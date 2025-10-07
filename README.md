@@ -1,41 +1,20 @@
-# Gestor de Procesos – Blue Home v1 (Railway Ready)
+# Blue Home – Gestor de Procesos v2 (Código inmutable en edición)
 
-Frontend **HTML** con menú lateral + Backend **Node.js (Express)** y **Google Apps Script** como conector a Google Sheets.
+Tema oscuro (azul marino / gris carbón) + Node (Express) + Apps Script.
+Incluye asignar, editar (sin modificar 'Código'), eliminar y auto-asignación por técnico.
+Actualización en vivo sin recargar.
 
-## 1) Variables en Railway
-Crea estas variables (Settings → Variables):
+## Variables en Railway
 ```
 PORT=3000
-GAS_URL=https://script.google.com/macros/s/AKfycbwacg0DwgrJgu9kr6EHhsoCObaSCsKpgHjJjFjNu8r0KpiwLErLV3DDbyVI0clnqbHgAQ/exec
+GAS_URL=https://script.google.com/macros/s/TU_URL_EXEC/exec
 ```
 
-## 2) Apps Script
-Pega `apps_script_code.gs` en [script.new](https://script.new) y cambia:
-```js
-const SHEET_ID = 'PON_AQUI_EL_ID_DE_TU_SPREADSHEET';
-```
-Publica como **Aplicación web** (cualquiera con el enlace) y usa esa URL en `GAS_URL`.
+## Estructura
+- `server/index.js` → API Express (`/api/login`, `/api/listOrders`, `/api/createOrder`, `/api/assignOrder`, `/api/updateOrder`, `/api/deleteOrder`, `/api/test`)
+- `frontend/` → `index.html`, `css/style.css`, `js/main.js`, `js/ordenes.js`
+- `apps_script_code_v2.gs` → Pega en Apps Script. Cambia `SHEET_ID` si actualiza la hoja.
 
-Estructura de hojas:
+## Hojas requeridas
 - **Usuarios**: `Usuario | Clave | Rol`
 - **Ordenes**: `Radicado | Fecha | Inquilino | Telefono | Código | Descripcion | Tecnico | Estado | Observaciones | Fotos | Firma`
-
-## 3) Instalar y ejecutar local
-```
-npm install
-npm run start
-```
-Abre `http://localhost:3000`
-
-## 4) Endpoints disponibles
-- `GET /api/test` → prueba variables
-- `POST /api/login` → { usuario, clave }
-- `POST /api/createOrder` → { usuario, inquilino, telefono, codigo, descripcion, tecnico, prioridad, estado }
-- `POST /api/listOrders` → { usuario, rol }
-
-## 5) Frontend
-- **Roles**: SuperAdmin (todo), admin (crear/listar), tecnico (solo ver asignadas).
-- Menú lateral azul marino / gris carbón con módulos `Órdenes`, `Usuarios`, `Reportes`, `Configuración` (habilitados, placeholders).
-
-## 6) Logo
-Se incluye `logo.svg` como marcador. Puedes reemplazarlo por tu logo oficial manteniendo el mismo nombre de archivo.

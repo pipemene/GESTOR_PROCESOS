@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Gestor de Procesos – Blue Home v2</title>
+  <link rel="stylesheet" href="./css/style.css"/>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="./img/logo.svg" alt="Blue Home"/>
+        <div>
+          <div class="title">BLUE HOME</div>
+          <div style="color:#9fb0d4;font-size:12px">Gestor de Procesos v2</div>
+        </div>
+      </div>
+      <nav>
+        <a class="nav-btn active" data-view="view-ordenes">🧾 Órdenes</a>
+        <a class="nav-btn" data-view="view-usuarios">👥 Usuarios</a>
+        <a class="nav-btn" data-view="view-reportes">📈 Reportes</a>
+        <a class="nav-btn" data-view="view-config">⚙️ Configuración</a>
+        <a class="nav-btn" id="btnLogout">🚪 Cerrar sesión</a>
+      </nav>
+      <div class="nav-footer">© Blue Home Inmobiliaria</div>
+    </aside>
+
+    <main>
+      <header class="top">
+        <div class="row" style="justify-content:space-between">
+          <h1 id="topTitle">Órdenes</h1>
+          <div class="pill" id="sessionInfo">Sin sesión</div>
+        </div>
+      </header>
+
+      <div class="wrap">
+        <!-- LOGIN -->
+        <section class="card" id="view-login">
+          <h2>Iniciar sesión</h2>
+          <div class="grid grid-2">
+            <div>
+              <label>Usuario</label>
+              <input id="lUsuario" placeholder="Ej. PIPEMENE"/>
+            </div>
+            <div>
+              <label>Clave</label>
+              <input id="lClave" type="password" placeholder="••••••"/>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="btnLogin">Ingresar</button>
+            <button class="secondary" id="btnPing">Probar conexión</button>
+          </div>
+          <div id="loginStatus" class="status"></div>
+        </section>
+
+        <!-- ÓRDENES -->
+        <section id="view-ordenes">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h2>Gestión de órdenes</h2>
+            <button class="btn-green" id="btnNueva">+ Nueva orden</button>
+          </div>
+
+          <div class="card">
+            <div class="status muted" id="listInfo">Usa "Cargar" para ver órdenes.</div>
+            <div class="row" style="margin-bottom:10px">
+              <button id="btnCargar">Cargar</button>
+              <select id="filtroEstado">
+                <option value="">Todos los estados</option>
+                <option>Pendiente</option><option>En curso</option><option>Cerrado</option>
+              </select>
+            </div>
+
+            <table id="tablaOrdenes" class="hide">
+              <thead>
+                <tr>
+                  <th>Radicado</th><th>Fecha</th><th>Inquilino</th><th>Teléfono</th>
+                  <th>Código</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Otros módulos -->
+        <section id="view-usuarios" class="card hide"><h2>Usuarios</h2><p class="muted">Próxima versión</p></section>
+        <section id="view-reportes" class="card hide"><h2>Reportes</h2><p class="muted">Próxima versión</p></section>
+        <section id="view-config" class="card hide"><h2>Configuración</h2><p class="muted">Próxima versión</p></section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-back" id="modalBack">
+    <div class="modal">
+      <h3 id="modalTitle">Nueva orden</h3>
+      <div class="formgrid">
+        <div><label>Inquilino</label><input id="mInquilino"></div>
+        <div><label>Teléfono</label><input id="mTelefono"></div>
+        <div><label>Código</label><input id="mCodigo"></div>
+        <div><label>Estado</label>
+          <select id="mEstado"><option>Pendiente</option><option>En curso</option><option>Cerrado</option></select>
+        </div>
+        <div style="grid-column:1/-1"><label>Descripción</label><textarea id="mDescripcion" rows="4"></textarea></div>
+        <div style="grid-column:1/-1"><label>Técnico</label><input id="mTecnico" placeholder="o deja vacío para 'Sin asignar'"/></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="mGuardar" class="btn-green">Guardar</button>
+        <button id="mCancelar" class="secondary">Cancelar</button>
+      </div>
+      <div id="modalStatus" class="status"></div>
+    </div>
+  </div>
+
+  <script src="./js/main.js"></script>
+  <script src="./js/ordenes.js"></script>
+</body>
+</html>

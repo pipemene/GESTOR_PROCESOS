@@ -1,10 +1,11 @@
 {
-  "name": "gestor-procesos-bluehome",
-  "version": "1.0.0",
-  "description": "Gestor de Procesos Blue Home v1 – Frontend HTML + Backend Node (Express) conectado a Google Apps Script / Google Sheets.",
-  "main": "server.js",
+  "name": "gestor-procesos-bluehome-v2",
+  "version": "2.0.1",
+  "description": "Gestor de Procesos Blue Home v2 – Node (Express) + HTML + Google Apps Script. Incluye asignar, editar (sin modificar 'Código'), eliminar y auto-asignación.",
+  "type": "module",
+  "main": "server/index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -13,6 +14,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "type": "module"
+  }
 }
