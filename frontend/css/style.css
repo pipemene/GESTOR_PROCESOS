@@ -39,3 +39,10 @@ th{color:#9fb0d4;font-weight:600}
 .modal.show{display:flex}
 .formgrid{display:grid;gap:10px}
 @media (min-width:700px){ .formgrid{grid-template-columns:1fr 1fr} }
+/* --- FIX para mostrar modal correctamente --- */
+.modal-back.show {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
