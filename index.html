@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestor de Procesos – Blue Home</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2b; --muted:#96a2b8; --accent:#3aa0ff; --ok:#22c55e; --error:#ef4444; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,sans-serif;background:linear-gradient(45deg,#0b1220,#0e1426);color:#e6edf7}
+    header{padding:20px 16px;border-bottom:1px solid #17233d;background:#0c1323;position:sticky;top:0;z-index:5}
+    .wrap{max-width:980px;margin:0 auto;padding:24px 16px}
+    h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.2px}
+    h2{font-size:18px;margin:16px 0 8px}
+    p{color:var(--muted);margin:6px 0 12px}
+    .grid{display:grid;gap:16px}
+    @media (min-width:900px){ .grid-2{grid-template-columns:1fr 1fr} }
+    .card{background:var(--card);border:1px solid #1b2742;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    label{font-size:12px;color:#aab6ce}
+    input,select,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #213054;background:#0e172b;color:#e6edf7;outline:none}
+    input:focus,textarea:focus{border-color:#335aa7;box-shadow:0 0 0 3px rgba(58,160,255,.15)}
+    button{cursor:pointer;background:linear-gradient(180deg,#2b85f6,#2769da);border:none;font-weight:600}
+    button.secondary{background:#17233d}
+    .row{display:flex;gap:10px;align-items:center}
+    .row > *{flex:1}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#0f1a30;border:1px solid #1c2d52;padding:6px 10px;border-radius:999px;font-size:12px;color:#c9d7f3}
+    .status{font-size:13px;margin-top:8px}
+    .status.ok{color:var(--ok)} .status.err{color:var(--error)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:10px;border-bottom:1px solid #1b2742;text-align:left}
+    th{color:#9fb0d4;font-weight:600}
+    .small{font-size:12px;color:#9fb0d4}
+    .hide{display:none}
+    footer{padding:32px 16px;color:#8aa0c8;text-align:center}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand img{width:28px;height:28px;border-radius:8px;border:1px solid #1b2742}
+    .tag{font-size:12px;color:#9fb0d4}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap row" style="justify-content:space-between">
+      <div class="brand">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Octicons-mark-github.svg" alt="BH"/>
+        <div>
+          <h1>GESTOR DE PROCESOS</h1>
+          <div class="tag">Blue Home Inmobiliaria • MVP Frontend HTML</div>
+        </div>
+      </div>
+      <div class="pill"><span id="envLabel">Apps Script: NO CONFIGURADO</span></div>
+    </div>
+  </header>
+
+  <div class="wrap grid grid-2">
+    <!-- Autenticación -->
+    <section class="card">
+      <h2>1) Autenticación</h2>
+      <p class="small">Registra usuarios y accede con email + contraseña (guardadas con hash en Google Sheets).</p>
+      <div class="grid">
+        <div class="row">
+          <input id="apiUrl" placeholder="Pega aquí tu URL de implementación de Google Apps Script"/>
+          <button id="saveUrl">Guardar URL</button>
+        </div>
+        <div id="urlStatus" class="status"></div>
+        <hr style="border-color:#1b2742">
+        <div class="grid grid-2">
+          <div>
+            <h3>Registro</h3>
+            <input id="rName" placeholder="Nombre completo"/>
+            <input id="rEmail" placeholder="Correo"/>
+            <input id="rPass" type="password" placeholder="Contraseña"/>
+            <button id="btnRegister">Registrar usuario</button>
+            <div id="regStatus" class="status"></div>
+          </div>
+          <div>
+            <h3>Login</h3>
+            <input id="lEmail" placeholder="Correo"/>
+            <input id="lPass" type="password" placeholder="Contraseña"/>
+            <button id="btnLogin">Ingresar</button>
+            <div id="loginStatus" class="status"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Crear radicado -->
+    <section class="card">
+      <h2>2) Crear Radicado</h2>
+      <p class="small">Genera radicados (folio) y quedan en la hoja RADICADOS.</p>
+      <input id="radAsunto" placeholder="Asunto o título del radicado"/>
+      <textarea id="radDetalle" rows="4" placeholder="Detalle / observaciones"></textarea>
+      <div class="row">
+        <input id="radCliente" placeholder="Cliente / Tercero relacionado"/>
+        <input id="radPrioridad" placeholder="Prioridad (Alta/Media/Baja)" />
+      </div>
+      <button id="btnCrearRad">Crear Radicado</button>
+      <div id="radStatus" class="status"></div>
+    </section>
+
+    <!-- Listado de radicados -->
+    <section class="card">
+      <h2>3) Mis Radicados</h2>
+      <div class="row">
+        <button id="btnCargar">Cargar mis radicados</button>
+        <button class="secondary" id="btnSalir">Cerrar sesión</button>
+      </div>
+      <div id="tablaWrap" class="grid" style="margin-top:8px">
+        <table id="tabla" class="hide">
+          <thead>
+            <tr>
+              <th>Radicado</th>
+              <th>Fecha</th>
+              <th>Asunto</th>
+              <th>Cliente</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="listStatus" class="status"></div>
+      </div>
+    </section>
+
+    <!-- Ayuda -->
+    <section class="card">
+      <h2>4) Ayuda rápida</h2>
+      <ul class="small">
+        <li>Configura primero la <b>URL de Apps Script</b> (paso 1).</li>
+        <li>Regístrate con tu correo y contraseña. Luego, inicia sesión.</li>
+        <li>Al crear un radicado, se guarda en la hoja <b>RADICADOS</b> y queda enlazado con tu correo.</li>
+        <li>El listado muestra solo tus radicados (filtrados por tu email).</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>
+    <small>© Blue Home Inmobiliaria – MVP conectando Frontend HTML con Google Apps Script + Google Sheets.</small>
+  </footer>
+
+  <script>
+    // === CONFIG ===
+    // La URL se guarda en localStorage para poder mover este HTML sin recompilar.
+    const apiInput = document.getElementById('apiUrl');
+    const saveUrlBtn = document.getElementById('saveUrl');
+    const envLabel = document.getElementById('envLabel');
+    const urlStatus = document.getElementById('urlStatus');
+
+    function getApiUrl(){
+      return localStorage.getItem('GAS_URL') || '';
+    }
+    function setApiUrl(url){
+      localStorage.setItem('GAS_URL', url);
+      envLabel.textContent = 'Apps Script: ' + (url ? 'CONFIGURADO' : 'NO CONFIGURADO');
+    }
+    (function init(){
+      const url = getApiUrl();
+      apiInput.value = url;
+      envLabel.textContent = 'Apps Script: ' + (url ? 'CONFIGURADO' : 'NO CONFIGURADO');
+    })();
+
+    saveUrlBtn.addEventListener('click', () => {
+      const url = apiInput.value.trim();
+      if(!/^https?:\/\//.test(url)){ urlStatus.textContent = 'URL inválida'; urlStatus.className='status err'; return; }
+      setApiUrl(url);
+      urlStatus.textContent = 'URL guardada.'; urlStatus.className = 'status ok';
+    });
+
+    // === Helpers ===
+    async function apiCall(action, payload = {}){
+      const endpoint = getApiUrl();
+      if(!endpoint){ throw new Error('Configura primero la URL de Apps Script'); }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action, payload })
+      });
+      const data = await response.json();
+      if(!response.ok || data.status !== 'ok'){
+        const msg = data && data.message ? data.message : ('Error en ' + action);
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    // === Registro ===
+    const regStatus = document.getElementById('regStatus');
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+      regStatus.textContent = '';
+      try{
+        const name = document.getElementById('rName').value.trim();
+        const email = document.getElementById('rEmail').value.trim();
+        const pass = document.getElementById('rPass').value;
+        if(!name || !email || !pass) throw new Error('Completa todos los campos');
+        const res = await apiCall('registerUser', {name,email,pass});
+        regStatus.textContent = 'Usuario creado.'; regStatus.className='status ok';
+      }catch(e){
+        regStatus.textContent = e.message; regStatus.className='status err';
+      }
+    });
+
+    // === Login ===
+    const loginStatus = document.getElementById('loginStatus');
+    let sessionEmail = null;
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+      loginStatus.textContent = '';
+      try{
+        const email = document.getElementById('lEmail').value.trim();
+        const pass = document.getElementById('lPass').value;
+        const res = await apiCall('login', {email,pass});
+        sessionEmail = email;
+        loginStatus.textContent = 'Sesión iniciada.'; loginStatus.className='status ok';
+      }catch(e){
+        loginStatus.textContent = e.message; loginStatus.className='status err';
+      }
+    });
+
+    // === Crear Radicado ===
+    const radStatus = document.getElementById('radStatus');
+    document.getElementById('btnCrearRad').addEventListener('click', async () => {
+      radStatus.textContent = '';
+      try{
+        if(!sessionEmail) throw new Error('Inicia sesión primero');
+        const asunto = document.getElementById('radAsunto').value.trim();
+        const detalle = document.getElementById('radDetalle').value.trim();
+        const cliente = document.getElementById('radCliente').value.trim();
+        const prioridad = document.getElementById('radPrioridad').value.trim();
+        if(!asunto) throw new Error('Escribe un asunto');
+        const res = await apiCall('createRadicado', {email:sessionEmail, asunto, detalle, cliente, prioridad});
+        radStatus.textContent = 'Radicado creado: ' + res.data.radicado; radStatus.className='status ok';
+      }catch(e){
+        radStatus.textContent = e.message; radStatus.className='status err';
+      }
+    });
+
+    // === Listar Radicados ===
+    const tabla = document.getElementById('tabla');
+    const tbody = tabla.querySelector('tbody');
+    const listStatus = document.getElementById('listStatus');
+
+    document.getElementById('btnCargar').addEventListener('click', async () => {
+      listStatus.textContent='';
+      tbody.innerHTML='';
+      try{
+        if(!sessionEmail) throw new Error('Inicia sesión primero');
+        const res = await apiCall('listRadicados', {email:sessionEmail});
+        const rows = res.data || [];
+        if(!rows.length){ listStatus.textContent='Sin radicados'; listStatus.className='status'; tabla.classList.add('hide'); return; }
+        rows.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = \`
+            <td>\${r.radicado}</td>
+            <td>\${r.fecha}</td>
+            <td>\${r.asunto}</td>
+            <td>\${r.cliente || ''}</td>
+            <td>\${r.estado || 'Abierto'}</td>
+          \`;
+          tbody.appendChild(tr);
+        });
+        tabla.classList.remove('hide');
+      }catch(e){
+        listStatus.textContent = e.message; listStatus.className='status err';
+        tabla.classList.add('hide');
+      }
+    });
+
+    // === Salir ===
+    document.getElementById('btnSalir').addEventListener('click', () => {
+      sessionEmail = null;
+      loginStatus.textContent = 'Sesión cerrada.'; loginStatus.className='status';
+    });
+  </script>
+</body>
+</html>
