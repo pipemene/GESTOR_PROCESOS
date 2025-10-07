@@ -1,52 +1,41 @@
-# GESTOR DE PROCESOS – Frontend HTML + Google Apps Script
+# Gestor de Procesos – Blue Home v1 (Railway Ready)
 
-Este paquete contiene un **frontend HTML** listo para conectar con un **Apps Script** que guarda y lee datos desde **Google Sheets** (usuarios y radicados).
+Frontend **HTML** con menú lateral + Backend **Node.js (Express)** y **Google Apps Script** como conector a Google Sheets.
 
-## Contenido
-- `index.html` → Interfaz para registrar usuarios, iniciar sesión, crear radicados y listarlos.
-- `apps_script_code.gs` → Código listo para pegar en Apps Script (Web App).
-- `README.md` → Este archivo con pasos de implementación.
+## 1) Variables en Railway
+Crea estas variables (Settings → Variables):
+```
+PORT=3000
+GAS_URL=https://script.google.com/macros/s/AKfycbwacg0DwgrJgu9kr6EHhsoCObaSCsKpgHjJjFjNu8r0KpiwLErLV3DDbyVI0clnqbHgAQ/exec
+```
 
-## Estructura de Google Sheets
-Crea un Spreadsheet (Google Sheets) y usa **dos hojas**:
+## 2) Apps Script
+Pega `apps_script_code.gs` en [script.new](https://script.new) y cambia:
+```js
+const SHEET_ID = 'PON_AQUI_EL_ID_DE_TU_SPREADSHEET';
+```
+Publica como **Aplicación web** (cualquiera con el enlace) y usa esa URL en `GAS_URL`.
 
-1. `USERS` con columnas (en este orden):
-   ```
-   timestamp | name | email | pass_hash
-   ```
+Estructura de hojas:
+- **Usuarios**: `Usuario | Clave | Rol`
+- **Ordenes**: `Radicado | Fecha | Inquilino | Telefono | Código | Descripcion | Tecnico | Estado | Observaciones | Fotos | Firma`
 
-2. `RADICADOS` con columnas:
-   ```
-   timestamp | radicado | email | asunto | detalle | cliente | prioridad | estado
-   ```
+## 3) Instalar y ejecutar local
+```
+npm install
+npm run start
+```
+Abre `http://localhost:3000`
 
-> No es obligatorio poner cabeceras, pero es recomendable. El script asume que la primera fila podría ser cabecera al listar.
+## 4) Endpoints disponibles
+- `GET /api/test` → prueba variables
+- `POST /api/login` → { usuario, clave }
+- `POST /api/createOrder` → { usuario, inquilino, telefono, codigo, descripcion, tecnico, prioridad, estado }
+- `POST /api/listOrders` → { usuario, rol }
 
-## Pasos: Apps Script (Backend)
-1. Abre [script.new](https://script.new) y pega el contenido de `apps_script_code.gs`.
-2. Reemplaza `SHEET_ID` con el ID de tu Spreadsheet (lo que está entre `/d/` y `/edit` en la URL).
-3. Menú **Implementar → Implementar como aplicación web**:
-   - Tipo: **App web**
-   - ¿Quién tiene acceso? **Cualquiera con el enlace** (para pruebas rápidas)
-   - Copia la **URL** resultante.
+## 5) Frontend
+- **Roles**: SuperAdmin (todo), admin (crear/listar), tecnico (solo ver asignadas).
+- Menú lateral azul marino / gris carbón con módulos `Órdenes`, `Usuarios`, `Reportes`, `Configuración` (habilitados, placeholders).
 
-> Luego puedes restringir acceso por Google y agregar verificación si lo necesitas.
-
-## Pasos: Frontend (index.html)
-1. Abre el archivo `index.html` en el navegador.
-2. En la sección **Autenticación**, pega la **URL de tu Apps Script** y presiona **Guardar URL**.
-3. Regístrate, inicia sesión y prueba crear/listar radicados.
-
-## Notas de seguridad (MVP)
-- Las contraseñas se guardan como **SHA-256** (hash) en la hoja `USERS`.
-- Este MVP no usa JWT ni sesiones; se apoya en el email del usuario. Puedes ampliarlo agregando una hoja `TOKENS` y validación por token en cada llamada.
-- Para entornos productivos:
-  - Cambia la publicación del Web App para que **solo usuarios de tu dominio** puedan acceder.
-  - Implementa roles y validación por token en las acciones.
-
-## Personalización
-- Cambia estilos y textos en `index.html` a tu identidad visual (colores azul/gris de Blue Home).
-- Puedes agregar campos adicionales a los radicados (ej. adjuntos, prioridad numérica, técnico asignado, etc.).
-- Para IDs de radicado secuenciales, reemplaza `nextRadicado()` por un contador basado en la última fila.
-
-¡Éxitos con el despliegue!
+## 6) Logo
+Se incluye `logo.svg` como marcador. Puedes reemplazarlo por tu logo oficial manteniendo el mismo nombre de archivo.
