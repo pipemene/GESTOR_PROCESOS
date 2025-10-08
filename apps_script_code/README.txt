@@ -1,1 +1,3 @@
-Implementar endpoints login, listUsers, listOrders, etc. en tu Apps Script.
+Implementar en Apps Script:
+- action=ping → return "pong"
+- action=login&usuario=x&clave=y → validar credenciales desde Google Sheets
