@@ -1,7 +1,7 @@
 {
-  "name": "gestor-procesos-bluehome-v2",
-  "version": "2.0.1",
-  "description": "Gestor de Procesos Blue Home v2 – Node (Express) + HTML + Google Apps Script. Incluye asignar, editar (sin modificar 'Código'), eliminar y auto-asignación.",
+  "name": "gestor-procesos-bluehome-v3-1",
+  "version": "3.1.0",
+  "description": "Blue Home Gestor de Procesos v3.1 \u2013 autosign t\u00e9cnico + UI responsive m\u00f3vil + Drive + firma + PDF.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {

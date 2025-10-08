@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Gestor de Procesos – Blue Home v2</title>
+  <title>Gestor de Procesos – Blue Home v3.1</title>
   <link rel="stylesheet" href="./css/style.css"/>
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img src="./img/logo.svg" alt="Blue Home"/>
         <div>
           <div class="title">BLUE HOME</div>
-          <div style="color:#9fb0d4;font-size:12px">Gestor de Procesos v2</div>
+          <div style="color:#9fb0d4;font-size:12px">Gestor de Procesos v3.1</div>
         </div>
       </div>
       <nav>
@@ -38,21 +38,17 @@
         <!-- LOGIN -->
         <section class="card" id="view-login">
           <h2>Iniciar sesión</h2>
-          <div class="grid grid-2">
-            <div>
-              <label>Usuario</label>
-              <input id="lUsuario" placeholder="Ej. PIPEMENE"/>
+          <div class="grid">
+            <div class="formgrid">
+              <div><label>Usuario</label><input id="lUsuario" placeholder="Ej. PIPEMENE"/></div>
+              <div><label>Clave</label><input id="lClave" type="password" placeholder="••••••"/></div>
             </div>
-            <div>
-              <label>Clave</label>
-              <input id="lClave" type="password" placeholder="••••••"/>
+            <div class="row wrap">
+              <button id="btnLogin">Ingresar</button>
+              <button class="secondary" id="btnPing">Probar conexión</button>
             </div>
+            <div id="loginStatus" class="status"></div>
           </div>
-          <div class="row" style="margin-top:10px">
-            <button id="btnLogin">Ingresar</button>
-            <button class="secondary" id="btnPing">Probar conexión</button>
-          </div>
-          <div id="loginStatus" class="status"></div>
         </section>
 
         <!-- ÓRDENES -->
@@ -63,28 +59,31 @@
           </div>
 
           <div class="card">
-            <div class="status muted" id="listInfo">Usa "Cargar" para ver órdenes.</div>
-            <div class="row" style="margin-bottom:10px">
+            <div class="row wrap" style="margin-bottom:10px">
               <button id="btnCargar">Cargar</button>
               <select id="filtroEstado">
                 <option value="">Todos los estados</option>
-                <option>Pendiente</option><option>En curso</option><option>Cerrado</option>
+                <option>Pendiente</option><option>En curso</option><option>Finalizado</option>
               </select>
+              <input id="filtroTexto" placeholder="Buscar por código/inq./técnico"/>
             </div>
 
-            <table id="tablaOrdenes" class="hide">
-              <thead>
-                <tr>
-                  <th>Radicado</th><th>Fecha</th><th>Inquilino</th><th>Teléfono</th>
-                  <th>Código</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+            <div class="th-scroll">
+              <table id="tablaOrdenes" class="hide">
+                <thead>
+                  <tr>
+                    <th>Radicado</th><th>Fecha</th><th>Inquilino</th><th>Teléfono</th>
+                    <th>Código</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="listInfo" class="status muted">Usa "Cargar" para ver órdenes.</div>
           </div>
         </section>
 
-        <!-- Otros módulos -->
+        <!-- PLACEHOLDERS -->
         <section id="view-usuarios" class="card hide"><h2>Usuarios</h2><p class="muted">Próxima versión</p></section>
         <section id="view-reportes" class="card hide"><h2>Reportes</h2><p class="muted">Próxima versión</p></section>
         <section id="view-config" class="card hide"><h2>Configuración</h2><p class="muted">Próxima versión</p></section>
@@ -92,7 +91,7 @@
     </main>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal crear/editar -->
   <div class="modal-back" id="modalBack">
     <div class="modal">
       <h3 id="modalTitle">Nueva orden</h3>
@@ -101,16 +100,57 @@
         <div><label>Teléfono</label><input id="mTelefono"></div>
         <div><label>Código</label><input id="mCodigo"></div>
         <div><label>Estado</label>
-          <select id="mEstado"><option>Pendiente</option><option>En curso</option><option>Cerrado</option></select>
+          <select id="mEstado"><option>Pendiente</option><option>En curso</option><option>Finalizado</option></select>
         </div>
         <div style="grid-column:1/-1"><label>Descripción</label><textarea id="mDescripcion" rows="4"></textarea></div>
         <div style="grid-column:1/-1"><label>Técnico</label><input id="mTecnico" placeholder="o deja vacío para 'Sin asignar'"/></div>
       </div>
-      <div class="row" style="margin-top:12px">
+      <div class="row wrap" style="margin-top:12px">
         <button id="mGuardar" class="btn-green">Guardar</button>
         <button id="mCancelar" class="secondary">Cancelar</button>
       </div>
       <div id="modalStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- Modal trabajo técnico -->
+  <div class="modal-back" id="workBack">
+    <div class="modal">
+      <h3>Actualizar trabajo</h3>
+      <div id="autoAsignHint" class="status muted"></div>
+      <div class="formgrid">
+        <div style="grid-column:1/-1"><label>Observaciones</label><textarea id="wObs" rows="5" placeholder="Describe lo reparado..."></textarea></div>
+        <div style="grid-column:1/-1">
+          <label>Evidencias (imágenes)</label>
+          <div class="drop" id="dropZone">Arrastra aquí o haz clic para elegir</div>
+          <input id="wFiles" type="file" accept="image/*" multiple style="display:none"/>
+          <div id="thumbs" class="row wrap" style="margin-top:8px"></div>
+        </div>
+        <div><label>Estado</label>
+          <select id="wEstado"><option>Pendiente</option><option>En curso</option><option>Finalizado</option></select>
+        </div>
+      </div>
+      <div class="row wrap" style="margin-top:12px">
+        <button id="wAuto" class="btn-warn" style="display:none">Autoasignarme</button>
+        <button id="wGuardar" class="btn-green">Guardar</button>
+        <button id="wCancelar" class="secondary">Cancelar</button>
+      </div>
+      <div id="workStatus" class="status"></div>
+    </div>
+  </div>
+
+  <!-- Modal firma -->
+  <div class="modal-back" id="signBack">
+    <div class="modal">
+      <h3>Firma del inquilino</h3>
+      <p class="muted">Pide al inquilino que firme en el recuadro:</p>
+      <canvas id="signPad" class="signature" width="640" height="220"></canvas>
+      <div class="row wrap" style="margin-top:10px">
+        <button id="sGuardar" class="btn-green">Guardar firma</button>
+        <button id="sLimpiar" class="secondary">Limpiar</button>
+        <button id="sCancelar" class="secondary">Cancelar</button>
+      </div>
+      <div id="signStatus" class="status"></div>
     </div>
   </div>
 
