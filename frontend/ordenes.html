@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Órdenes — BlueHome</title>
+<link rel="stylesheet" href="/css/style.css"/></head>
+<body>
+<header class="topbar"><div>Órdenes</div><div class="badge" id="userBadge">—</div></header>
+<div class="container">
+  <div class="card">
+    <div class="actions"><button id="btnCargar" class="btn-primary">Cargar órdenes</button></div>
+    <table class="table" id="tabla"><thead>
+      <tr><th>Radicado</th><th>Fecha</th><th>Inquilino</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Acciones</th></tr>
+    </thead><tbody></tbody></table>
+  </div>
+  <div class="card" id="firmaCard" style="display:none;">
+    <h3>Finalizar orden <span id="radicadoSel"></span> (firma inquilino)</h3>
+    <div class="canvas-wrap"><canvas id="pad" width="500" height="200" style="background:#0f172a;border-radius:8px;"></canvas></div>
+    <div class="actions">
+      <button id="btnLimpiar">Limpiar</button>
+      <button id="btnGuardar" class="btn-success">Guardar firma y cerrar</button>
+      <button id="btnCancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+<script src="/js/ordenes.js"></script>
+</body></html>

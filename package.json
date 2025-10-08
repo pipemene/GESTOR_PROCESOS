@@ -1,14 +1,14 @@
 {
   "name": "bluehome-gestor-procesos",
-  "version": "3.3.0",
-  "type": "module",
+  "version": "3.4.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node server/index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
     "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "node-fetch": "^3.3.2"
   }
 }
