@@ -3,33 +3,27 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Gestor de Procesos – Blue Home v3.1</title>
+  <title>Gestor de Procesos – Blue Home v3.3</title>
   <link rel="stylesheet" href="./css/style.css"/>
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
+    <aside class="sidebar hide" id="sidebar">
       <div class="brand">
         <img src="./img/logo.svg" alt="Blue Home"/>
         <div>
           <div class="title">BLUE HOME</div>
-          <div style="color:#9fb0d4;font-size:12px">Gestor de Procesos v3.1</div>
+          <div style="color:#9fb0d4;font-size:12px">Gestor de Procesos v3.3</div>
         </div>
       </div>
-      <nav>
-        <a class="nav-btn active" data-view="view-ordenes">🧾 Órdenes</a>
-        <a class="nav-btn" data-view="view-usuarios">👥 Usuarios</a>
-        <a class="nav-btn" data-view="view-reportes">📈 Reportes</a>
-        <a class="nav-btn" data-view="view-config">⚙️ Configuración</a>
-        <a class="nav-btn" id="btnLogout">🚪 Cerrar sesión</a>
-      </nav>
+      <nav id="navMenu"></nav>
       <div class="nav-footer">© Blue Home Inmobiliaria</div>
     </aside>
 
     <main>
       <header class="top">
         <div class="row" style="justify-content:space-between">
-          <h1 id="topTitle">Órdenes</h1>
+          <h1 id="topTitle">Iniciar sesión</h1>
           <div class="pill" id="sessionInfo">Sin sesión</div>
         </div>
       </header>
@@ -37,22 +31,20 @@
       <div class="wrap">
         <!-- LOGIN -->
         <section class="card" id="view-login">
-          <h2>Iniciar sesión</h2>
-          <div class="grid">
-            <div class="formgrid">
-              <div><label>Usuario</label><input id="lUsuario" placeholder="Ej. PIPEMENE"/></div>
-              <div><label>Clave</label><input id="lClave" type="password" placeholder="••••••"/></div>
-            </div>
-            <div class="row wrap">
-              <button id="btnLogin">Ingresar</button>
-              <button class="secondary" id="btnPing">Probar conexión</button>
-            </div>
-            <div id="loginStatus" class="status"></div>
+          <h2>Ingresar</h2>
+          <div class="formgrid">
+            <div><label>Usuario</label><input id="lUsuario" placeholder="Ej. PIPEMENE"/></div>
+            <div><label>Clave</label><input id="lClave" type="password" placeholder="••••••"/></div>
           </div>
+          <div class="row wrap" style="margin-top:10px">
+            <button id="btnLogin">Ingresar</button>
+            <button class="secondary" id="btnPing">Probar conexión</button>
+          </div>
+          <div id="loginStatus" class="status"></div>
         </section>
 
         <!-- ÓRDENES -->
-        <section id="view-ordenes">
+        <section id="view-ordenes" class="hide">
           <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
             <h2>Gestión de órdenes</h2>
             <button class="btn-green" id="btnNueva">+ Nueva orden</button>
@@ -68,30 +60,51 @@
               <input id="filtroTexto" placeholder="Buscar por código/inq./técnico"/>
             </div>
 
-            <div class="th-scroll">
+            <div class="table-wrap">
               <table id="tablaOrdenes" class="hide">
                 <thead>
                   <tr>
                     <th>Radicado</th><th>Fecha</th><th>Inquilino</th><th>Teléfono</th>
-                    <th>Código</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Acciones</th>
+                    <th>Código</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>PDF</th><th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
+
+            <div id="cards" class="cards"></div>
+
             <div id="listInfo" class="status muted">Usa "Cargar" para ver órdenes.</div>
           </div>
         </section>
 
-        <!-- PLACEHOLDERS -->
-        <section id="view-usuarios" class="card hide"><h2>Usuarios</h2><p class="muted">Próxima versión</p></section>
-        <section id="view-reportes" class="card hide"><h2>Reportes</h2><p class="muted">Próxima versión</p></section>
-        <section id="view-config" class="card hide"><h2>Configuración</h2><p class="muted">Próxima versión</p></section>
+        <!-- USUARIOS (solo superadmin) -->
+        <section id="view-usuarios" class="hide">
+          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h2>Usuarios</h2>
+            <button class="btn-green" id="btnNuevoUser">+ Nuevo usuario</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table id="tablaUsers" class="hide">
+                <thead><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="usersInfo" class="status muted">Carga la lista de usuarios.</div>
+            <div class="row wrap" style="margin-top:10px">
+              <button id="btnLoadUsers">Cargar</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-reportes" class="hide"><div class="card"><h2>Reportes</h2><p class="muted">Próxima versión.</p></div></section>
+        <section id="view-config"   class="hide"><div class="card"><h2>Configuración</h2><p class="muted">Próxima versión.</p></div></section>
       </div>
     </main>
   </div>
 
-  <!-- Modal crear/editar -->
+  <!-- Modales -->
   <div class="modal-back" id="modalBack">
     <div class="modal">
       <h3 id="modalTitle">Nueva orden</h3>
@@ -103,7 +116,11 @@
           <select id="mEstado"><option>Pendiente</option><option>En curso</option><option>Finalizado</option></select>
         </div>
         <div style="grid-column:1/-1"><label>Descripción</label><textarea id="mDescripcion" rows="4"></textarea></div>
-        <div style="grid-column:1/-1"><label>Técnico</label><input id="mTecnico" placeholder="o deja vacío para 'Sin asignar'"/></div>
+        <div style="grid-column:1/-1">
+          <label>Técnico</label>
+          <select id="mTecnico"></select>
+          <div class="muted" style="margin-top:4px">Puedes dejar <b>Sin asignar</b> para autoasignación por técnicos.</div>
+        </div>
       </div>
       <div class="row wrap" style="margin-top:12px">
         <button id="mGuardar" class="btn-green">Guardar</button>
@@ -113,7 +130,6 @@
     </div>
   </div>
 
-  <!-- Modal trabajo técnico -->
   <div class="modal-back" id="workBack">
     <div class="modal">
       <h3>Actualizar trabajo</h3>
@@ -139,7 +155,6 @@
     </div>
   </div>
 
-  <!-- Modal firma -->
   <div class="modal-back" id="signBack">
     <div class="modal">
       <h3>Firma del inquilino</h3>
@@ -154,7 +169,26 @@
     </div>
   </div>
 
+  <div class="modal-back" id="userBack">
+    <div class="modal">
+      <h3 id="uTitle">Nuevo usuario</h3>
+      <div class="formgrid">
+        <div><label>Usuario</label><input id="uUser"></div>
+        <div><label>Clave</label><input id="uPass" type="password"></div>
+        <div><label>Rol</label>
+          <select id="uRol"><option>tecnico</option><option>admin</option><option>superadmin</option></select>
+        </div>
+      </div>
+      <div class="row wrap" style="margin-top:12px">
+        <button id="uGuardar" class="btn-green">Guardar</button>
+        <button id="uCancelar" class="secondary">Cancelar</button>
+      </div>
+      <div id="userStatus" class="status"></div>
+    </div>
+  </div>
+
   <script src="./js/main.js"></script>
   <script src="./js/ordenes.js"></script>
+  <script src="./js/usuarios.js"></script>
 </body>
 </html>

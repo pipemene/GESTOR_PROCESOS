@@ -1,7 +1,7 @@
 {
-  "name": "gestor-procesos-bluehome-v3-1",
-  "version": "3.1.0",
-  "description": "Blue Home Gestor de Procesos v3.1 \u2013 autosign t\u00e9cnico + UI responsive m\u00f3vil + Drive + firma + PDF.",
+  "name": "gestor-procesos-bluehome-v3-3-final",
+  "version": "3.3.0",
+  "description": "Blue Home Gestor de Procesos v3.3 \u2013 enterprise final.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {

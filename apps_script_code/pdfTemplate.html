@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; color:#222; margin:40px; }
+    h1 { text-align:center; color:#003366; border-bottom:2px solid #0055aa; padding-bottom:5px; }
+    h2 { color:#004a99; border-left:4px solid #004a99; padding-left:8px; }
+    .block{margin-top:15px;}
+    .firma{text-align:center;margin-top:40px;}
+    .firma img{width:250px;border-bottom:1px solid #000;}
+    .evidencia{text-align:center;margin:8px 0;}
+    .evidencia img{width:100%;max-width:450px;border-radius:8px;}
+    footer{text-align:center;font-size:11px;color:#777;margin-top:60px;}
+  </style>
+</head>
+<body>
+  <h1>BLUE HOME INMOBILIARIA<br>Orden de Servicio</h1>
+  <p><b>Radicado:</b> <?= data.radicado ?></p>
+  <p><b>Fecha:</b> <?= data.fecha ?></p>
+  <p><b>Inquilino:</b> <?= data.inquilino ?></p>
+  <p><b>Teléfono:</b> <?= data.telefono ?></p>
+  <p><b>Código inmueble:</b> <?= data.codigo ?></p>
+  <p><b>Técnico:</b> <?= data.tecnico ?></p>
+  <p><b>Estado:</b> <?= data.estado ?></p>
+
+  <div class="block">
+    <h2>Descripción del trabajo</h2>
+    <p><?= data.descripcion ?></p>
+  </div>
+  <div class="block">
+    <h2>Actividades realizadas</h2>
+    <p><?= data.actividades || "No registradas" ?></p>
+  </div>
+  <? if (data.fotos && data.fotos.length) { ?>
+  <div class="block"><h2>Evidencias fotográficas</h2>
+  <? data.fotos.forEach(f => { ?><div class="evidencia"><img src="<?= f ?>"/></div><? }); ?>
+  </div><? } ?>
+  <div class="firma">
+    <h2>Firma del inquilino</h2>
+    <img src="<?= data.firmaUrl ?>" alt="Firma del inquilino"/><p><?= data.inquilino ?></p>
+  </div>
+  <footer>Documento generado automáticamente por Blue Home Inmobiliaria – Gestor de Procesos v3.3<br>Fecha de emisión: <?= new Date().toLocaleDateString("es-CO") ?></footer>
+</body>
+</html>
