@@ -1,12 +1,12 @@
 
-// ordenes.js - módulo de gestión de órdenes
+// ordenes.js - módulo de gestión de órdenes (versión final)
 document.addEventListener("DOMContentLoaded", () => {
   const btnCargar = document.getElementById("btnCargar");
   const btnNueva = document.getElementById("btnNuevaOrden");
   const contenedor = document.getElementById("ordenesContainer");
 
   if (!btnCargar || !btnNueva || !contenedor) {
-    console.log("Página sin módulo de órdenes, se omite ejecución.");
+    console.log("ℹ Página sin módulo de órdenes, ejecución omitida.");
     return;
   }
 
@@ -14,8 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/listOrders");
       const data = await res.json();
-      if (!data || !Array.isArray(data)) throw new Error("Respuesta inválida");
       contenedor.innerHTML = "";
+
+      if (!data || !Array.isArray(data)) {
+        contenedor.innerHTML = "<p>No hay órdenes registradas.</p>";
+        return;
+      }
+
       data.forEach(ord => {
         const fila = document.createElement("div");
         fila.className = "orden-item";
@@ -31,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (err) {
       console.error("Error cargando órdenes:", err);
-      alert("No se pudieron cargar las órdenes.");
+      alert("❌ No se pudieron cargar las órdenes.");
     }
   }
 
@@ -39,16 +44,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const descripcion = prompt("Descripción de la orden:");
     if (!descripcion) return;
     try {
-      await fetch("/api/createOrder", {
+      const res = await fetch("/api/createOrder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ descripcion })
       });
-      alert("Orden creada correctamente.");
-      cargarOrdenes();
+      const data = await res.json();
+      if (data.status === "ok") {
+        alert("✅ Orden creada correctamente.");
+        cargarOrdenes();
+      } else {
+        alert("❌ Error al crear la orden.");
+      }
     } catch (err) {
       console.error(err);
-      alert("Error al crear la orden.");
+      alert("❌ Error de conexión al crear la orden.");
     }
   }
 
@@ -56,8 +66,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.classList.contains("btnEliminar")) {
       const id = e.target.dataset.id;
       if (confirm(`¿Eliminar la orden ${id}?`)) {
-        await fetch(`/api/deleteOrder/${id}`, { method: "DELETE" });
-        cargarOrdenes();
+        try {
+          await fetch("/api/deleteOrder", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ radicado: id })
+          });
+          alert("🗑 Orden eliminada.");
+          cargarOrdenes();
+        } catch (err) {
+          alert("❌ Error eliminando la orden.");
+        }
       }
     }
   });
