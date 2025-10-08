@@ -1,59 +1,44 @@
-// server/index.js (Blue Home v3.3 final)
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+import express from 'express';
+import path from 'path';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "20mb" }));
-
-const PORT = process.env.PORT || 3000;
-const GAS_URL = process.env.GAS_URL;
-if(!GAS_URL) console.warn("[WARN] GAS_URL no configurada");
-
-async function callGAS(action, payload = {}){
-  if(!GAS_URL) throw new Error("GAS_URL no configurada");
-  const res = await fetch(GAS_URL, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ action, payload })
-  });
-  let data;
-  try{ data = await res.json(); }
-  catch(e){ const t = await res.text(); throw new Error(`Respuesta no JSON desde GAS: ${t.slice(0,200)}`); }
-  if(!res.ok || data.status!=='ok') throw new Error(data?.message || `Error GAS en ${action}`);
-  return data.data;
-}
-
-// Core
-app.get("/api/test", (req,res)=>res.json({ok:true, now:new Date().toISOString(), env:{PORT, GAS_URL_present: !!GAS_URL}}));
-app.post("/api/login",       async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("login", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/listOrders",  async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("listOrders", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/createOrder", async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("createOrder", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/assignOrder", async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("assignOrder", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/updateOrder", async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("updateOrder", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/deleteOrder", async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("deleteOrder", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-
-// Drive & PDF
-app.post("/api/updateWork",   async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("updateWork", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/saveSignature",async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("saveSignature", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/generatePDF",  async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("generatePDF", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-
-// Users
-app.post("/api/listUsers",   async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("listUsers", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/createUser",  async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("createUser", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/updateUser",  async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("updateUser", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.post("/api/deleteUser",  async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("deleteUser", req.body||{})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-app.get ("/api/listTechnicians", async (req,res)=>{ try{ res.json({status:"ok", data: await callGAS("listTechnicians", {})}); } catch(e){ res.status(400).json({status:"error", message:String(e.message||e)});} });
-
-// Static
-import path from "path";
-import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const publicDir = path.resolve(__dirname, "../frontend");
-app.use(express.static(publicDir));
-app.get("/", (req,res)=>res.sendFile(path.join(publicDir,"index.html")));
 
-app.listen(PORT, ()=>console.log(`[OK] Blue Home v3.3 escuchando en ${PORT}`));
+const app = express();
+app.use(express.json({limit:'10mb'}));
+
+const GAS_URL = process.env.GAS_URL;
+const PORT = process.env.PORT || 3000;
+
+const publicDir = path.resolve(__dirname, '../frontend');
+app.use(express.static(publicDir));
+
+app.get('/api/test', async (req,res)=>{
+  try {
+    const ping = await fetch(`${GAS_URL}?action=ping`).then(r=>r.text());
+    res.json({ok:true,ping});
+  } catch(e){ res.json({ok:false,error:String(e)}) }
+});
+
+app.post('/api/login', async (req,res)=>{
+  try {
+    const {usuario,clave} = req.body;
+    const r = await fetch(`${GAS_URL}?action=login&usuario=${usuario}&clave=${clave}`);
+    const data = await r.json();
+    res.json(data);
+  }catch(e){res.json({success:false,error:String(e)})}
+});
+
+app.get('/api/listUsers', async (req,res)=>{
+  try{const r = await fetch(`${GAS_URL}?action=listUsers`); const data=await r.json(); res.json(data);}catch(e){res.json({error:String(e)})}
+});
+
+app.get('/', (req,res)=>res.sendFile(path.join(publicDir,'index.html')));
+app.get('/ordenes',(req,res)=>res.sendFile(path.join(publicDir,'ordenes.html')));
+app.get('/usuarios',(req,res)=>res.sendFile(path.join(publicDir,'usuarios.html')));
+
+app.listen(PORT,()=>console.log('Servidor BlueHome activo en puerto '+PORT));

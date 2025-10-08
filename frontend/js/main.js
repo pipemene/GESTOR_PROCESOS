@@ -1,16 +1,23 @@
-
-// main.js - Blue Home Gestor de Procesos (versión final)
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("BlueHome Gestor de Procesos v3.3 listo ✅");
-
-  const user = localStorage.getItem("usuario") || "Desconocido";
-  const userDisplay = document.querySelector("#userDisplay");
-  if (userDisplay) userDisplay.innerText = user;
-
-  // Evitar errores si los botones no existen aún
-  const btnCargar = document.getElementById("btnCargar");
-  const btnNueva = document.getElementById("btnNuevaOrden");
-
-  if (btnCargar) console.log("✔ Botón cargar detectado");
-  if (btnNueva) console.log("✔ Botón nueva orden detectado");
+document.addEventListener("DOMContentLoaded",()=>{
+  console.log("Gestor BlueHome listo");
+  const btnLogin=document.getElementById("btnLogin");
+  const btnTest=document.getElementById("btnTest");
+  if(btnLogin){
+    btnLogin.addEventListener("click",async()=>{
+      const usuario=document.getElementById("usuario").value.trim();
+      const clave=document.getElementById("clave").value.trim();
+      if(!usuario||!clave){alert("Completa los campos");return;}
+      try{
+        const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usuario,clave})});
+        const data=await r.json();
+        alert(JSON.stringify(data));
+      }catch(e){alert("Error de conexión");console.error(e)}
+    });
+  }
+  if(btnTest){
+    btnTest.addEventListener("click",async()=>{
+      const r=await fetch("/api/test");const d=await r.json();
+      alert("Respuesta servidor: "+JSON.stringify(d));
+    });
+  }
 });
