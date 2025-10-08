@@ -1,9 +1,14 @@
 
-// ordenes.js - módulo de órdenes
+// ordenes.js - módulo de gestión de órdenes
 document.addEventListener("DOMContentLoaded", () => {
   const btnCargar = document.getElementById("btnCargar");
   const btnNueva = document.getElementById("btnNuevaOrden");
   const contenedor = document.getElementById("ordenesContainer");
+
+  if (!btnCargar || !btnNueva || !contenedor) {
+    console.log("Página sin módulo de órdenes, se omite ejecución.");
+    return;
+  }
 
   async function cargarOrdenes() {
     try {
@@ -57,6 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnCargar?.addEventListener("click", cargarOrdenes);
-  btnNueva?.addEventListener("click", crearOrden);
+  btnCargar.addEventListener("click", cargarOrdenes);
+  btnNueva.addEventListener("click", crearOrden);
 });

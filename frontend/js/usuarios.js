@@ -1,8 +1,13 @@
 
-// usuarios.js - módulo de usuarios
+// usuarios.js - módulo de gestión de usuarios
 document.addEventListener("DOMContentLoaded", () => {
   const btnLoadUsers = document.getElementById("btnLoadUsers");
   const contenedor = document.getElementById("usuariosContainer");
+
+  if (!btnLoadUsers || !contenedor) {
+    console.log("Página sin módulo de usuarios, se omite ejecución.");
+    return;
+  }
 
   async function cargarUsuarios() {
     try {
@@ -21,5 +26,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  btnLoadUsers?.addEventListener("click", cargarUsuarios);
+  btnLoadUsers.addEventListener("click", cargarUsuarios);
 });
