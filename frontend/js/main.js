@@ -1,16 +1,49 @@
-
-// main.js - Blue Home Gestor de Procesos (versión final)
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("BlueHome Gestor de Procesos v3.3 listo ✅");
+  console.log("🚀 BlueHome Gestor de Procesos v3.3 listo ✅");
 
-  const user = localStorage.getItem("usuario") || "Desconocido";
-  const userDisplay = document.querySelector("#userDisplay");
-  if (userDisplay) userDisplay.innerText = user;
+  const btnLogin = document.getElementById("btnLogin");
+  const btnTest = document.getElementById("btnTest");
 
-  // Evitar errores si los botones no existen aún
-  const btnCargar = document.getElementById("btnCargar");
-  const btnNueva = document.getElementById("btnNuevaOrden");
+  if (btnLogin) {
+    console.log("✅ Botón de login detectado");
+    btnLogin.addEventListener("click", async () => {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+      if (!usuario || !clave) return alert("Por favor, completa los campos");
 
-  if (btnCargar) console.log("✔ Botón cargar detectado");
-  if (btnNueva) console.log("✔ Botón nueva orden detectado");
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario, clave }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem("usuario", data.usuario);
+          localStorage.setItem("rol", data.rol);
+          window.location.href = "/ordenes";
+        } else {
+          alert("❌ Usuario o clave incorrectos");
+        }
+      } catch (err) {
+        console.error("Error en login:", err);
+        alert("⚠️ No se pudo conectar al servidor");
+      }
+    });
+  } else {
+    console.log("⚠️ Botón de login no detectado");
+  }
+
+  if (btnTest) {
+    btnTest.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/test");
+        const data = await res.json();
+        alert("✅ Conexión exitosa\n" + JSON.stringify(data, null, 2));
+      } catch (err) {
+        alert("❌ No se pudo conectar con el servidor");
+        console.error(err);
+      }
+    });
+  }
 });
