@@ -1,0 +1,98 @@
+<!-- Html/order_new.html — Crear orden -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Nueva Orden</title>
+  <link rel="stylesheet" href="styles.css">
+  <?!= include('Html/partials'); ?>
+</head>
+<body class="bg">
+  <div class="nav">
+    <div class="brand"><?= BRAND.company ?></div>
+    <div class="nav-links">
+      <a href="?p=dashboard">Panel</a>
+      <a href="?p=new" class="active">Nueva Orden</a>
+      <a href="?p=login" id="logoutBtn">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Crear Orden</h2>
+      <form id="fOrder">
+        <div class="grid">
+          <div>
+            <label>Nombre del cliente</label>
+            <input required id="clientName">
+          </div>
+          <div>
+            <label>Cédula/NIT</label>
+            <input id="clientId">
+          </div>
+          <div>
+            <label>Teléfono</label>
+            <input id="clientPhone">
+          </div>
+          <div>
+            <label>Dirección del inmueble</label>
+            <input required id="propertyAddress">
+          </div>
+          <div class="full">
+            <label>Descripción del daño/solicitud</label>
+            <textarea id="issue" rows="3"></textarea>
+          </div>
+          <div>
+            <label>Prioridad</label>
+            <select id="priority">
+              <option>baja</option><option selected>media</option><option>alta</option>
+            </select>
+          </div>
+          <div>
+            <label>Técnico asignado</label>
+            <select id="assignedTechId"></select>
+          </div>
+          <div>
+            <label>Fecha programada</label>
+            <input type="datetime-local" id="scheduledAt">
+          </div>
+        </div>
+        <label>Notas</label>
+        <textarea id="notes" rows="2"></textarea>
+        <button type="submit">Crear</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function loadTechs(){
+      google.script.run.withSuccessHandler(list => {
+        const sel = document.getElementById('assignedTechId');
+        sel.innerHTML = '<option value="">Sin asignar</option>' +
+          list.map(t=>`<option value="${t.techId}">${t.name} (${t.phone})</option>`).join('');
+      }).listTechs();
+    }
+    document.getElementById('fOrder').addEventListener('submit', e=>{
+      e.preventDefault();
+      const order = {
+        clientName: fOrder.clientName.value.trim(),
+        clientId: fOrder.clientId.value.trim(),
+        clientPhone: fOrder.clientPhone.value.trim(),
+        propertyAddress: fOrder.propertyAddress.value.trim(),
+        issue: fOrder.issue.value.trim(),
+        priority: fOrder.priority.value,
+        assignedTechId: fOrder.assignedTechId.value,
+        scheduledAt: fOrder.scheduledAt.value,
+        notes: fOrder.notes.value.trim()
+      };
+      google.script.run.withSuccessHandler(res=>{
+        if(!res.ok) return showToast('No se pudo crear','error');
+        showToast('Orden creada');
+        window.location.href='?p=detail&orderId='+res.orderId;
+      }).createOrder(order);
+    });
+    loadTechs();
+  </script>
+</body>
+</html>

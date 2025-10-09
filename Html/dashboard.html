@@ -1,0 +1,64 @@
+<!-- Html/dashboard.html — Panel -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Panel</title>
+  <link rel="stylesheet" href="styles.css">
+  <?!= include('Html/partials'); ?>
+</head>
+<body class="bg">
+  <div class="nav">
+    <div class="brand"><?= BRAND.company ?></div>
+    <div class="nav-links">
+      <a href="?p=dashboard">Panel</a>
+      <a href="?p=new">Nueva Orden</a>
+      <a href="#" id="logoutBtn">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Últimas órdenes</h2>
+      <div id="orders"></div>
+    </div>
+  </div>
+
+  <script>
+    function renderOrders(list){
+      const el = document.getElementById('orders');
+      if (!list.length) { el.innerHTML = '<p class="muted">Sin órdenes.</p>'; return; }
+      el.innerHTML = list.map(o => `
+        <div class="row">
+          <div><b>${o.orderId}</b> · ${new Date(o.createdAt).toLocaleString()}</div>
+          <div>${o.clientName} · ${o.propertyAddress}</div>
+          <div><span class="badge">${o.status}</span> · <a href="?p=detail&orderId=${o.orderId}">Ver</a></div>
+        </div>
+      `).join('');
+    }
+
+    function loadRecent(){
+      google.script.run.withSuccessHandler(res => {
+        if (!res || !res.length){ renderOrders([]); return; }
+        // ordenar por fecha desc
+        res.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+        renderOrders(res.slice(0,20));
+      }).listOrdersLight();
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', e=>{
+      e.preventDefault();
+      const token = (document.cookie.match(/BHSESS=([^;]+)/)||[])[1];
+      google.script.run.withSuccessHandler(()=>{
+        document.cookie='BHSESS=; Max-Age=0; path=/';
+        window.location.href='?p=login';
+      }).logout(token);
+    });
+
+    // Ligero: solo columnas básicas (agregado en Orders.gs abajo)
+  </script>
+  <script><?!= include('Html/app'); ?></script>
+  <script>loadRecent();</script>
+</body>
+</html>

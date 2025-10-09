@@ -1,0 +1,161 @@
+<!-- Html/order_detail.html — Ver/editar orden y archivos -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Detalle de Orden</title>
+  <link rel="stylesheet" href="styles.css">
+  <?!= include('Html/partials'); ?>
+</head>
+<body class="bg">
+  <div class="nav">
+    <div class="brand"><?= BRAND.company ?></div>
+    <div class="nav-links">
+      <a href="?p=dashboard">Panel</a>
+      <a href="?p=new">Nueva Orden</a>
+      <a href="?p=login" id="logoutBtn">Salir</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Orden <span id="oid"></span></h2>
+      <div id="info"></div>
+      <hr/>
+      <h3>Actualizar estado</h3>
+      <div class="grid">
+        <div>
+          <label>Estado</label>
+          <select id="status">
+            <option>creada</option><option>asignada</option><option>en_proceso</option><option>finalizada</option>
+          </select>
+        </div>
+        <div>
+          <label>Finalizada en</label>
+          <input type="datetime-local" id="finishedAt">
+        </div>
+      </div>
+      <label>Notas</label>
+      <textarea id="notes" rows="2"></textarea>
+      <button id="saveBtn">Guardar cambios</button>
+    </div>
+
+    <div class="card">
+      <h3>Fotos</h3>
+      <input type="file" id="photos" multiple accept="image/*">
+      <div id="gallery" class="grid"></div>
+    </div>
+
+    <div class="card">
+      <h3>Firma del cliente</h3>
+      <canvas id="sig" width="500" height="200" class="sig"></canvas>
+      <div>
+        <button id="clearSig">Borrar</button>
+        <button id="saveSig">Guardar Firma</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>PDF de Orden de Salida</h3>
+      <button id="genPdf">Generar PDF</button>
+      <div id="pdfLink" class="muted"></div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('orderId');
+    document.getElementById('oid').textContent = orderId;
+
+    function load(){
+      google.script.run.withSuccessHandler(res=>{
+        if(!res.ok) return showToast('No existe','error');
+        const o = res.order;
+        document.getElementById('status').value = o.status;
+        document.getElementById('finishedAt').value = o.finishedAt ? new Date(o.finishedAt).toISOString().slice(0,16) : '';
+        document.getElementById('notes').value = o.notes || '';
+        document.getElementById('info').innerHTML = `
+          <div class="grid">
+            <div><b>Cliente:</b> ${o.clientName} (${o.clientId})</div>
+            <div><b>Tel:</b> ${o.clientPhone}</div>
+            <div class="full"><b>Dirección:</b> ${o.propertyAddress}</div>
+            <div class="full"><b>Descripción:</b> ${o.issue}</div>
+            <div><b>Prioridad:</b> ${o.priority}</div>
+            <div><b>Técnico:</b> ${o.assignedTechId||'—'}</div>
+            <div><b>Programada:</b> ${o.scheduledAt||'—'}</div>
+          </div>`;
+      }).getOrder(orderId);
+      loadPhotos();
+    }
+
+    function save(){
+      const payload = {
+        orderId,
+        status: document.getElementById('status').value,
+        finishedAt: document.getElementById('finishedAt').value,
+        notes: document.getElementById('notes').value
+      };
+      google.script.run.withSuccessHandler(()=>{
+        showToast('Guardado');
+      }).updateOrder(payload);
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', save);
+
+    // Fotos
+    document.getElementById('photos').addEventListener('change', async (e)=>{
+      const files = Array.from(e.target.files);
+      for (const file of files){
+        const b64 = await file.arrayBuffer().then(buf => {
+          let binary = '';
+          const bytes = new Uint8Array(buf);
+          const len = bytes.byteLength;
+          for (let i=0;i<len;i++){ binary += String.fromCharCode(bytes[i]); }
+          return btoa(binary);
+        });
+        google.script.run.withSuccessHandler(res=>{
+          showToast('Foto subida');
+          loadPhotos();
+        }).uploadFile(orderId, b64, file.name, 'photo');
+      }
+      e.target.value = '';
+    });
+
+    function loadPhotos(){
+      google.script.run.withSuccessHandler(list=>{
+        const gal = document.getElementById('gallery');
+        gal.innerHTML = list.map(p => `<div><a href="${p.url}" target="_blank">${p.name}</a></div>`).join('');
+      }).listFiles(orderId, 'photo');
+    }
+
+    // Firma
+    const canvas = document.getElementById('sig');
+    const ctx = canvas.getContext('2d');
+    let drawing=false;
+    canvas.addEventListener('mousedown', e=>{ drawing=true; ctx.moveTo(e.offsetX,e.offsetY); });
+    canvas.addEventListener('mousemove', e=>{ if(drawing){ ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); }});
+    canvas.addEventListener('mouseup', ()=> drawing=false);
+    canvas.addEventListener('mouseleave', ()=> drawing=false);
+    document.getElementById('clearSig').addEventListener('click', ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); });
+    document.getElementById('saveSig').addEventListener('click', ()=>{
+      const dataUrl = canvas.toDataURL('image/png');
+      const b64 = dataUrl.split(',')[1];
+      google.script.run.withSuccessHandler(res=>{
+        showToast('Firma guardada');
+      }).uploadSignature(orderId, b64, 'firma_'+orderId+'.png');
+    });
+
+    // PDF
+    document.getElementById('genPdf').addEventListener('click', ()=>{
+      google.script.run.withSuccessHandler(res=>{
+        if(!res.ok) return showToast('Error generando PDF','error');
+        document.getElementById('pdfLink').innerHTML = `<a target="_blank" href="${res.url}">Abrir PDF</a>`;
+        showToast('PDF generado');
+      }).generateOrderPdf(orderId);
+    });
+
+    load();
+  </script>
+</body>
+</html>
