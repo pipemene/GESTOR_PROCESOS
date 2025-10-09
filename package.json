@@ -1,14 +1,20 @@
 {
   "name": "bluehome-reparaciones-railway",
   "version": "1.0.0",
-  "description": "Backend Node.js (Express) para Blue Home Inmobiliaria – Gestor de Reparaciones",
+  "description": "Backend Blue Home Inmobiliaria (Railway)",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "node-fetch": "^3.3.2"
-  }
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Blue Home Inmobiliaria",
+  "license": "MIT"
 }
