@@ -1,6 +1,6 @@
-/* Html/styles.css — Estilos minimal */
+/* Estilos básicos */
 *{ box-sizing: border-box; }
-body.bg{ background: #0b3a67; background: linear-gradient(135deg,#0b3a67,#1b6bb3); min-height: 100vh; margin:0; }
+body.bg{ background: linear-gradient(135deg,#0b3a67,#1b6bb3); min-height: 100vh; margin:0; }
 .container{ max-width: 980px; margin: 0 auto; padding: 16px; }
 .center{ display:flex; align-items:center; justify-content:center; min-height: 100vh; }
 .card{ background:#fff; border-radius: 14px; padding: 20px; box-shadow: 0 6px 25px rgba(0,0,0,.15); }
@@ -19,8 +19,3 @@ button:hover{ filter:brightness(1.05); }
 .nav .nav-links a{ margin-left: 10px; text-decoration:none; color:#0b3a67; font-weight:600; }
 .nav .nav-links .active{ text-decoration: underline; }
 .toast{ position:fixed; bottom:16px; right:16px; background:#111; color:#fff; padding:10px 14px; border-radius:10px; opacity:.92; }
-.sig{ border:1px dashed #bbb; background:#fafafa; border-radius:8px; }
-@media (max-width: 720px){
-  .grid{ grid-template-columns:1fr; }
-  .row{ grid-template-columns:1fr; }
-}

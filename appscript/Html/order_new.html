@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Nueva Orden</title>
+  <link rel="stylesheet" href="styles.css">
+  <?!= include('appscript/Html/partials'); ?>
+</head>
+<body class="bg">
+  <div class="nav">
+    <div class="brand">BLUE HOME INMOBILIARIA</div>
+    <div class="nav-links">
+      <a href="?p=dashboard">Panel</a>
+      <a href="?p=new" class="active">Nueva Orden</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Crear Orden</h2>
+      <form id="fOrder">
+        <div class="grid">
+          <div><label>Inquilino</label><input id="inquilino"></div>
+          <div><label>Teléfono</label><input id="telefono"></div>
+          <div><label>Código</label><input id="codigo"></div>
+          <div class="full">
+            <label>Descripción</label><textarea id="descripcion" rows="3"></textarea>
+          </div>
+          <div><label>Técnico</label><input id="tecnico"></div>
+          <div>
+            <label>Estado</label>
+            <select id="estado"><option>creada</option><option>asignada</option><option>en_proceso</option><option>finalizada</option></select>
+          </div>
+        </div>
+        <label>Observaciones</label>
+        <textarea id="observaciones" rows="2"></textarea>
+        <button type="submit">Crear</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const f = document.getElementById('fOrder');
+    f.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const payload = {
+        inquilino: f.inquilino.value.trim(),
+        telefono: f.telefono.value.trim(),
+        codigo: f.codigo.value.trim(),
+        descripcion: f.descripcion.value.trim(),
+        tecnico: f.tecnico.value.trim(),
+        estado: f.estado.value,
+        observaciones: f.observaciones.value.trim()
+      };
+      google.script.run.withSuccessHandler(res=>{
+        if(!res.ok) return showToast('No se pudo crear','error');
+        showToast('Orden creada');
+        window.location.href='?p=dashboard';
+      }).createOrder(payload);
+    });
+  </script>
+</body>
+</html>
