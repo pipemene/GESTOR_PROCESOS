@@ -1,15 +1,25 @@
 <!doctype html>
-<html lang="es"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>BlueHome Gestor — Login</title>
-<link rel="stylesheet" href="/css/style.css"/></head>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BlueHome Gestor – Login</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
 <body>
-<div class="center"><div class="card login">
-<h2>BlueHome Gestor de Procesos</h2>
-<label>Usuario</label><input id="usuario" type="text" placeholder="Usuario"/>
-<label>Clave</label><input id="clave" type="password" placeholder="Clave"/>
-<button id="btnLogin" class="btn-primary">Ingresar</button>
-<button id="btnTest">Probar conexión</button>
-</div></div>
-<script src="/js/main.js"></script>
-</body></html>
+  <div class="container">
+    <div class="card">
+      <h1>BlueHome Gestor de Procesos</h1>
+      <div class="badge">Sin sesión</div>
+      <label>Usuario</label>
+      <input id="usuario" value="PIPEMENE">
+      <label>Clave</label>
+      <input id="clave" type="password" value="Blu3h0m32016#">
+      <button id="btnLogin">Ingresar</button>
+      <button id="btnPing" class="secondary">Probar conexión</button>
+      <pre id="log"></pre>
+    </div>
+  </div>
+  <script src="/js/main.js"></script>
+</body>
+</html>

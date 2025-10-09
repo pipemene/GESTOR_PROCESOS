@@ -1,25 +1,33 @@
+const $ = sel => document.querySelector(sel);
+const log = (obj)=>{ const p = $('#log'); p.textContent = (typeof obj==='string'?obj:JSON.stringify(obj,null,2)) + "\n" + p.textContent; };
+
+async function ping(){
+  const r = await fetch('/api/test');
+  const j = await r.json();
+  log(j);
+  alert('Conexión:\n'+JSON.stringify(j, null, 2));
+}
+
+async function login(){
+  const usuario = $('#usuario').value.trim();
+  const clave = $('#clave').value.trim();
+  const r = await fetch('/api/login', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({usuario, clave})
+  });
+  const j = await r.json();
+  log(j);
+  if(j.ok){
+    sessionStorage.setItem('usuario', usuario);
+    sessionStorage.setItem('rol', j.rol);
+    location.href = '/ordenes.html';
+  }else{
+    alert(j.msg || 'Usuario o clave incorrectos');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', ()=>{
-  const btnLogin = document.getElementById('btnLogin');
-  const btnTest = document.getElementById('btnTest');
-
-  if(btnLogin){
-    btnLogin.addEventListener('click', async ()=>{
-      const usuario = document.getElementById('usuario').value.trim();
-      const clave = document.getElementById('clave').value.trim();
-      if(!usuario || !clave){ alert('Completa los campos'); return; }
-      try{
-        const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ usuario, clave }) });
-        const data = await r.json();
-        if(data.ok || data.success){ localStorage.setItem('usuario', usuario); window.location.href = '/ordenes'; }
-        else{ alert(data.msg || 'Usuario o clave incorrectos'); }
-      }catch(e){ alert('Error de red'); console.error(e); }
-    });
-  }
-
-  if(btnTest){
-    btnTest.addEventListener('click', async ()=>{
-      const r = await fetch('/api/test'); const d = await r.json();
-      alert('Conexión: ' + JSON.stringify(d, null, 2));
-    });
-  }
+  $('#btnPing').addEventListener('click', ping);
+  $('#btnLogin').addEventListener('click', login);
 });

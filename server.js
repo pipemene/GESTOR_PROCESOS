@@ -1,89 +1,82 @@
-// server.js
-// Gestor de Procesos Blue Home v1 - Backend Express
-// Usa variables de entorno: PORT, GAS_URL
 
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-
+const express = require('express');
+const fetch = global.fetch || ((...args)=>import('node-fetch').then(({default: f})=>f(...args)));
+const morgan = require('morgan');
+const cors = require('cors');
+const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({limit:'10mb'}));
+app.use(express.urlencoded({extended:true, limit:'10mb'}));
+app.use(morgan('dev'));
+app.use(express.static('frontend'));
 
 const PORT = process.env.PORT || 3000;
-const GAS_URL = process.env.GAS_URL;
+const GAS = process.env.APPSCRIPT_URL;
+const DEBUG = String(process.env.DEBUG||'false').toLowerCase()==='true';
+const dlog = (...a)=>{ if(DEBUG) console.log('[DEBUG]', ...a); };
 
-if (!GAS_URL) {
-  console.warn("[WARN] Falta variable de entorno GAS_URL. Configúrala en Railway.");
+if(!GAS){ console.error('FALTA VARIABLE APPSCRIPT_URL'); process.exit(1); }
+
+async function gasGet(params){
+  const url = `${GAS}?${new URLSearchParams(params)}`;
+  dlog('GET -> GAS', url);
+  const r = await fetch(url, {method:'GET'});
+  const txt = await r.text();
+  dlog('GAS raw:', txt.slice(0,250));
+  try { return JSON.parse(txt); } catch(e){ 
+    return { ok:false, msg:'Respuesta no JSON desde GAS', raw: txt };
+  }
 }
 
-// --------- Helpers ---------
-async function callGAS(action, payload = {}) {
-  if (!GAS_URL) throw new Error("GAS_URL no configurada");
-  const res = await fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, payload })
-  });
-  const data = await res.json();
-  if (!res.ok || data.status !== "ok") {
-    const msg = data?.message || `Error en acción ${action}`;
-    throw new Error(msg);
-  }
-  return data.data;
-}
-
-// --------- API ---------
-app.get("/api/test", (req, res) => {
-  res.json({
-    ok: true,
-    now: new Date().toISOString(),
-    env: {
-      PORT,
-      GAS_URL_present: !!GAS_URL
-    }
-  });
-});
-
-app.post("/api/login", async (req, res) => {
-  try {
-    const { usuario, clave } = req.body || {};
-    const data = await callGAS("login", { usuario, clave });
-    res.json({ status: "ok", data });
-  } catch (err) {
-    res.status(400).json({ status: "error", message: String(err.message || err) });
+app.get('/api/test', async (req,res)=>{
+  try{
+    const data = await gasGet({action:'ping'});
+    res.json({ ok:true, env:{ port:PORT, debug:DEBUG }, gas:data });
+  }catch(err){
+    res.status(500).json({ ok:false, error: String(err) });
   }
 });
 
-app.post("/api/createOrder", async (req, res) => {
-  try {
-    const payload = req.body || {};
-    const data = await callGAS("createOrder", payload);
-    res.json({ status: "ok", data });
-  } catch (err) {
-    res.status(400).json({ status: "error", message: String(err.message || err) });
+app.post('/api/login', async (req,res)=>{
+  try{
+    const { usuario='', clave='' } = req.body || {};
+    const data = await gasGet({
+      action:'login',
+      usuario: encodeURIComponent(usuario),
+      clave: encodeURIComponent(clave)
+    });
+    dlog('Login GAS ->', data);
+    if(data && data.ok) return res.json(data);
+    return res.status(401).json({ ok:false, msg: (data && data.msg) || 'Login inválido' });
+  }catch(err){
+    res.status(500).json({ ok:false, error:String(err) });
   }
 });
 
-app.post("/api/listOrders", async (req, res) => {
-  try {
-    const { usuario, rol } = req.body || {};
-    const data = await callGAS("listOrders", { usuario, rol });
-    res.json({ status: "ok", data });
-  } catch (err) {
-    res.status(400).json({ status: "error", message: String(err.message || err) });
+app.get('/api/ordenes', async (req,res)=>{
+  try{
+    const data = await gasGet({action:'getOrders'});
+    if(!data.ok) return res.status(500).json(data);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({ ok:false, error:String(err) });
   }
 });
 
-// --------- Static Frontend ---------
-app.use(express.static(".")); // sirve index.html y assets en la raíz del proyecto
-
-app.get("/", (req, res) => {
-  res.sendFile(process.cwd() + "/index.html");
+app.post('/api/firma', async (req,res)=>{
+  try{
+    const { radicado, firma } = req.body;
+    const data = await gasGet({ action:'saveSignature', radicado, firma });
+    res.json(data);
+  }catch(err){
+    res.status(500).json({ ok:false, error:String(err) });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`[OK] Gestor de Procesos Blue Home v1 escuchando en puerto ${PORT}`);
+app.listen(PORT, ()=>{
+  console.log(`BlueHome Gestor v3.5 (debug=${DEBUG}) escuchando en puerto ${PORT}`);
+  console.log('GAS_URL:', GAS);
 });

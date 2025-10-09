@@ -1,19 +1,12 @@
+:root{--bg:#0b1220; --card:#121a2b; --txt:#e5e7eb}
 *{box-sizing:border-box}
-body{margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
-.container{max-width:1080px;margin:0 auto;padding:24px}
-.card{background:#0b1222;border:1px solid #1f2937;border-radius:14px;padding:16px;margin:16px 0}
-h1,h2,h3{margin:0 0 12px}
-input,select,button,textarea{border-radius:10px;border:1px solid #1f2937;background:#111827;color:#e5e7eb;padding:10px}
-button{cursor:pointer}
-.btn-primary{background:#2563eb}
-.btn-success{background:#10b981}
-.grid{display:grid;gap:10px}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:10px;border-bottom:1px solid #1f2937;text-align:left}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#0b1222;border-bottom:1px solid #1f2937}
-.badge{background:#111827;color:#9ca3af;border:1px solid #1f2937;border-radius:999px;padding:6px 10px;font-size:12px}
-.center{display:flex;justify-content:center;align-items:center;height:100vh}
-.login{width:320px}
-.canvas-wrap{background:#0b1222;border:1px dashed #334155;padding:8px;border-radius:10px}
-@media(max-width:800px){.actions{flex-direction:column}.container{padding:14px}}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial}
+.container{min-height:100vh;display:grid;place-items:center;padding:24px}
+.card{background:#121a2b;padding:24px;border-radius:16px;max-width:420px;width:100%}
+h1{margin:0 0 16px;font-size:22px;color:#93c5fd}
+.badge{background:#1f2937;color:#9ca3af;padding:6px 10px;border-radius:999px;font-size:12px;display:inline-block;margin-bottom:10px}
+label{display:block;margin:.5rem 0 .25rem}
+input{width:100%;padding:10px;border-radius:10px;border:1px solid #1f2937;background:#0f172a;color:#e5e7eb}
+button{width:100%;padding:12px;border-radius:10px;border:none;background:#2563eb;color:white;margin-top:10px;font-weight:600;cursor:pointer}
+button.secondary{background:#334155}
+pre#log{background:#0b1020;border:1px dashed #243040;padding:12px;border-radius:10px;margin-top:12px;max-height:200px;overflow:auto;font-size:12px;color:#a3e635}
