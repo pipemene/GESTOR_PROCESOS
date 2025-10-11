@@ -3,97 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestor Blue Home - Iniciar sesión</title>
+  <title>Iniciar sesión | Blue Home Inmobiliaria</title>
   <style>
     body {
-      margin: 0;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(to bottom right, #eaf2ff, #f6f9ff);
+      background: linear-gradient(135deg, #e8f0ff, #f9fbff);
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
+      margin: 0;
     }
 
     .login-container {
       background: #fff;
-      padding: 2rem 3rem;
-      border-radius: 20px;
-      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 400px;
       text-align: center;
-      width: 360px;
-      transition: 0.3s;
+      animation: fadeIn 0.5s ease;
     }
 
-    .login-container:hover {
-      transform: scale(1.02);
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .login-container h2 {
+    h1 {
       color: #222;
-      margin-bottom: 0.5rem;
-    }
-
-    .login-container h2 span {
-      color: #007bff;
+      font-size: 1.6em;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
     input {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
       border-radius: 8px;
-      border: 1px solid #d0d0d0;
-      font-size: 14px;
-      outline: none;
-      transition: border 0.2s;
+      font-size: 15px;
+      transition: border-color 0.3s ease;
     }
 
     input:focus {
+      outline: none;
       border-color: #007bff;
     }
 
     button {
-      width: 100%;
       background-color: #007bff;
       border: none;
-      color: #fff;
-      font-weight: 600;
+      color: white;
+      font-size: 16px;
       padding: 12px;
-      border-radius: 8px;
+      border-radius: 10px;
+      width: 100%;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background-color 0.3s ease;
     }
 
     button:hover {
-      background-color: #0056d2;
+      background-color: #0056b3;
     }
 
-    .error {
+    #error-message {
       color: red;
       font-size: 14px;
-      margin-top: 10px;
+      margin-bottom: 10px;
+      height: 20px;
     }
 
-    .logo {
-      width: 60px;
-      margin-bottom: 15px;
+    footer {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      color: #888;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
-
   <div class="login-container">
-    <img src="https://bluehomeinmobiliaria.com/wp-content/uploads/2023/12/bluehome-logo.png" class="logo" alt="Logo Blue Home" />
-    <h2>🔒 Iniciar <span>sesión</span></h2>
-
-    <input type="text" id="username" placeholder="Usuario" autocomplete="off" />
+    <h1>🔒 Iniciar sesión</h1>
+    <input type="text" id="username" placeholder="Usuario" />
     <input type="password" id="password" placeholder="Contraseña" />
-
-    <div id="error-message" class="error"></div>
-
+    <div id="error-message"></div>
     <button onclick="loginUser()">Entrar</button>
   </div>
+
+  <footer>© 2025 Blue Home Inmobiliaria | Sistema Gestor</footer>
 
   <script>
     async function loginUser() {
@@ -118,20 +123,35 @@
 
         if (!response.ok) {
           errorDiv.textContent = data.error || 'Error en el inicio de sesión.';
+          console.log('Error del servidor:', data);
           return;
         }
 
+        // ✅ Guardar token y rol
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.role);
 
-       // Redirigir según rol
-if (data.role === 'SuperAdmin' || data.role === 'admin') {
-  window.location.href = '/dashboard.html';
-} else if (data.role === 'tecnico') {
-  window.location.href = '/tecnicos.html';
-} else {
-  window.location.href = '/ordenes.html';
-}
+        console.log('Login exitoso. Rol:', data.role);
+
+        // ✅ Redirección según rol
+        if (data.role === 'SuperAdmin' || data.role === 'admin') {
+          window.location.href = '/dashboard.html';
+        } else if (data.role === 'tecnico') {
+          window.location.href = '/tecnicos.html';
+        } else {
+          window.location.href = '/ordenes.html';
+        }
+
+      } catch (error) {
+        console.error('Error al conectar con el servidor:', error);
+        errorDiv.textContent = 'Error al conectar con el servidor.';
+      }
+    }
+
+    // Permitir Enter para iniciar sesión
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') loginUser();
+    });
   </script>
 </body>
 </html>
