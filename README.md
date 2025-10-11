@@ -1,26 +1,21 @@
+# PROGESTOR – Blue Home (Railway)
 
-# 🏗️ Blue Home Inmobiliaria - Gestor de Reparaciones (Railway)
+## 1) Variables de entorno
+- PORT=3000
+- JWT_SECRET=BlueHomeStrongSecret2025
+- SPREADSHEET_ID=1ViZQyX8-vDENf3_FkQ2fYAdpC993cpRSnmlcSUg2J6w
+- USERS_SHEET=Usuarios
+- ORDERS_SHEET=ordenes
+- GOOGLE_SERVICE_ACCOUNT_EMAIL=bluehome-procesos@midyear-pattern-443303-d7.iam.gserviceaccount.com
+- GOOGLE_PRIVATE_KEY="(tu private key con \n)"
+- Comparte tu hoja con la cuenta de servicio
 
-Backend oficial conectado con Google Sheets, Drive y Apps Script.
+## 2) Deploy
+- npm i
+- npm run dev (local) o Railway (npm start)
+- / → login
 
-## 🚀 Cómo desplegar
-1. Sube este proyecto a **GitHub**.
-2. Conéctalo a **Railway**.
-3. En Railway → Variables → Bulk Edit → pega las variables del archivo `.env.example`.
-4. Guarda y despliega.
-
-## 🧩 Endpoints principales
-- `GET /` → Estado del servidor.
-- `GET /api/config` → Configuración (Sheets, Drive, AppScript).
-- `POST /api/orders` → Crea una orden en Google Sheets vía Apps Script.
-
-## ⚙️ Estructura
-- `index.js`: Servidor principal Express.
-- `config.js`: Carga de variables de entorno.
-- `.env.example`: Variables de configuración.
-- `appscript/`: Carpeta con código de Apps Script (HTML, Code.gs, etc.)
-
-## ✅ Autor
-**Blue Home Inmobiliaria**  
-Palmira, Colombia  
-www.bluehomeinmobiliaria.com
+## 3) Endpoints
+- POST /api/auth/login → {usuario, clave}
+- GET/POST/PUT/DELETE /api/users (SuperAdmin)
+- GET/POST/PUT /api/orders ; GET /api/orders/summary

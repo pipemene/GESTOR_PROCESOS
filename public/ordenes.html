@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Órdenes – Blue Home</title>
+<style>body{font-family:Poppins,sans-serif;background:linear-gradient(180deg,#e6f0ff,#fff);padding:30px}h2{text-align:center}table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.08)}th,td{padding:10px;border-bottom:1px solid #eee}th{background:#007bff;color:#fff}.row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}input,select,button{padding:10px;border:1px solid #ddd;border-radius:8px}button{background:#007bff;color:#fff;border:none;cursor:pointer}button:hover{background:#005ed0}</style></head>
+<body><div style="text-align:right"><a href="/dashboard.html">⬅ Volver</a></div><h2>📋 Órdenes de Trabajo</h2>
+<div class="row"><input id="cliente" placeholder="Cliente"/><input id="descripcion" placeholder="Descripción" style="flex:1"/><input id="codigo" placeholder="Código (BH-2025-001)"/><input id="tecnico" placeholder="Técnico"/><button onclick="crear()">Crear</button></div>
+<div id="tabla"></div>
+<script>
+const token=localStorage.getItem('token');if(!token) location.href='/';
+async function cargar(){const res=await fetch('/api/orders',{headers:{Authorization:'Bearer '+token}});const json=await res.json();const lista=json.data||[];let html='<table><tr><th>Código</th><th>Cliente</th><th>Técnico</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>';for(const o of lista){html+=`<tr><td>${o.codigo}</td><td>${o.cliente}</td><td>${o.tecnico}</td><td>${o.estado}</td><td>${o.fecha}</td><td><button onclick="asignar('${o.codigo}')">Asignar</button></td></tr>`;}html+='</table>';document.getElementById('tabla').innerHTML=html;}
+async function crear(){const body={cliente:cliente.value,descripcion:descripcion.value,codigo:codigo.value,tecnico:tecnico.value};const res=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});const data=await res.json();alert(data.message||(data.ok?'Creada':'Error'));cargar();}
+async function asignar(cod){const t=prompt('Asignar a técnico:');if(!t) return;const res=await fetch('/api/orders/assign',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({codigo:cod,tecnico:t})});const data=await res.json();alert(data.message||(data.ok?'Ok':'Error'));cargar();}
+cargar();
+</script></body></html>

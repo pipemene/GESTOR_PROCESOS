@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Usuarios – Blue Home</title>
+<style>body{font-family:Poppins,sans-serif;background:linear-gradient(180deg,#e6f0ff,#fff);padding:30px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.08)}th,td{padding:10px;border-bottom:1px solid #eee}th{background:#007bff;color:#fff}.row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}input,select,button{padding:10px;border:1px solid #ddd;border-radius:8px}button{background:#007bff;color:#fff;border:none;cursor:pointer}button:hover{background:#005ed0}</style></head>
+<body><div style="text-align:right"><a href="/dashboard.html">⬅ Volver</a></div><h2>👤 Gestión de Usuarios</h2>
+<div class="row"><input id="u" placeholder="Usuario"/><input id="c" placeholder="Clave"/><select id="r"><option>SuperAdmin</option><option>admin</option><option>tecnico</option></select><button onclick="crear()">Crear</button></div>
+<div id="tabla"></div>
+<script>
+const token=localStorage.getItem('token');if(!token) location.href='/';
+async function cargar(){const res=await fetch('/api/users',{headers:{Authorization:'Bearer '+token}});const json=await res.json();const lista=json.data||[];let html='<table><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr>';for(const x of lista){html+=`<tr><td>${x.usuario}</td><td>${x.rol}</td><td><button onclick="editar('${x.usuario}')">Editar</button> <button onclick="eliminar('${x.usuario}')">Eliminar</button></td></tr>`;}html+='</table>';document.getElementById('tabla').innerHTML=html;}
+async function crear(){const body={usuario:u.value,clave:c.value,rol:r.value};const res=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});const data=await res.json();alert(data.message||(data.ok?'Creado':'Error'));cargar();}
+async function editar(usuario){const nuevaClave=prompt('Nueva clave (deja vacío si no cambias):','');const nuevoRol=prompt('Nuevo rol (SuperAdmin/admin/tecnico):','');const body={};if(nuevaClave!==null) body.clave=nuevaClave;if(nuevoRol!==null) body.rol=nuevoRol;const res=await fetch('/api/users/'+encodeURIComponent(usuario),{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});const data=await res.json();alert(data.message||(data.ok?'Actualizado':'Error'));cargar();}
+async function eliminar(usuario){if(!confirm('Eliminar usuario '+usuario+'?')) return;const res=await fetch('/api/users/'+encodeURIComponent(usuario),{method:'DELETE',headers:{Authorization:'Bearer '+token}});const data=await res.json();alert(data.message||(data.ok?'Eliminado':'Error'));cargar();}
+cargar();
+</script></body></html>

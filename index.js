@@ -1,41 +1,31 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-import express from "express";
-import { config } from "./config.js";
-import fetch from "node-fetch";
+import authRouter, { authGuard, roleGuard } from './routes/auth.js';
+import ordersRouter from './routes/orders.js';
+import usersRouter from './routes/users.js';
+
+dotenv.config();
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
-// Healthcheck
-app.get("/", (req, res) => {
-  res.json({ status: "ok", env: config.env, at: new Date().toISOString() });
-});
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Exponer configuración
-app.get("/api/config", (req, res) => {
-  res.json({
-    port: config.port,
-    spreadsheet: config.sheet.url,
-    drive: config.drive.url,
-    appscript: config.appscript.webappUrl,
-  });
-});
+app.use('/api/auth', authRouter);
+app.use('/api/orders', authGuard, ordersRouter);
+app.use('/api/users', authGuard, roleGuard('SuperAdmin'), usersRouter);
 
-// Endpoint de prueba para crear orden (proxy a Apps Script)
-app.post("/api/orders", async (req, res) => {
-  try {
-    const response = await fetch(config.appscript.webappUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body),
-    });
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
-  }
-});
+app.get('/', (_req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('/health', (_req, res) => res.json({ ok: true }));
 
-app.listen(config.port, () => {
-  console.log(`✅ Servidor corriendo en puerto ${config.port}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ PROGESTOR running on ${PORT}`));

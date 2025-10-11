@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Blue Home – Login</title>
+<style>body{font-family:Poppins,sans-serif;display:grid;place-items:center;height:100vh;background:linear-gradient(180deg,#e6f0ff,#fff)}.card{background:#fff;padding:28px 24px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.08);width:320px;text-align:center}input,button{width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;margin:6px 0}button{background:#007bff;color:#fff;border:none;cursor:pointer}button:hover{background:#005ed0}.msg{color:#b00;font-size:14px;min-height:20px}</style></head>
+<body><div class="card"><h2>🔐 Iniciar sesión</h2><input id="usuario" placeholder="Usuario"/><input id="clave" type="password" placeholder="Clave"/><div id="msg" class="msg"></div><button onclick="login()">Entrar</button></div>
+<script>
+async function login(){const body={usuario:usuario.value.trim(),clave:clave.value.trim()};const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await res.json();if(data.ok){localStorage.setItem('token',data.token);localStorage.setItem('role',data.role);localStorage.setItem('usuario',data.usuario);location.href='/dashboard.html';}else{msg.textContent=data.message||'Error';}}
+</script></body></html>

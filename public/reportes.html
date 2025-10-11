@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Reportes – Blue Home</title>
+<style>body{font-family:Poppins,sans-serif;background:#f5f8ff;padding:30px}.card{background:#fff;display:inline-block;padding:16px 20px;margin:10px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.08)}</style></head>
+<body><div style="text-align:right"><a href="/dashboard.html">⬅ Volver</a></div><h2>📈 Reporte de estados</h2><div id="wrap"></div>
+<script>const token=localStorage.getItem('token');if(!token) location.href='/';async function cargar(){const res=await fetch('/api/orders/summary',{headers:{Authorization:'Bearer '+token}});const data=await res.json();const s=data.summary||{};let html='';Object.keys(s).forEach(k=>html+=`<div class="card"><b>${k}</b>: ${s[k]}</div>`);document.getElementById('wrap').innerHTML=html||'Sin datos';}cargar();</script>
+</body></html>

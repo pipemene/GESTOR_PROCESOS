@@ -1,1 +1,0 @@
-// Apps Script principal de Blue Home Inmobiliaria - Gestor de Reparaciones
