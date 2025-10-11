@@ -9,92 +9,68 @@ import {
 
 const router = express.Router();
 
-// ✅ Crear nueva orden (sin verificarToken temporalmente)
+// 🟦 Crear nueva orden
 router.post("/", async (req, res) => {
   try {
-    console.log("📦 Datos recibidos para crear orden:", req.body);
-
-    const { codigoInmueble, arrendatario, telefono, tecnico, observacion } =
-      req.body;
-
-    console.log("🧾 Conectando con Google Sheets...");
+    const { codigoInmueble, arrendatario, telefono, tecnico, observacion } = req.body;
+    console.log("📦 Nueva orden:", req.body);
 
     const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
 
-    // Autenticación con servicio de Google
     await doc.useServiceAccountAuth({
       client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
 
     await doc.loadInfo();
-    console.log("✅ Conectado al documento:", doc.title);
-
     const sheet = doc.sheetsByTitle[ORDERS_SHEET];
-    if (!sheet) {
-      console.error("❌ No se encontró la pestaña:", ORDERS_SHEET);
-      return res.status(500).json({ error: "Hoja de órdenes no encontrada" });
-    }
+    if (!sheet) return res.status(500).json({ error: "Hoja no encontrada" });
 
-    console.log("✍️ Agregando nueva fila...");
-
+    // Agregar nueva fila
     await sheet.addRow({
-      Codigo: codigoInmueble || "",
-      Arrendatario: arrendatario || "",
+      Cliente: "BLUE HOME INMOBILIARIA",
+      Fecha: new Date().toLocaleString("es-CO"),
+      Inquilino: arrendatario || "",
       Telefono: telefono || "",
+      Código: codigoInmueble || "",
+      Descripcion: observacion || "",
       Tecnico: tecnico || "Sin asignar",
-      Observacion: observacion || "",
       Estado: "Pendiente",
-      FechaCreacion: new Date().toLocaleString("es-CO"),
     });
 
-    console.log("✅ Orden creada correctamente en Google Sheets");
-
+    console.log("✅ Orden registrada correctamente");
     res.json({ message: "Orden creada correctamente" });
   } catch (error) {
-    console.error("🔥 ERROR AL CREAR ORDEN:");
-    console.error(error.message);
+    console.error("🔥 Error al crear orden:", error.message);
     res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
-// ✅ Obtener todas las órdenes (sin verificarToken temporalmente)
+// 🟨 Obtener todas las órdenes
 router.get("/", async (req, res) => {
   try {
-    console.log("📥 Solicitando todas las órdenes...");
-
     const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
-
     await doc.useServiceAccountAuth({
       client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     });
-
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle[ORDERS_SHEET];
-
-    if (!sheet) {
-      console.error("❌ No se encontró la pestaña:", ORDERS_SHEET);
-      return res.status(500).json({ error: "Hoja de órdenes no encontrada" });
-    }
-
     const rows = await sheet.getRows();
-    console.log(`📄 ${rows.length} órdenes encontradas`);
 
     const data = rows.map((row) => ({
-      codigo: row.Codigo,
-      arrendatario: row.Arrendatario,
-      telefono: row.Telefono,
-      tecnico: row.Tecnico,
-      observacion: row.Observacion,
-      estado: row.Estado,
-      fecha: row.FechaCreacion,
+      codigo: row["Código"] || "",
+      arrendatario: row["Inquilino"] || "",
+      telefono: row["Telefono"] || "",
+      tecnico: row["Tecnico"] || "",
+      observacion: row["Descripcion"] || "",
+      estado: row["Estado"] || "",
+      fecha: row["Fecha"] || "",
     }));
 
     res.json(data);
   } catch (error) {
-    console.error("🔥 ERROR AL OBTENER ÓRDENES:");
-    console.error(error.message);
+    console.error("🔥 Error al obtener órdenes:", error.message);
     res.status(500).json({ error: "Error al obtener órdenes" });
   }
 });
