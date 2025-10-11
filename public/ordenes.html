@@ -3,213 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Órdenes | Blue Home Gestor</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <title>Órdenes Registradas | Gestor de Procesos Blue Home</title>
+
+  <!-- Estilos básicos -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <style>
     body {
-      background-color: #f4f6fa;
-      color: #333;
+      background-color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1e293b;
     }
-    .container {
-      margin-top: 40px;
-      max-width: 1200px;
+    .container-main {
+      max-width: 1100px;
+      margin: 40px auto;
     }
     .card {
-      border-radius: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .btn-primary {
-      background-color: #004aad;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       border: none;
     }
-    .btn-primary:hover {
-      background-color: #003b8a;
-    }
-    .btn-secondary {
-      background-color: #6c757d;
-    }
-    table thead {
-      background-color: #004aad;
+    .card-header {
+      background: #0d6efd;
       color: white;
+      font-weight: 600;
     }
-    .form-label {
-      font-weight: bold;
+    .btn-primary {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+    }
+    .btn-primary:hover {
+      background-color: #084298;
+    }
+    table th {
+      background-color: #e2e8f0;
+    }
+    .alerta {
+      background: #e2e3e5;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      color: #555;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
+  <div class="container-main">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h3>📋 Órdenes Registradas</h3>
-      <button
-        class="btn btn-secondary"
-        onclick="window.location.href='dashboard.html'"
-      >
-        ⬅ Volver al Dashboard
-      </button>
+      <a href="dashboard.html" class="btn btn-secondary">🔙 Volver al Dashboard</a>
     </div>
 
-    <div class="d-flex mb-4">
-      <input
-        type="text"
-        id="buscarOrden"
-        class="form-control me-2"
-        placeholder="Buscar por código, arrendatario o técnico..."
-      />
-      <button class="btn btn-primary" onclick="filtrarOrdenes()">🔍 Buscar</button>
-    </div>
+    <!-- FORMULARIO NUEVA ORDEN -->
+    <div class="card mb-4">
+      <div class="card-header">🆕 Crear Nueva Orden</div>
+      <div class="card-body">
+        <form id="form-orden">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Código del Inmueble</label>
+              <input id="codigo" type="text" class="form-control" placeholder="Ejemplo: 2016" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Arrendatario</label>
+              <input id="arrendatario" type="text" class="form-control" placeholder="Ejemplo: BLUE HOME INMOBILIARIA" required>
+            </div>
+          </div>
 
-    <div class="card p-4 mb-4">
-      <h5 class="mb-3">🆕 Crear Nueva Orden</h5>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Teléfono</label>
+              <input id="telefono" type="text" class="form-control" placeholder="Ejemplo: 6022806940" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Técnico</label>
+              <select id="tecnico" class="form-select">
+                <option value="">Sin asignar</option>
+                <option value="Mauricio">Mauricio</option>
+                <option value="Jair">Jair</option>
+                <option value="Dayan">Dayan</option>
+              </select>
+            </div>
+          </div>
 
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Código del inmueble</label>
-          <input type="text" id="codigo" class="form-control" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Arrendatario</label>
-          <input type="text" id="arrendatario" class="form-control" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Teléfono</label>
-          <input type="text" id="telefono" class="form-control" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Técnico</label>
-          <select id="tecnico" class="form-select">
-            <option>Sin asignar</option>
-            <option>Jair</option>
-            <option>Mauricio</option>
-            <option>Dayan</option>
-          </select>
-        </div>
-        <div class="col-12">
-          <label class="form-label">Descripción / Observación</label>
-          <textarea id="observacion" rows="3" class="form-control"></textarea>
-        </div>
-      </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descripción / Observación</label>
+            <textarea id="descripcion" rows="3" class="form-control" placeholder="Ejemplo: Instalar TV de sala de juntas..."></textarea>
+          </div>
 
-      <div class="text-end mt-3">
-        <button class="btn btn-primary" onclick="crearOrden()">Crear Orden</button>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary">💾 Crear Orden</button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <div class="card p-4">
-      <h5>📁 Órdenes Registradas</h5>
-      <div class="table-responsive mt-3">
-        <table class="table table-striped table-hover">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Arrendatario</th>
-              <th>Teléfono</th>
-              <th>Técnico</th>
-              <th>Estado</th>
-              <th>Descripción</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tablaOrdenes">
-            <tr>
-              <td colspan="7" class="text-center text-muted">Cargando órdenes...</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- TABLA DE ÓRDENES REGISTRADAS -->
+    <div class="card">
+      <div class="card-header">📁 Órdenes Registradas</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered mb-0">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Arrendatario</th>
+                <th>Teléfono</th>
+                <th>Técnico</th>
+                <th>Estado</th>
+                <th>Descripción</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-ordenes-body">
+              <tr><td colspan="7" class="text-center text-muted">Cargando órdenes...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <script>
-    const API_URL = "/api/orders";
-
-    // Crear una nueva orden
-    async function crearOrden() {
-      const codigo = document.getElementById("codigo").value.trim();
-      const arrendatario = document.getElementById("arrendatario").value.trim();
-      const telefono = document.getElementById("telefono").value.trim();
-      const tecnico = document.getElementById("tecnico").value.trim();
-      const observacion = document.getElementById("observacion").value.trim();
-
-      if (!codigo || !arrendatario || !telefono || !observacion) {
-        alert("Por favor completa todos los campos.");
-        return;
-      }
-
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            codigo,
-            arrendatario,
-            telefono,
-            tecnico,
-            observacion
-          })
-        });
-
-        const data = await response.json();
-        alert(data.message || "Orden creada correctamente");
-        cargarOrdenes();
-      } catch (error) {
-        alert("Error al crear la orden: " + error.message);
-      }
-    }
-
-    // Cargar todas las órdenes
-    async function cargarOrdenes() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-
-        const tbody = document.getElementById("tablaOrdenes");
-        tbody.innerHTML = "";
-
-        if (!data || data.length === 0) {
-          tbody.innerHTML =
-            '<tr><td colspan="7" class="text-center text-muted">No hay órdenes registradas.</td></tr>';
-          return;
-        }
-
-        data.forEach((orden) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${orden.codigo || ""}</td>
-            <td>${orden.arrendatario || ""}</td>
-            <td>${orden.telefono || ""}</td>
-            <td>${orden.tecnico || "Sin asignar"}</td>
-            <td>${orden.estado || "Pendiente"}</td>
-            <td>${orden.observacion || ""}</td>
-            <td>
-              <a href="orden_detalle.html?codigo=${orden.codigo}" class="btn btn-sm btn-primary">
-                Ver / Gestionar
-              </a>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (error) {
-        console.error("Error al cargar las órdenes:", error);
-      }
-    }
-
-    // Filtro de búsqueda
-    function filtrarOrdenes() {
-      const filtro = document.getElementById("buscarOrden").value.toLowerCase();
-      const filas = document.querySelectorAll("#tablaOrdenes tr");
-      filas.forEach((fila) => {
-        const texto = fila.innerText.toLowerCase();
-        fila.style.display = texto.includes(filtro) ? "" : "none";
-      });
-    }
-
-    // Cargar al inicio
-    window.onload = cargarOrdenes;
-  </script>
+  <!-- Script -->
+  <script src="js/ordenes.js"></script>
 </body>
 </html>
