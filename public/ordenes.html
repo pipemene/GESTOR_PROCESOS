@@ -1,76 +1,188 @@
-<div class="card p-6 bg-white rounded-2xl shadow">
-  <h2 class="text-xl font-bold mb-4 text-blue-600">Nueva Orden</h2>
-  <form id="ordenForm">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block font-semibold text-gray-700">Código del inmueble</label>
-        <input type="text" id="codigo" class="w-full border rounded-lg p-2" required>
-      </div>
-      <div>
-        <label class="block font-semibold text-gray-700">Arrendatario</label>
-        <input type="text" id="arrendatario" class="w-full border rounded-lg p-2" required>
-      </div>
-      <div>
-        <label class="block font-semibold text-gray-700">Teléfono</label>
-        <input type="tel" id="telefono" class="w-full border rounded-lg p-2" required>
-      </div>
-      <div>
-        <label class="block font-semibold text-gray-700">Técnico</label>
-        <select id="tecnico" class="w-full border rounded-lg p-2">
-          <option value="Sin asignar">Sin asignar</option>
-        </select>
-      </div>
-    </div>
-    <div class="mt-4">
-      <label class="block font-semibold text-gray-700">Observación</label>
-      <textarea id="observacion" rows="3" class="w-full border rounded-lg p-2" placeholder="Describe brevemente el trabajo a realizar"></textarea>
-    </div>
-    <button type="submit" class="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow">
-      Crear Orden
-    </button>
-  </form>
-</div>
-
-<script>
-  // 🔹 Cargar técnicos desde la API
-  async function cargarTecnicos() {
-    const token = localStorage.getItem("token");
-    const res = await fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } });
-    const usuarios = await res.json();
-    const tecnicos = usuarios.filter(u => u.rol.toLowerCase() === 'tecnico');
-    const select = document.getElementById('tecnico');
-    tecnicos.forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t.usuario;
-      opt.textContent = t.usuario;
-      select.appendChild(opt);
-    });
-  }
-
-  // 🔹 Crear orden
-  document.getElementById('ordenForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-    const data = {
-      codigo: document.getElementById('codigo').value,
-      arrendatario: document.getElementById('arrendatario').value,
-      telefono: document.getElementById('telefono').value,
-      observacion: document.getElementById('observacion').value,
-      tecnico: document.getElementById('tecnico').value,
-    };
-    const res = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data)
-    });
-    if (res.ok) {
-      alert("✅ Orden creada correctamente");
-      document.getElementById('ordenForm').reset();
-    } else {
-      alert("❌ Error al crear la orden");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Órdenes | Blue Home Inmobiliaria</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f8ff;
+      margin: 0;
+      padding: 20px;
     }
-  });
+    h2 {
+      text-align: center;
+      color: #007bff;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      margin-top: 40px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
 
-  // Inicializar
-  cargarTecnicos();
-</script>
+  <h2>📋 Nueva Orden</h2>
+  <form id="orderForm">
+    <label for="codigo">Código del inmueble</label>
+    <input type="text" id="codigo" required>
+
+    <label for="arrendatario">Arrendatario</label>
+    <input type="text" id="arrendatario" required>
+
+    <label for="telefono">Teléfono</label>
+    <input type="text" id="telefono" required>
+
+    <label for="tecnico">Técnico</label>
+    <select id="tecnico">
+      <option value="Sin asignar">Sin asignar</option>
+      <option value="MAURICIO">MAURICIO</option>
+      <option value="JAIR">JAIR</option>
+    </select>
+
+    <label for="observacion">Observación</label>
+    <textarea id="observacion" rows="3" required></textarea>
+
+    <button type="submit">Crear Orden</button>
+  </form>
+
+  <h2>📑 Órdenes Registradas</h2>
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Arrendatario</th>
+        <th>Teléfono</th>
+        <th>Técnico</th>
+        <th>Observación</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+      window.location.href = '/';
+    }
+
+    // 🔹 Cargar órdenes existentes
+    async function loadOrders() {
+      try {
+        const response = await fetch('/api/orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) throw new Error('Error al cargar órdenes');
+        const data = await response.json();
+
+        const tbody = document.querySelector('#ordersTable tbody');
+        tbody.innerHTML = '';
+
+        data.forEach(order => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${order.codigo}</td>
+            <td>${order.arrendatario}</td>
+            <td>${order.telefono}</td>
+            <td>${order.tecnico}</td>
+            <td>${order.observacion}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    // 🔹 Crear una nueva orden
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const codigo = document.getElementById('codigo').value.trim();
+      const arrendatario = document.getElementById('arrendatario').value.trim();
+      const telefono = document.getElementById('telefono').value.trim();
+      const tecnico = document.getElementById('tecnico').value;
+      const observacion = document.getElementById('observacion').value.trim();
+
+      try {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ codigo, arrendatario, telefono, tecnico, observacion })
+        });
+
+        if (!response.ok) {
+          const msg = await response.text();
+          alert(`❌ Error al crear la orden: ${msg}`);
+          return;
+        }
+
+        alert('✅ Orden creada correctamente');
+        document.getElementById('orderForm').reset();
+        loadOrders();
+
+      } catch (error) {
+        console.error(error);
+        alert('Error de conexión al crear la orden');
+      }
+    });
+
+    loadOrders();
+  </script>
+</body>
+</html>
