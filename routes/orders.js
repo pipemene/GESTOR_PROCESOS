@@ -1,71 +1,89 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { getSheetData, appendRow } from '../services/sheetsService.js';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT_SECRET, SPREADSHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, ORDERS_SHEET } from '../config.js';
 
 const router = express.Router();
 
-// Middleware de autenticación
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Token faltante' });
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+// 🧩 Middleware para verificar token
+function verifyToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(403).json({ error: 'Token faltante' });
+
+  const token = authHeader.split(' ')[1];
+  if (!token) return res.status(403).json({ error: 'Token inválido' });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: 'Token no válido' });
     req.user = decoded;
     next();
-  } catch {
-    res.status(403).json({ error: 'Token inválido' });
-  }
+  });
 }
 
-// 🔹 Obtener todas las órdenes
-router.get('/', authMiddleware, async (req, res) => {
+// 🧩 Función para conectar con Google Sheets
+async function getOrdersSheet() {
+  const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
+  await doc.useServiceAccountAuth({
+    client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  });
+  await doc.loadInfo();
+  return doc.sheetsByTitle[ORDERS_SHEET];
+}
+
+// 📋 Obtener todas las órdenes
+router.get('/', verifyToken, async (req, res) => {
   try {
-    const data = await getSheetData(process.env.ORDERS_SHEET);
-    const headers = data[0];
-    const orders = data.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((key, i) => (obj[key] = row[i] || ''));
-      return obj;
-    });
-    res.json(orders);
-  } catch (err) {
-    console.error('❌ Error al leer órdenes:', err);
+    const sheet = await getOrdersSheet();
+    const rows = await sheet.getRows();
+
+    const data = rows.map(row => ({
+      codigo: row.Codigo || '',
+      arrendatario: row.Arrendatario || '',
+      telefono: row.Telefono || '',
+      tecnico: row.Tecnico || '',
+      observacion: row.Observacion || '',
+      estado: row.Estado || '',
+      fecha: row.FechaCreacion || '',
+    }));
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error al obtener órdenes:', error);
     res.status(500).json({ error: 'Error al obtener las órdenes' });
   }
 });
 
-// 🔹 Crear nueva orden (solo SuperAdmin)
-router.post('/', authMiddleware, async (req, res) => {
+// 🛠 Crear nueva orden
+router.post('/', verifyToken, async (req, res) => {
   try {
-    if (req.user.rol !== 'superadmin') {
-      return res.status(403).json({ error: 'Solo el SuperAdmin puede crear órdenes' });
+    const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
+    const { role, username } = req.user;
+
+    if (!codigo || !arrendatario || !telefono || !observacion) {
+      return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    const { codigo, arrendatario, telefono, observacion, tecnico } = req.body;
-    if (!codigo || !arrendatario || !telefono) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    // 🔐 Validar rol permitido
+    if (role !== 'SuperAdmin' && role !== 'admin') {
+      return res.status(403).json({ error: 'Solo el SuperAdmin o admin pueden crear órdenes' });
     }
 
-    const fecha = new Date().toLocaleDateString('es-CO');
-    const tecnicoAsignado = tecnico && tecnico !== '' ? tecnico : 'Sin asignar';
-    const estado = 'Pendiente';
+    const sheet = await getOrdersSheet();
+    await sheet.addRow({
+      Codigo: codigo,
+      Arrendatario: arrendatario,
+      Telefono: telefono,
+      Tecnico: tecnico || 'Sin asignar',
+      Observacion: observacion,
+      Estado: 'Pendiente',
+      FechaCreacion: new Date().toLocaleString('es-CO'),
+      CreadoPor: username,
+    });
 
-    const nuevaOrden = [
-      fecha,
-      codigo,
-      arrendatario,
-      telefono,
-      observacion || '',
-      tecnicoAsignado,
-      estado
-    ];
-
-    await appendRow(process.env.ORDERS_SHEET, nuevaOrden);
-
-    console.log(`✅ Nueva orden creada: ${codigo} (${arrendatario})`);
-    res.status(201).json({ message: 'Orden creada correctamente' });
-  } catch (err) {
-    console.error('❌ Error al crear la orden:', err);
+    res.json({ success: true, message: 'Orden creada correctamente' });
+  } catch (error) {
+    console.error('Error al crear orden:', error);
     res.status(500).json({ error: 'Error al crear la orden' });
   }
 });
