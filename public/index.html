@@ -124,17 +124,14 @@
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.role);
 
-        // Redirigir según rol
-        if (data.role === 'SuperAdmin') {
-          window.location.href = '/ordenes.html';
-        } else {
-          window.location.href = '/ordenes.html';
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        errorDiv.textContent = 'Error al conectar con el servidor.';
-      }
-    }
+       // Redirigir según rol
+if (data.role === 'SuperAdmin' || data.role === 'admin') {
+  window.location.href = '/dashboard.html';
+} else if (data.role === 'tecnico') {
+  window.location.href = '/tecnicos.html';
+} else {
+  window.location.href = '/ordenes.html';
+}
   </script>
 </body>
 </html>

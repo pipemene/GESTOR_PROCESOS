@@ -1,6 +1,141 @@
-<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><title>Blue Home – Panel</title>
-<style>body{font-family:Poppins,sans-serif;background:linear-gradient(180deg,#e6f0ff,#fff);padding:50px;text-align:center}.cards{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:20px}.card{background:#fff;width:260px;padding:24px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.08)}.btn{display:inline-block;margin-top:10px;padding:10px 16px;background:#007bff;color:#fff;border-radius:8px;text-decoration:none}.btn:hover{background:#005ed0}.top{position:absolute;right:20px;top:20px}.top button{padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff}</style></head>
-<body><div class="top"><button onclick="logout()">Salir</button></div><h2>🏠 Panel Blue Home</h2><p>Selecciona un módulo:</p><div class="cards" id="cards"></div>
-<script>(function(){const t=localStorage.getItem('token');if(!t) location.href='/';})();function logout(){localStorage.removeItem('token');localStorage.removeItem('role');localStorage.removeItem('usuario');location.href='/';}const role=(localStorage.getItem('role')||'').toLowerCase();const cards=[{title:'📋 Órdenes',href:'/ordenes.html'},{title:'👷 Técnicos',href:'/tecnicos.html'},{title:'📈 Reportes',href:'/reportes.html'}];if(role==='superadmin'){cards.push({title:'👤 Usuarios',href:'/usuarios.html'});}document.getElementById('cards').innerHTML=cards.map(c=>`<div class="card"><h3>${c.title}</h3><a class="btn" href="${c.href}">Abrir</a></div>`).join('');</script>
-</body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control | Blue Home Inmobiliaria</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: linear-gradient(to bottom right, #e8f0ff, #f9fbff);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    header {
+      background-color: #007bff;
+      color: white;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.6em;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 50px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .card h3 {
+      margin-top: 10px;
+      color: #222;
+      font-weight: 600;
+    }
+
+    .icon {
+      font-size: 50px;
+      color: #007bff;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      padding: 10px 0;
+      background: #f2f6ff;
+      border-top: 1px solid #ddd;
+    }
+
+    .logout {
+      position: absolute;
+      right: 25px;
+      top: 22px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .logout:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Panel de Control
+    <button class="logout" onclick="logout()">Cerrar sesión</button>
+  </header>
+
+  <div class="dashboard">
+    <div class="card" onclick="location.href='ordenes.html'">
+      <div class="icon">📋</div>
+      <h3>Órdenes</h3>
+    </div>
+
+    <div class="card" onclick="location.href='usuarios.html'">
+      <div class="icon">👥</div>
+      <h3>Usuarios</h3>
+    </div>
+
+    <div class="card" onclick="location.href='tecnicos.html'">
+      <div class="icon">🧰</div>
+      <h3>Técnicos</h3>
+    </div>
+
+    <div class="card" onclick="location.href='reportes.html'">
+      <div class="icon">📊</div>
+      <h3>Reportes</h3>
+    </div>
+  </div>
+
+  <footer>© 2025 Blue Home Inmobiliaria | Sistema Gestor</footer>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      window.location.href = '/';
+    }
+
+    // Protección: si no hay sesión, no entra
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
