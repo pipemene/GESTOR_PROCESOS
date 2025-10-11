@@ -1,29 +1,37 @@
 import express from 'express';
-import { getUsers, createUser, updateUser, deleteUser } from '../services/sheetsService.js';
+import jwt from 'jsonwebtoken';
+import { getSheetData, appendRow, updateCell, deleteRow } from '../services/sheetsService.js';
 
 const router = express.Router();
 
-router.get('/', async (_req, res) => {
-  try { res.json({ ok:true, total:(await getUsers()).length, data: await getUsers() }); }
-  catch (e) { res.status(500).json({ ok:false, error:e.message }); }
-});
-
-router.post('/', async (req, res) => {
+// Middleware de autenticación
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token faltante' });
   try {
-    const { usuario, clave, rol } = req.body || {};
-    if (!usuario || !clave || !rol) return res.status(400).json({ ok:false, message:'Campos requeridos' });
-    res.json(await createUser({ usuario, clave, rol }));
-  } catch (e) { res.status(500).json({ ok:false, error:e.message }); }
-});
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(403).json({ error: 'Token inválido' });
+  }
+}
 
-router.put('/:usuario', async (req, res) => {
-  try { res.json(await updateUser(req.params.usuario, { clave: req.body?.clave, rol: req.body?.rol })); }
-  catch (e) { res.status(500).json({ ok:false, error:e.message }); }
-});
-
-router.delete('/:usuario', async (req, res) => {
-  try { res.json(await deleteUser(req.params.usuario)); }
-  catch (e) { res.status(500).json({ ok:false, error:e.message }); }
+// 🔹 Listar usuarios
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const data = await getSheetData(process.env.USERS_SHEET);
+    const headers = data[0];
+    const users = data.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((key, i) => (obj[key] = row[i] || ''));
+      return obj;
+    });
+    res.json(users);
+  } catch (err) {
+    console.error('❌ Error al leer usuarios:', err);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
 });
 
 export default router;

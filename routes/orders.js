@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import { getSheetData, appendRow } from '../services/sheetsService.js';
+
 const router = express.Router();
-const { getSheetData, appendRow } = require('../services/sheetsService');
-const jwt = require('jsonwebtoken');
 
 // Middleware de autenticación
 function authMiddleware(req, res, next) {
@@ -33,11 +34,14 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// 🔹 Crear nueva orden
+// 🔹 Crear nueva orden (solo SuperAdmin)
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { codigo, arrendatario, telefono, observacion, tecnico } = req.body;
+    if (req.user.rol !== 'superadmin') {
+      return res.status(403).json({ error: 'Solo el SuperAdmin puede crear órdenes' });
+    }
 
+    const { codigo, arrendatario, telefono, observacion, tecnico } = req.body;
     if (!codigo || !arrendatario || !telefono) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
@@ -66,4 +70,4 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
