@@ -4,33 +4,45 @@ import { getSheetData } from '../services/sheetsService.js';
 
 const router = express.Router();
 
-// 🔹 Login
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { usuario, clave } = req.body;
-    if (!usuario || !clave) return res.status(400).json({ error: 'Campos requeridos' });
+    const { username, password } = req.body;
 
-    const data = await getSheetData(process.env.USERS_SHEET);
-    const headers = data[0];
-    const users = data.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((key, i) => (obj[key] = row[i] || ''));
-      return obj;
-    });
+    if (!username || !password)
+      return res.status(400).json({ error: 'Debe ingresar usuario y contraseña' });
 
-    const user = users.find(u => u.usuario === usuario && u.clave === clave);
-    if (!user) return res.status(401).json({ error: 'Usuario o clave incorrectos' });
+    const users = await getSheetData(process.env.USERS_SHEET);
 
-    const token = jwt.sign(
-      { usuario: user.usuario, rol: user.rol },
-      process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+    // Verificamos encabezados
+    const headers = users[0];
+    const userIndex = headers.findIndex((h) => h.toLowerCase() === 'usuario');
+    const passIndex = headers.findIndex((h) => h.toLowerCase() === 'clave');
+    const roleIndex = headers.findIndex((h) => h.toLowerCase() === 'rol');
+
+    if (userIndex === -1 || passIndex === -1)
+      return res.status(500).json({ error: 'Encabezados inválidos en la hoja Usuarios' });
+
+    const userRow = users.find(
+      (row, i) =>
+        i > 0 &&
+        row[userIndex]?.trim()?.toLowerCase() === username.trim().toLowerCase()
     );
 
-    res.json({ token, usuario: user.usuario, rol: user.rol });
+    if (!userRow)
+      return res.status(401).json({ error: 'Usuario no encontrado en la hoja' });
+
+    const storedPassword = userRow[passIndex]?.trim();
+    if (storedPassword !== password.trim())
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    const role = userRow[roleIndex] || 'tecnico';
+    const token = jwt.sign({ username, role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+    return res.json({ token, role });
   } catch (err) {
     console.error('❌ Error en login:', err);
-    res.status(500).json({ error: 'Error interno al iniciar sesión' });
+    return res.status(500).json({ error: err.message || 'Error interno del servidor' });
   }
 });
 
