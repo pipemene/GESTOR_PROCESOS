@@ -165,5 +165,71 @@ router.put("/:codigo", async (req, res) => {
     res.status(500).json({ error: "Error al actualizar la orden" });
   }
 });
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import nodemailer from "nodemailer";
+import { ensureOrderFolder, uploadPDFtoDrive } from "../services/driveService.js";
+import { GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY } from "../config.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// 📄 PUT /api/orders/:codigo
+// Guarda el PDF, lo sube a Drive y envía el correo
+router.put("/:codigo", async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const { pdfBase64 } = req.body;
+
+    if (!pdfBase64) {
+      return res.status(400).json({ error: "No se recibió el PDF." });
+    }
+
+    // 🔹 Guardar el PDF temporalmente
+    const pdfPath = path.join(__dirname, `../tmp/${codigo}.pdf`);
+    const pdfBuffer = Buffer.from(pdfBase64, "base64");
+    fs.writeFileSync(pdfPath, pdfBuffer);
+
+    // 🔹 Crear carpeta de la orden (si no existe)
+    const rootFolderId = process.env.DRIVE_FOLDER_ID;
+    const folderId = await ensureOrderFolder(rootFolderId, codigo);
+
+    // 🔹 Subir PDF a Drive
+    const pdfUrl = await uploadPDFtoDrive(folderId, pdfPath, `${codigo}.pdf`);
+
+    // 🔹 Configurar envío de correo
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "bluehomeinmobiliaria@gmail.com", // correo emisor
+        pass: process.env.GMAIL_APP_PASSWORD, // clave de aplicación (no tu contraseña normal)
+      },
+    });
+
+    // 🔹 Enviar correo
+    await transporter.sendMail({
+      from: '"Gestor Blue Home" <bluehomeinmobiliaria@gmail.com>',
+      to: ["arrendamientos@bluehomeinmo.co", "reparaciones@bluehomeinmo.co"],
+      subject: `Orden ${codigo} completada y firmada`,
+      html: `
+        <h3>📄 Orden ${codigo} completada</h3>
+        <p>Se adjunta el PDF firmado y subido al Drive.</p>
+        <p><a href="${pdfUrl}">Ver PDF en Google Drive</a></p>
+      `,
+    });
+
+    // 🔹 Eliminar PDF temporal
+    fs.unlinkSync(pdfPath);
+
+    res.json({
+      success: true,
+      message: "PDF subido y correo enviado correctamente",
+      pdfUrl,
+    });
+  } catch (error) {
+    console.error("❌ Error al procesar PDF:", error);
+    res.status(500).json({ error: "Error al subir o enviar PDF." });
+  }
+});
 
 export default router;
