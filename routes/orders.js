@@ -3,16 +3,18 @@ import { google } from "googleapis";
 import nodemailer from "nodemailer";
 import {
   GOOGLE_SHEET_ID,
+  GOOGLE_DRIVE_FOLDER_ID,
   GOOGLE_SERVICE_ACCOUNT_EMAIL,
   GOOGLE_PRIVATE_KEY,
-  GOOGLE_DRIVE_FOLDER_ID,
   GMAIL_USER,
-  GMAIL_APP_PASSWORD
+  GMAIL_APP_PASSWORD,
 } from "../config.js";
 
 const router = express.Router();
 
-// Autenticación con Google Sheets
+// ==============================
+// 🔐 AUTENTICACIÓN GOOGLE
+// ==============================
 const auth = new google.auth.JWT(
   GOOGLE_SERVICE_ACCOUNT_EMAIL,
   null,
@@ -21,115 +23,126 @@ const auth = new google.auth.JWT(
 );
 
 const sheets = google.sheets({ version: "v4", auth });
+const drive = google.drive({ version: "v3", auth });
 
-// ============================
-// 📍 Obtener todas las órdenes
-// ============================
+// ==============================
+// ✉️ CONFIGURACIÓN DE CORREO
+// ==============================
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: GMAIL_USER,
+    pass: GMAIL_APP_PASSWORD,
+  },
+});
+
+// ==============================
+// 📋 OBTENER TODAS LAS ÓRDENES
+// ==============================
 router.get("/", async (req, res) => {
-  console.log("Solicitando todas las órdenes...");
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: "Órdenes!A:H", // <- Aquí se lee desde la hoja Órdenes
+      range: "Órdenes!A2:H",
     });
 
     const rows = response.data.values || [];
-    const headers = rows[0] || [];
-    const data = rows.slice(1).map((row) =>
-      Object.fromEntries(headers.map((header, index) => [header, row[index] || ""]))
-    );
+    const orders = rows.map((row) => ({
+      fecha: row[0] || "",
+      arrendatario: row[1] || "",
+      telefono: row[2] || "",
+      codigo: row[3] || "",
+      descripcion: row[4] || "",
+      tecnico: row[5] || "",
+      estado: row[6] || "",
+    }));
 
-    res.json({ success: true, data });
+    res.json(orders);
   } catch (error) {
     console.error("❌ ERROR AL OBTENER ÓRDENES:", error);
-    res.status(500).json({ success: false, message: "Error al obtener órdenes", error });
+    res.status(500).json({ message: "Error al obtener órdenes" });
   }
 });
 
-// ============================
-// 📍 Crear nueva orden
-// ============================
+// ==============================
+// 🧾 CREAR NUEVA ORDEN
+// ==============================
 router.post("/", async (req, res) => {
   try {
-    const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
+    const { arrendatario, telefono, codigoInmueble, descripcion, tecnico } = req.body;
 
-    if (!codigo || !arrendatario) {
-      return res.status(400).json({ success: false, message: "Faltan campos obligatorios" });
+    // Validación básica
+    if (!arrendatario || !telefono || !codigoInmueble) {
+      return res.status(400).json({ message: "Faltan datos obligatorios" });
     }
 
-    // Generar código único tipo BH-2025-XXX
-    const random = Math.floor(Math.random() * 1000);
-    const codigoGenerado = `BH-2025-${random}`;
+    const fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
+    const codigo = `BH-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
+    const estado = "Pendiente";
 
-    // Crear fila con todos los valores
-    const values = [
-      "BLUE HOME INMOBILIARIA",
-      new Date().toLocaleString("es-CO"),
-      arrendatario,
-      telefono,
-      codigoGenerado,
-      observacion,
-      tecnico || "Sin asignar",
-      "Pendiente",
-    ];
-
-    // Insertar fila en la hoja “Órdenes”
+    // Guardar en la hoja Órdenes
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: "Órdenes!A:H",
+      range: "Órdenes!A2:H",
       valueInputOption: "USER_ENTERED",
-      resource: { values: [values] },
+      requestBody: {
+        values: [
+          [
+            `BLUE HOME INMOBILIARIA ${fecha}`,
+            arrendatario,
+            telefono,
+            codigo,
+            descripcion,
+            tecnico || "Sin asignar",
+            estado,
+          ],
+        ],
+      },
     });
 
-    console.log("✅ Orden creada:", codigoGenerado);
+    console.log(`✅ Orden ${codigo} registrada correctamente.`);
 
-    res.json({ success: true, message: "Orden creada correctamente", codigo: codigoGenerado });
-  } catch (error) {
-    console.error("❌ ERROR AL CREAR ORDEN:", error);
-    res.status(500).json({ success: false, message: "Error al crear la orden", error });
-  }
-});
+    // ==============================
+    // ☁️ Subir archivo PDF al Drive (si viene adjunto)
+    // ==============================
+    if (req.files && req.files.archivo) {
+      const file = req.files.archivo;
+      const fileMetadata = {
+        name: `Orden_${codigo}.pdf`,
+        parents: [GOOGLE_DRIVE_FOLDER_ID],
+      };
 
-// ============================
-// 📍 Actualizar orden (guardar PDF firmado)
-// ============================
-router.put("/:codigo", async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    const { pdfBase64 } = req.body;
+      const media = {
+        mimeType: file.mimetype,
+        body: file.data,
+      };
 
-    if (!pdfBase64) {
-      return res.status(400).json({ success: false, message: "Falta el archivo PDF." });
+      await drive.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: "id",
+      });
+
+      console.log(`📁 Archivo PDF de la orden ${codigo} subido a Drive correctamente.`);
     }
 
-    console.log(`📄 Recibido PDF firmado para orden ${codigo}`);
-
-    // Enviar por correo (opcional)
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-    });
-
+    // ==============================
+    // 📩 Enviar correo automático
+    // ==============================
     const mailOptions = {
-      from: `"Gestor de Reparaciones" <${GMAIL_USER}>`,
-      to: ["arrendamientos@bluehomeinmo.co", "reparaciones@bluehomeinmo.co"],
-      subject: `PDF de orden ${codigo}`,
-      text: `Se ha recibido el PDF firmado correspondiente a la orden ${codigo}.`,
-      attachments: [
-        {
-          filename: `Orden_${codigo}.pdf`,
-          content: pdfBase64.split(";base64,").pop(),
-          encoding: "base64",
-        },
-      ],
+      from: `"Blue Home Inmobiliaria" <${GMAIL_USER}>`,
+      to: GMAIL_USER, // aquí puedes cambiar a un correo del área operativa si prefieres
+      subject: `Nueva orden registrada: ${codigo}`,
+      text: `Se ha registrado una nueva orden en el Gestor de Reparaciones.\n\nCódigo: ${codigo}\nArrendatario: ${arrendatario}\nTeléfono: ${telefono}\nDescripción: ${descripcion}\nTécnico: ${tecnico || "Sin asignar"}\nEstado: ${estado}`,
     };
 
     await transporter.sendMail(mailOptions);
+    console.log(`📧 Correo de confirmación enviado para la orden ${codigo}.`);
 
-    res.json({ success: true, message: "PDF guardado y correo enviado" });
+    res.json({ message: "Orden creada correctamente" });
   } catch (error) {
-    console.error("❌ ERROR AL ACTUALIZAR ORDEN:", error);
-    res.status(500).json({ success: false, message: "Error al actualizar orden", error });
+    console.error("❌ ERROR AL CREAR ORDEN:", error);
+    res.status(500).json({ message: "Error al crear la orden" });
   }
 });
 
