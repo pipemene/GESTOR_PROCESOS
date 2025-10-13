@@ -28,7 +28,8 @@ router.get("/", async (req, res) => {
     const sheet = await getSheet();
     const rows = await sheet.getRows();
 
-    const ordenes = rows.map((r) => ({
+    const ordenes = rows.map((r, index) => ({
+      id: index + 1,
       codigo: r["Código"] || "",
       arrendatario: r["Inquilino"] || "",
       telefono: r["Telefono"] || "",

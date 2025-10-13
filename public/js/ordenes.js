@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabla = document.querySelector("#tablaOrdenes tbody");
   const mensaje = document.getElementById("mensaje");
 
-  // 🔄 Cargar órdenes existentes
+  // 🔄 Cargar órdenes desde el backend
   async function cargarOrdenes() {
     try {
       const res = await fetch("/api/orders");
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
       tabla.innerHTML = "";
 
       if (!data.length) {
-        tabla.innerHTML = `<tr><td colspan="6">No hay órdenes registradas</td></tr>`;
+        tabla.innerHTML = `<tr><td colspan="7">No hay órdenes registradas</td></tr>`;
         return;
       }
 
@@ -25,12 +25,23 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${o.tecnico || "-"}</td>
           <td>${o.estado || "-"}</td>
           <td>${o.observacion || "-"}</td>
+          <td><button class="btn-ver" data-codigo="${o.codigo}">🔍 Ver</button></td>
         `;
         tabla.appendChild(fila);
       });
+
+      // 🧭 Redirigir al detalle
+      document.querySelectorAll(".btn-ver").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const codigo = btn.dataset.codigo;
+          if (codigo) {
+            window.location.href = `/orden_detalle.html?codigo=${encodeURIComponent(codigo)}`;
+          }
+        });
+      });
     } catch (err) {
       console.error("Error al cargar órdenes:", err);
-      tabla.innerHTML = `<tr><td colspan="6">Error cargando órdenes</td></tr>`;
+      tabla.innerHTML = `<tr><td colspan="7">Error al cargar órdenes</td></tr>`;
     }
   }
 
@@ -49,8 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
       observacion: form.observacion.value.trim(),
     };
 
-    console.log("📤 Enviando datos:", datos);
-
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -63,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.ok) {
         mostrarMensaje("✅ Orden creada correctamente", "exito");
         form.reset();
-        await cargarOrdenes(); // refrescar tabla
+        await cargarOrdenes();
       } else {
         mostrarMensaje(`❌ Error: ${respuesta.error || "No se pudo crear la orden"}`, "error");
       }
