@@ -3,105 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Órdenes Registradas | Blue Home</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <title>Órdenes Registradas | Gestor de Procesos</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <style>
     body {
       background-color: #f4f6f9;
-      font-family: "Segoe UI", sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    .card {
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    .container {
+      max-width: 1100px;
+      margin-top: 40px;
     }
     .card-header {
-      background-color: #0d6efd;
+      background-color: #007bff;
       color: white;
-      font-weight: 600;
+      font-weight: bold;
     }
     .mensaje {
       display: none;
       text-align: center;
-      font-weight: 500;
-      margin-top: 10px;
+      font-weight: 600;
+      margin: 15px 0;
       padding: 10px;
-      border-radius: 6px;
+      border-radius: 8px;
     }
     .mensaje.exito {
       background-color: #d1e7dd;
       color: #0f5132;
+      border: 1px solid #badbcc;
     }
     .mensaje.error {
       background-color: #f8d7da;
       color: #842029;
+      border: 1px solid #f5c2c7;
     }
-    #btnCrearOrden[disabled] {
-      opacity: 0.7;
-      cursor: not-allowed;
+    .table thead {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #0069d9;
+    }
+    .badge-ready {
+      background: #28a745;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.9rem;
     }
   </style>
 </head>
-
 <body>
-  <div class="container py-4">
-    <h4 class="mb-4"><i class="bi bi-clipboard"></i> 📋 Órdenes Registradas</h4>
+  <div class="container">
+    <h3 class="text-center mb-4">📋 Órdenes Registradas</h3>
 
-    <!-- Crear Nueva Orden -->
-    <div class="card mb-4">
-      <div class="card-header">
-        📘 Crear Nueva Orden
-      </div>
+    <!-- 🔔 Mensaje visual -->
+    <div id="mensaje" class="mensaje"></div>
+    <div class="text-center mb-3">
+      <span class="badge-ready">Sistema listo ✅</span>
+    </div>
+
+    <!-- 📦 Crear nueva orden -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header">🧾 Crear Nueva Orden</div>
       <div class="card-body">
         <form id="formOrden">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Código del Inmueble</label>
-              <input type="text" class="form-control" id="codigo" placeholder="Ejemplo: 2016" required />
+              <label for="codigo" class="form-label">Código del Inmueble</label>
+              <input type="text" id="codigo" class="form-control" placeholder="Ejemplo: 2016" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Arrendatario</label>
-              <input type="text" class="form-control" id="arrendatario" placeholder="Ejemplo: BLUE HOME INMOBILIARIA" required />
+              <label for="arrendatario" class="form-label">Arrendatario</label>
+              <input type="text" id="arrendatario" class="form-control" placeholder="Ejemplo: BLUE HOME INMOBILIARIA" required>
             </div>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Teléfono</label>
-              <input type="text" class="form-control" id="telefono" placeholder="Ejemplo: 6022806940" />
+              <label for="telefono" class="form-label">Teléfono</label>
+              <input type="text" id="telefono" class="form-control" placeholder="Ejemplo: 6022806940">
             </div>
             <div class="col-md-6">
-              <label class="form-label">Técnico</label>
-              <select class="form-select" id="tecnico">
+              <label for="tecnico" class="form-label">Técnico</label>
+              <select id="tecnico" class="form-select">
                 <option value="Sin asignar">Sin asignar</option>
-                <option value="JAIR">JAIR</option>
-                <option value="MAURICIO">MAURICIO</option>
-                <option value="CRISTIAN">CRISTIAN</option>
+                <option value="Mauricio">Mauricio</option>
+                <option value="Carlos">Carlos</option>
+                <option value="Andrés">Andrés</option>
               </select>
             </div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Descripción / Observación</label>
-            <textarea class="form-control" id="observacion" rows="2" placeholder="Ejemplo: Instalar TV de sala de juntas."></textarea>
+            <label for="observacion" class="form-label">Descripción / Observación</label>
+            <textarea id="observacion" class="form-control" rows="3" placeholder="Ejemplo: Instalar TV de sala de juntas."></textarea>
           </div>
 
-          <button type="submit" id="btnCrearOrden" class="btn btn-primary">
-            💾 Crear Orden
-          </button>
-
-          <div id="mensaje" class="mensaje"></div>
+          <div class="text-end">
+            <button type="submit" id="btnCrearOrden" class="btn btn-primary">
+              💾 Crear Orden
+            </button>
+          </div>
         </form>
       </div>
     </div>
 
-    <!-- Tabla de Órdenes -->
-    <div class="card">
-      <div class="card-header">
-        📁 Órdenes Registradas
-      </div>
-      <div class="card-body table-responsive">
-        <table id="tablaOrdenes" class="table table-bordered table-striped align-middle">
-          <thead class="table-primary">
+    <!-- 📋 Tabla de órdenes -->
+    <div class="card shadow-sm">
+      <div class="card-header">📂 Órdenes Registradas</div>
+      <div class="card-body p-0">
+        <table class="table table-striped mb-0" id="tablaOrdenes">
+          <thead>
             <tr>
               <th>Código</th>
               <th>Arrendatario</th>
@@ -119,7 +136,7 @@
     </div>
   </div>
 
+  <!-- 🚀 Script principal -->
   <script src="./js/ordenes.js"></script>
-
 </body>
 </html>
