@@ -1,30 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("form");
-  const btnCrear = form.querySelector("button[type='submit']");
+  const form = document.getElementById("formOrden");
+  const btnCrear = document.getElementById("btnCrearOrden");
   const tabla = document.querySelector("#tablaOrdenes tbody");
   const mensaje = document.getElementById("mensaje");
-
-  // Buscar campo por id o name
-  const campo = (id) =>
-    document.getElementById(id) ||
-    form.querySelector(`[name='${id}']`) ||
-    form.querySelector(`[placeholder*='${id}']`) ||
-    null;
 
   // 🔄 Cargar órdenes existentes
   async function cargarOrdenes() {
     try {
       const res = await fetch("/api/orders");
-      const data = await res.json();
+      if (!res.ok) throw new Error("Error al obtener órdenes");
 
+      const data = await res.json();
       tabla.innerHTML = "";
 
-      if (!data.length) {
-        tabla.innerHTML = `<tr><td colspan="6">No hay órdenes registradas</td></tr>`;
+      if (!Array.isArray(data) || data.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay órdenes registradas</td></tr>`;
         return;
       }
 
-      data.forEach((o) => {
+      data.forEach(o => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${o.codigo || ""}</td>
@@ -38,11 +32,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (err) {
       console.error("Error al cargar órdenes:", err);
-      tabla.innerHTML = `<tr><td colspan="6">Error cargando órdenes</td></tr>`;
+      tabla.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error cargando órdenes</td></tr>`;
     }
   }
 
-  // 🚀 Crear orden
+  // 🚀 Enviar formulario para crear orden
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -50,12 +44,21 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCrear.textContent = "Creando...";
 
     const datos = {
-      codigo: campo("codigo")?.value.trim() || campo("codigo_inmueble")?.value.trim() || "",
-      arrendatario: campo("arrendatario")?.value.trim() || "",
-      telefono: campo("telefono")?.value.trim() || "",
-      tecnico: campo("tecnico")?.value || "Sin asignar",
-      observacion: campo("observacion")?.value.trim() || campo("descripcion")?.value.trim() || "",
+      codigo: document.getElementById("codigo").value.trim(),
+      arrendatario: document.getElementById("arrendatario").value.trim(),
+      telefono: document.getElementById("telefono").value.trim(),
+      tecnico: document.getElementById("tecnico").value,
+      observacion: document.getElementById("observacion").value.trim(),
     };
+
+    console.log("📤 Enviando datos:", datos);
+
+    if (!datos.codigo || !datos.arrendatario) {
+      mostrarMensaje("⚠️ Código y Arrendatario son obligatorios", "error");
+      btnCrear.disabled = false;
+      btnCrear.textContent = "💾 Crear Orden";
+      return;
+    }
 
     try {
       const res = await fetch("/api/orders", {
@@ -65,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const respuesta = await res.json();
+      console.log("📥 Respuesta servidor:", respuesta);
 
       if (res.ok) {
         mostrarMensaje("✅ Orden creada correctamente", "exito");
@@ -75,21 +79,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (err) {
       mostrarMensaje("❌ Error de conexión con el servidor", "error");
-      console.error(err);
+      console.error("Error en la creación:", err);
     } finally {
       btnCrear.disabled = false;
-      btnCrear.textContent = "Crear Orden";
+      btnCrear.textContent = "💾 Crear Orden";
     }
   });
 
-  // 💬 Mostrar mensaje visual
+  // 💬 Mostrar mensajes en pantalla
   function mostrarMensaje(texto, tipo) {
-    if (!mensaje) return alert(texto);
     mensaje.textContent = texto;
-    mensaje.className = tipo === "exito" ? "mensaje exito" : "mensaje error";
+    mensaje.className = `mensaje ${tipo}`;
     mensaje.style.display = "block";
-    setTimeout(() => (mensaje.style.display = "none"), 3000);
+
+    setTimeout(() => {
+      mensaje.style.display = "none";
+    }, 3500);
   }
 
+  // 🔁 Cargar al iniciar
   cargarOrdenes();
 });
