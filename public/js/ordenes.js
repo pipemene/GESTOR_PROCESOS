@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ Script cargado correctamente");
+
   const form = document.getElementById("formOrden");
   const btnCrear = document.getElementById("btnCrearOrden");
   const tabla = document.querySelector("#tablaOrdenes tbody");
@@ -30,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         tabla.appendChild(fila);
       });
+
+      console.log("📋 Órdenes cargadas:", data.length);
     } catch (err) {
       console.error("Error al cargar órdenes:", err);
       tabla.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error cargando órdenes</td></tr>`;
@@ -68,25 +72,25 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const respuesta = await res.json();
-      console.log("📥 Respuesta servidor:", respuesta);
+      console.log("📥 Respuesta del servidor:", respuesta);
 
       if (res.ok) {
         mostrarMensaje("✅ Orden creada correctamente", "exito");
         form.reset();
-        await cargarOrdenes(); // refrescar tabla
+        await cargarOrdenes();
       } else {
         mostrarMensaje(`❌ Error: ${respuesta.error || "No se pudo crear la orden"}`, "error");
       }
     } catch (err) {
       mostrarMensaje("❌ Error de conexión con el servidor", "error");
-      console.error("Error en la creación:", err);
+      console.error("Error al crear orden:", err);
     } finally {
       btnCrear.disabled = false;
       btnCrear.textContent = "💾 Crear Orden";
     }
   });
 
-  // 💬 Mostrar mensajes en pantalla
+  // 💬 Mostrar mensajes visuales
   function mostrarMensaje(texto, tipo) {
     mensaje.textContent = texto;
     mensaje.className = `mensaje ${tipo}`;
@@ -97,6 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 3500);
   }
 
-  // 🔁 Cargar al iniciar
+  // 🔁 Cargar órdenes al iniciar
   cargarOrdenes();
 });
