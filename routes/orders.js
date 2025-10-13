@@ -1,148 +1,77 @@
 import express from "express";
-import { google } from "googleapis";
-import nodemailer from "nodemailer";
-import {
-  GOOGLE_SHEET_ID,
-  GOOGLE_DRIVE_FOLDER_ID,
-  GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  GOOGLE_PRIVATE_KEY,
-  GMAIL_USER,
-  GMAIL_APP_PASSWORD,
-} from "../config.js";
+import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
+import dotenv from "dotenv";
 
+dotenv.config();
 const router = express.Router();
 
-// ==============================
-// 🔐 AUTENTICACIÓN GOOGLE
-// ==============================
-const auth = new google.auth.JWT(
-  GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  null,
-  GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-);
+// Configuración Google Sheets
+const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
-const sheets = google.sheets({ version: "v4", auth });
-const drive = google.drive({ version: "v3", auth });
-
-// ==============================
-// ✉️ CONFIGURACIÓN DE CORREO
-// ==============================
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_APP_PASSWORD,
-  },
+const auth = new JWT({
+  email: SERVICE_ACCOUNT_EMAIL,
+  key: PRIVATE_KEY,
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-// ==============================
-// 📋 OBTENER TODAS LAS ÓRDENES
-// ==============================
+async function getSheet() {
+  const doc = new GoogleSpreadsheet(SHEET_ID, auth);
+  await doc.loadInfo();
+  return doc.sheetsByTitle["ordenes"];
+}
+
+// 📋 Obtener todas las órdenes
 router.get("/", async (req, res) => {
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: GOOGLE_SHEET_ID,
-      range: "Órdenes!A2:H",
-    });
-
-    const rows = response.data.values || [];
-    const orders = rows.map((row) => ({
-      fecha: row[0] || "",
-      arrendatario: row[1] || "",
-      telefono: row[2] || "",
-      codigo: row[3] || "",
-      descripcion: row[4] || "",
-      tecnico: row[5] || "",
-      estado: row[6] || "",
+    const sheet = await getSheet();
+    const rows = await sheet.getRows();
+    const ordenes = rows.map((r) => ({
+      codigo: r.Código || "",
+      arrendatario: r.Inquilino || "",
+      telefono: r.Telefono || "",
+      tecnico: r.Tecnico || "",
+      estado: r.Estado || "Pendiente",
+      observacion: r.Descripcion || "",
+      fecha: r.Fecha || "",
     }));
-
-    res.json(orders);
+    res.json(ordenes);
   } catch (error) {
-    console.error("❌ ERROR AL OBTENER ÓRDENES:", error);
-    res.status(500).json({ message: "Error al obtener órdenes" });
+    console.error("❌ Error al obtener órdenes:", error);
+    res.status(500).json({ error: "Error al obtener órdenes" });
   }
 });
 
-// ==============================
-// 🧾 CREAR NUEVA ORDEN
-// ==============================
+// 🆕 Crear nueva orden
 router.post("/", async (req, res) => {
   try {
-    const { arrendatario, telefono, codigoInmueble, descripcion, tecnico } = req.body;
+    const { codigo, arrendatario, telefono = "", tecnico = "Sin asignar", observacion = "" } = req.body;
 
-    // Validación básica
-    if (!arrendatario || !telefono || !codigoInmueble) {
-      return res.status(400).json({ message: "Faltan datos obligatorios" });
+    if (!codigo || !arrendatario) {
+      return res.status(400).json({ message: "Código y arrendatario son obligatorios" });
     }
 
-    const fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
-    const codigo = `BH-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
-    const estado = "Pendiente";
+    const sheet = await getSheet();
+    const fecha = new Date().toLocaleString("es-CO");
 
-    // Guardar en la hoja Órdenes
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: GOOGLE_SHEET_ID,
-      range: "Órdenes!A2:H",
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [
-          [
-            `BLUE HOME INMOBILIARIA ${fecha}`,
-            arrendatario,
-            telefono,
-            codigo,
-            descripcion,
-            tecnico || "Sin asignar",
-            estado,
-          ],
-        ],
-      },
-    });
-
-    console.log(`✅ Orden ${codigo} registrada correctamente.`);
-
-    // ==============================
-    // ☁️ Subir archivo PDF al Drive (si viene adjunto)
-    // ==============================
-    if (req.files && req.files.archivo) {
-      const file = req.files.archivo;
-      const fileMetadata = {
-        name: `Orden_${codigo}.pdf`,
-        parents: [GOOGLE_DRIVE_FOLDER_ID],
-      };
-
-      const media = {
-        mimeType: file.mimetype,
-        body: file.data,
-      };
-
-      await drive.files.create({
-        resource: fileMetadata,
-        media: media,
-        fields: "id",
-      });
-
-      console.log(`📁 Archivo PDF de la orden ${codigo} subido a Drive correctamente.`);
-    }
-
-    // ==============================
-    // 📩 Enviar correo automático
-    // ==============================
-    const mailOptions = {
-      from: `"Blue Home Inmobiliaria" <${GMAIL_USER}>`,
-      to: GMAIL_USER, // aquí puedes cambiar a un correo del área operativa si prefieres
-      subject: `Nueva orden registrada: ${codigo}`,
-      text: `Se ha registrado una nueva orden en el Gestor de Reparaciones.\n\nCódigo: ${codigo}\nArrendatario: ${arrendatario}\nTeléfono: ${telefono}\nDescripción: ${descripcion}\nTécnico: ${tecnico || "Sin asignar"}\nEstado: ${estado}`,
+    const nuevaOrden = {
+      cliente: "BLUE HOME INMOBILIARIA",
+      Fecha: fecha,
+      Inquilino: arrendatario,
+      Telefono: telefono,
+      Código: codigo,
+      Descripcion: observacion,
+      Tecnico: tecnico,
+      Estado: "Pendiente",
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Correo de confirmación enviado para la orden ${codigo}.`);
-
-    res.json({ message: "Orden creada correctamente" });
+    await sheet.addRow(nuevaOrden);
+    res.status(201).json({ message: "✅ Orden creada correctamente", data: nuevaOrden });
   } catch (error) {
-    console.error("❌ ERROR AL CREAR ORDEN:", error);
-    res.status(500).json({ message: "Error al crear la orden" });
+    console.error("❌ Error al crear orden:", error);
+    res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
