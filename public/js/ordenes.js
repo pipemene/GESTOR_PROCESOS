@@ -1,106 +1,93 @@
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ Script cargado correctamente");
+import express from "express";
+import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
+import dotenv from "dotenv";
 
-  const form = document.getElementById("formOrden");
-  const btnCrear = document.getElementById("btnCrearOrden");
-  const tabla = document.querySelector("#tablaOrdenes tbody");
-  const mensaje = document.getElementById("mensaje");
+dotenv.config();
+const router = express.Router();
 
-  // 🔄 Cargar órdenes existentes
-  async function cargarOrdenes() {
-    try {
-      const res = await fetch("/api/orders");
-      if (!res.ok) throw new Error("Error al obtener órdenes");
+// 📄 Configuración de Google Sheets
+const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
-      const data = await res.json();
-      tabla.innerHTML = "";
+const auth = new JWT({
+  email: SERVICE_ACCOUNT_EMAIL,
+  key: PRIVATE_KEY,
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+});
 
-      if (!Array.isArray(data) || data.length === 0) {
-        tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay órdenes registradas</td></tr>`;
-        return;
-      }
+async function getSheet() {
+  const doc = new GoogleSpreadsheet(SHEET_ID, auth);
+  await doc.loadInfo();
+  return doc.sheetsByTitle["ordenes"];
+}
 
-      data.forEach(o => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${o.codigo || ""}</td>
-          <td>${o.arrendatario || ""}</td>
-          <td>${o.telefono || ""}</td>
-          <td>${o.tecnico || ""}</td>
-          <td>${o.estado || "Pendiente"}</td>
-          <td>${o.observacion || ""}</td>
-        `;
-        tabla.appendChild(fila);
-      });
+// ✅ Obtener todas las órdenes
+router.get("/", async (req, res) => {
+  try {
+    const sheet = await getSheet();
+    const rows = await sheet.getRows();
 
-      console.log("📋 Órdenes cargadas:", data.length);
-    } catch (err) {
-      console.error("Error al cargar órdenes:", err);
-      tabla.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error cargando órdenes</td></tr>`;
-    }
+    const ordenes = rows.map((row) => ({
+      codigo: row.Código || "",
+      arrendatario: row.Inquilino || "",
+      telefono: row.Teléfono || "",
+      tecnico: row.Tecnico || "",
+      estado: row.Estado || "Pendiente",
+      observacion: row.Descripcion || "",
+      fecha: row.Fecha || "",
+    }));
+
+    res.json(ordenes);
+  } catch (err) {
+    console.error("❌ Error al obtener órdenes:", err);
+    res.status(500).json({ error: "Error al obtener órdenes" });
   }
+});
 
-  // 🚀 Enviar formulario para crear orden
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+// 🆕 Crear nueva orden
+router.post("/", async (req, res) => {
+  try {
+    const {
+      codigo,
+      arrendatario,
+      telefono = "",
+      tecnico = "Sin asignar",
+      observacion = "",
+    } = req.body;
 
-    btnCrear.disabled = true;
-    btnCrear.textContent = "Creando...";
+    if (!codigo || !arrendatario) {
+      return res
+        .status(400)
+        .json({ message: "Código y arrendatario son obligatorios" });
+    }
 
-    const datos = {
-      codigo: document.getElementById("codigo").value.trim(),
-      arrendatario: document.getElementById("arrendatario").value.trim(),
-      telefono: document.getElementById("telefono").value.trim(),
-      tecnico: document.getElementById("tecnico").value,
-      observacion: document.getElementById("observacion").value.trim(),
+    const sheet = await getSheet();
+    const fecha = new Date().toLocaleString("es-CO");
+
+    const nuevaOrden = {
+      Fecha: fecha,
+      Inquilino: arrendatario,
+      Teléfono: telefono,
+      Código: codigo,
+      Descripcion: observacion,
+      Tecnico: tecnico,
+      Estado: "Pendiente",
     };
 
-    console.log("📤 Enviando datos:", datos);
+    await sheet.addRow(nuevaOrden);
 
-    if (!datos.codigo || !datos.arrendatario) {
-      mostrarMensaje("⚠️ Código y Arrendatario son obligatorios", "error");
-      btnCrear.disabled = false;
-      btnCrear.textContent = "💾 Crear Orden";
-      return;
-    }
+    console.log("✅ Orden agregada a Google Sheets:", nuevaOrden);
 
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos),
-      });
-
-      const respuesta = await res.json();
-      console.log("📥 Respuesta del servidor:", respuesta);
-
-      if (res.ok) {
-        mostrarMensaje("✅ Orden creada correctamente", "exito");
-        form.reset();
-        await cargarOrdenes();
-      } else {
-        mostrarMensaje(`❌ Error: ${respuesta.error || "No se pudo crear la orden"}`, "error");
-      }
-    } catch (err) {
-      mostrarMensaje("❌ Error de conexión con el servidor", "error");
-      console.error("Error al crear orden:", err);
-    } finally {
-      btnCrear.disabled = false;
-      btnCrear.textContent = "💾 Crear Orden";
-    }
-  });
-
-  // 💬 Mostrar mensajes visuales
-  function mostrarMensaje(texto, tipo) {
-    mensaje.textContent = texto;
-    mensaje.className = `mensaje ${tipo}`;
-    mensaje.style.display = "block";
-
-    setTimeout(() => {
-      mensaje.style.display = "none";
-    }, 3500);
+    res.status(201).json({
+      message: "Orden creada correctamente",
+      data: nuevaOrden,
+    });
+  } catch (err) {
+    console.error("❌ Error al crear orden:", err);
+    res.status(500).json({ error: "Error al crear la orden" });
   }
-
-  // 🔁 Cargar órdenes al iniciar
-  cargarOrdenes();
 });
+
+export default router;
