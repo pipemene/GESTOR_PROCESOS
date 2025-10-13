@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
-// Configuración Google Sheets
+// 🔐 Configuración de credenciales
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
@@ -17,16 +17,21 @@ const auth = new JWT({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
+// 🧾 Función para obtener la hoja activa
 async function getSheet() {
   const doc = new GoogleSpreadsheet(SHEET_ID, auth);
   await doc.loadInfo();
-  return doc.sheetsByTitle["ordenes"];
+  let sheet = doc.sheetsByTitle["ordenes"];
+  if (!sheet) sheet = doc.sheetsByIndex[0]; // Si no existe "ordenes", usa la primera hoja
+  return sheet;
 }
 
-// 📋 Obtener todas las órdenes
+// 📥 Obtener todas las órdenes
 router.get("/", async (req, res) => {
   try {
     const sheet = await getSheet();
+    if (!sheet) throw new Error("No se encontró ninguna hoja válida en el documento");
+
     const rows = await sheet.getRows();
     const ordenes = rows.map((r) => ({
       codigo: r.Código || "",
@@ -39,21 +44,21 @@ router.get("/", async (req, res) => {
     }));
     res.json(ordenes);
   } catch (error) {
-    console.error("❌ Error al obtener órdenes:", error);
+    console.error("❌ Error al obtener órdenes:", error.message);
     res.status(500).json({ error: "Error al obtener órdenes" });
   }
 });
 
-// 🆕 Crear nueva orden
+// 🆕 Crear una nueva orden
 router.post("/", async (req, res) => {
   try {
     const { codigo, arrendatario, telefono = "", tecnico = "Sin asignar", observacion = "" } = req.body;
-
-    if (!codigo || !arrendatario) {
+    if (!codigo || !arrendatario)
       return res.status(400).json({ message: "Código y arrendatario son obligatorios" });
-    }
 
     const sheet = await getSheet();
+    if (!sheet) throw new Error("No se encontró la hoja 'ordenes' en el documento");
+
     const fecha = new Date().toLocaleString("es-CO");
 
     const nuevaOrden = {
@@ -70,7 +75,7 @@ router.post("/", async (req, res) => {
     await sheet.addRow(nuevaOrden);
     res.status(201).json({ message: "✅ Orden creada correctamente", data: nuevaOrden });
   } catch (error) {
-    console.error("❌ Error al crear orden:", error);
+    console.error("❌ Error al crear orden:", error.message);
     res.status(500).json({ error: "Error al crear la orden" });
   }
 });
