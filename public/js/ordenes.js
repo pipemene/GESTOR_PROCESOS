@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("formOrden");
-  const btnCrear = document.getElementById("btnCrearOrden");
-  const tabla = document.getElementById("tablaOrdenes").querySelector("tbody");
+  const form = document.querySelector("form");
+  const btnCrear = form.querySelector("button[type='submit']");
+  const tabla = document.querySelector("#tablaOrdenes tbody");
   const mensaje = document.getElementById("mensaje");
 
   // 🔄 Cargar órdenes existentes
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      data.forEach(o => {
+      data.forEach((o) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${o.codigo || ""}</td>
@@ -34,19 +34,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 🚀 Enviar formulario
+  // 🚀 Crear orden
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     btnCrear.disabled = true;
     btnCrear.textContent = "Creando...";
 
+    // Tomar los valores REALES del formulario según tu HTML
     const datos = {
-      codigo: form.codigo.value.trim(),
-      arrendatario: form.arrendatario.value.trim(),
-      telefono: form.telefono.value.trim(),
-      tecnico: form.tecnico.value,
-      observacion: form.observacion.value.trim(),
+      codigo: document.getElementById("codigo").value.trim(),
+      arrendatario: document.getElementById("arrendatario").value.trim(),
+      telefono: document.getElementById("telefono").value.trim(),
+      tecnico: document.getElementById("tecnico").value,
+      observacion: document.getElementById("observacion").value.trim(),
     };
 
     try {
@@ -76,10 +77,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 💬 Mostrar mensaje visual
   function mostrarMensaje(texto, tipo) {
+    if (!mensaje) return alert(texto); // fallback si el div no existe
     mensaje.textContent = texto;
     mensaje.className = tipo === "exito" ? "mensaje exito" : "mensaje error";
     mensaje.style.display = "block";
-
     setTimeout(() => {
       mensaje.style.display = "none";
     }, 3000);
