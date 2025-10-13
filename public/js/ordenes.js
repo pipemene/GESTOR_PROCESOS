@@ -1,88 +1,89 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const form = document.getElementById("form-orden");
-  const inputCodigo = document.getElementById("codigo");
-  const inputArrendatario = document.getElementById("arrendatario");
-  const inputTelefono = document.getElementById("telefono");
-  const inputDescripcion = document.getElementById("descripcion");
-  const selectTecnico = document.getElementById("tecnico");
-  const tablaBody = document.getElementById("tabla-ordenes-body");
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("formOrden");
+  const btnCrear = document.getElementById("btnCrearOrden");
+  const tabla = document.getElementById("tablaOrdenes").querySelector("tbody");
+  const mensaje = document.getElementById("mensaje");
 
-  // ✅ Cargar órdenes registradas al inicio
+  // 🔄 Cargar órdenes existentes
   async function cargarOrdenes() {
     try {
       const res = await fetch("/api/orders");
-      const ordenes = await res.json();
-      tablaBody.innerHTML = "";
+      const data = await res.json();
 
-      if (ordenes.length === 0) {
-        tablaBody.innerHTML = `
-          <tr><td colspan="6" class="text-center text-gray-400">No hay órdenes registradas.</td></tr>`;
+      tabla.innerHTML = "";
+
+      if (!data.length) {
+        tabla.innerHTML = `<tr><td colspan="5">No hay órdenes registradas</td></tr>`;
         return;
       }
 
-      ordenes.forEach((orden) => {
+      data.forEach(o => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td>${orden.codigo}</td>
-          <td>${orden.arrendatario}</td>
-          <td>${orden.telefono}</td>
-          <td>${orden.tecnico || "Sin asignar"}</td>
-          <td>${orden.estado || "Pendiente"}</td>
-          <td>${orden.descripcion || ""}</td>
-          <td><a href="/orden_detalle.html?codigo=${orden.codigo}" class="btn btn-sm btn-primary">Ver / Gestionar</a></td>
+          <td>${o.codigo || ""}</td>
+          <td>${o.arrendatario || ""}</td>
+          <td>${o.telefono || ""}</td>
+          <td>${o.tecnico || ""}</td>
+          <td>${o.observacion || ""}</td>
         `;
-        tablaBody.appendChild(fila);
+        tabla.appendChild(fila);
       });
-    } catch (error) {
-      console.error("❌ Error al cargar las órdenes:", error);
+    } catch (err) {
+      console.error("Error al cargar órdenes:", err);
+      tabla.innerHTML = `<tr><td colspan="5">Error cargando órdenes</td></tr>`;
     }
   }
 
-  await cargarOrdenes();
-
-  // ✅ Crear nueva orden
+  // 🚀 Enviar formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const codigoInmueble = inputCodigo.value.trim();
-    const arrendatario = inputArrendatario.value.trim();
-    const telefono = inputTelefono.value.trim();
-    const descripcion = inputDescripcion.value.trim();
-    const tecnico = selectTecnico.value || "Sin asignar";
+    btnCrear.disabled = true;
+    btnCrear.textContent = "Creando...";
 
-    // ⚠️ Validar campos obligatorios
-    if (!codigoInmueble || !arrendatario || !telefono) {
-      alert("⚠️ Faltan datos obligatorios: Código, Arrendatario o Teléfono.");
-      return;
-    }
-
-    const nuevaOrden = {
-      codigoInmueble,
-      arrendatario,
-      telefono,
-      descripcion,
-      tecnico,
+    const datos = {
+      codigo: form.codigo.value.trim(),
+      arrendatario: form.arrendatario.value.trim(),
+      telefono: form.telefono.value.trim(),
+      tecnico: form.tecnico.value,
+      observacion: form.observacion.value.trim(),
     };
 
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nuevaOrden),
+        body: JSON.stringify(datos),
       });
 
-      const data = await res.json();
+      const respuesta = await res.json();
 
       if (res.ok) {
-        alert("✅ Orden creada correctamente");
+        mostrarMensaje("✅ Orden creada correctamente", "exito");
         form.reset();
-        await cargarOrdenes();
+        await cargarOrdenes(); // refrescar tabla
       } else {
-        alert(`❌ Error: ${data.message || "No se pudo crear la orden"}`);
+        mostrarMensaje(`❌ Error: ${respuesta.error || "No se pudo crear la orden"}`, "error");
       }
-    } catch (error) {
-      console.error("❌ Error al crear la orden:", error);
-      alert("❌ No se pudo conectar con el servidor.");
+    } catch (err) {
+      mostrarMensaje("❌ Error de conexión con el servidor", "error");
+      console.error(err);
+    } finally {
+      btnCrear.disabled = false;
+      btnCrear.textContent = "Crear Orden";
     }
   });
+
+  // 💬 Mostrar mensaje visual
+  function mostrarMensaje(texto, tipo) {
+    mensaje.textContent = texto;
+    mensaje.className = tipo === "exito" ? "mensaje exito" : "mensaje error";
+    mensaje.style.display = "block";
+
+    setTimeout(() => {
+      mensaje.style.display = "none";
+    }, 3000);
+  }
+
+  cargarOrdenes();
 });
