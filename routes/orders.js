@@ -6,7 +6,6 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
-// 🔐 Credenciales de servicio
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
@@ -20,7 +19,6 @@ const auth = new JWT({
 async function getSheet() {
   const doc = new GoogleSpreadsheet(SHEET_ID, auth);
   await doc.loadInfo();
-  // Si no existe "Órdenes" o "ordenes", usa la primera hoja
   return doc.sheetsByTitle["Órdenes"] || doc.sheetsByTitle["ordenes"] || doc.sheetsByIndex[0];
 }
 
@@ -37,7 +35,6 @@ router.get("/", async (req, res) => {
       tecnico: r["Tecnico"] || "",
       estado: r["Estado"] || "Pendiente",
       observacion: r["Descripcion"] || "",
-      fecha: r["Fecha"] || "",
     }));
 
     res.json(ordenes);
