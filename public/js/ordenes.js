@@ -3,15 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnCrear = document.getElementById("btnCrearOrden");
   const tabla = document.querySelector("#tablaOrdenes tbody");
   const mensaje = document.getElementById("mensaje");
+  const btnVolver = document.getElementById("btnVolverDashboard");
 
-  // 🔄 Cargar órdenes desde el backend
+  // 🔙 Botón volver al dashboard
+  if (btnVolver) {
+    btnVolver.addEventListener("click", () => {
+      window.location.href = "/dashboard.html";
+    });
+  }
+
+  // 🔄 Cargar órdenes existentes
   async function cargarOrdenes() {
     try {
       const res = await fetch("/api/orders");
       const data = await res.json();
       tabla.innerHTML = "";
 
-      if (!data.length) {
+      if (!Array.isArray(data) || data.length === 0) {
         tabla.innerHTML = `<tr><td colspan="7">No hay órdenes registradas</td></tr>`;
         return;
       }
@@ -19,18 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
       data.forEach((o) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td>${o.codigo || "-"}</td>
-          <td>${o.arrendatario || "-"}</td>
-          <td>${o.telefono || "-"}</td>
-          <td>${o.tecnico || "-"}</td>
-          <td>${o.estado || "-"}</td>
-          <td>${o.observacion || "-"}</td>
+          <td>${o.codigo || "—"}</td>
+          <td>${o.arrendatario || "—"}</td>
+          <td>${o.telefono || "—"}</td>
+          <td>${o.tecnico || "Sin asignar"}</td>
+          <td>${o.estado || "Pendiente"}</td>
+          <td>${o.observacion || "—"}</td>
           <td><button class="btn-ver" data-codigo="${o.codigo}">🔍 Ver</button></td>
         `;
         tabla.appendChild(fila);
       });
 
-      // 🧭 Redirigir al detalle
+      // Evento para abrir detalle
       document.querySelectorAll(".btn-ver").forEach((btn) => {
         btn.addEventListener("click", () => {
           const codigo = btn.dataset.codigo;
@@ -41,14 +49,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (err) {
       console.error("Error al cargar órdenes:", err);
-      tabla.innerHTML = `<tr><td colspan="7">Error al cargar órdenes</td></tr>`;
+      tabla.innerHTML = `<tr><td colspan="7">Error cargando órdenes</td></tr>`;
     }
   }
 
-  // 🚀 Crear nueva orden
+  // 🚀 Enviar formulario
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     btnCrear.disabled = true;
     btnCrear.textContent = "Creando...";
 
@@ -74,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         await cargarOrdenes();
       } else {
-        mostrarMensaje(`❌ Error: ${respuesta.error || "No se pudo crear la orden"}`, "error");
+        mostrarMensaje(`❌ ${respuesta.error || "No se pudo crear la orden"}`, "error");
       }
     } catch (err) {
       mostrarMensaje("❌ Error de conexión con el servidor", "error");
@@ -85,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 💬 Mostrar mensajes de estado
+  // 💬 Mostrar mensajes visuales
   function mostrarMensaje(texto, tipo) {
     mensaje.textContent = texto;
     mensaje.className = tipo === "exito" ? "mensaje exito" : "mensaje error";
