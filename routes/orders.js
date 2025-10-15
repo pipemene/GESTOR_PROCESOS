@@ -31,17 +31,17 @@ function limpiarCampo(nombre) {
   return nombre?.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-// 📋 Obtener órdenes
+// 📋 Obtener todas las órdenes
 router.get("/", async (req, res) => {
   try {
     const sheet = await getSheet();
     const rows = await sheet.getRows();
 
-    if (!rows.length) {
-      return res.json([]);
-    }
+    if (!rows.length) return res.json([]);
 
-    // Normalizamos encabezados (por si hay tildes o espacios)
+    // 👇 ESTE CONSOLE.LOG ES LA CLAVE
+    console.log("Encabezados detectados:", Object.keys(rows[0]));
+
     const encabezados = Object.keys(rows[0]).reduce((mapa, clave) => {
       const limpio = limpiarCampo(clave);
       mapa[limpio] = clave;
