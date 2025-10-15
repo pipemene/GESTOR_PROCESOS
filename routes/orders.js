@@ -29,17 +29,18 @@ router.get("/", async (req, res) => {
     const sheet = await getSheet();
     const rows = await sheet.getRows();
 
+    // 🧩 Mapear con los nombres REALES de tus columnas
     const ordenes = rows.map((r, index) => ({
       id: index + 1,
       codigo: r["Código"] || "",
       arrendatario: r["Inquilino"] || "",
       telefono: r["Telefono"] || "",
-      tecnico: r["Tecnico"] || "Sin asignar",
-      estado: r["Estado"] || "Pendiente",
+      tecnico: r["Tecnico"] || "",
+      estado: r["Estado"] || "",
       observacion: r["Descripcion"] || "",
     }));
 
-    console.log("✅ Órdenes enviadas al frontend:", ordenes.length);
+    console.log("✅ Órdenes leídas correctamente:", ordenes.length);
     res.json(ordenes);
   } catch (error) {
     console.error("❌ Error al obtener órdenes:", error);
@@ -72,7 +73,6 @@ router.post("/", async (req, res) => {
 
     await sheet.addRow(nuevaOrden);
     console.log("✅ Orden creada correctamente:", nuevaOrden);
-
     res.status(201).json({ message: "Orden creada correctamente", data: nuevaOrden });
   } catch (error) {
     console.error("❌ Error al crear orden:", error);
