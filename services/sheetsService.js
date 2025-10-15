@@ -71,3 +71,19 @@ export async function deleteRow(sheetName, rowIndex) {
     range,
   });
 }
+// === Compatibilidad para routes/orders.js ===
+// Devuelve la hoja "Órdenes" completa (primer fila como encabezados)
+export async function getSheet() {
+  const data = await getSheetData('Órdenes');
+  if (!data.length) return { headers: [], rows: [] };
+
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => (obj[h] = row[i] || ""));
+    return obj;
+  });
+
+  return { headers, rows };
+}
+

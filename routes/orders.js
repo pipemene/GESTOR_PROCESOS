@@ -1,82 +1,69 @@
 import express from "express";
-import { getSheet } from "../services/sheetsService.js";
-
+import { getSheet, appendRow } from "../services/sheetsService.js";
 
 const router = express.Router();
 
-// ✅ Función auxiliar para limpiar nombres de columnas
-function limpiarCampo(campo) {
-  return campo
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "")
-    .toLowerCase();
-}
-
-// 📋 Obtener todas las órdenes
+// 🟦 Obtener todas las órdenes desde Google Sheets
 router.get("/", async (req, res) => {
   try {
-    const sheet = await getSheet();
-    const rows = await sheet.getRows();
+    const { headers, rows } = await getSheet();
 
-    if (!rows.length) return res.json([]);
+    if (!rows || rows.length === 0) {
+      console.warn("⚠️ No hay órdenes registradas.");
+      return res.json([]);
+    }
 
-    // 👇 Log de diagnóstico
-    console.log("Encabezados detectados:", Object.keys(rows[0]));
-
-    // 🔍 Normalizar encabezados
-    const encabezados = Object.keys(rows[0]).reduce((mapa, clave) => {
-      const limpio = limpiarCampo(clave);
-      mapa[limpio] = clave;
-      return mapa;
-    }, {});
-
-    // 🧩 Convertir filas en objetos orden
-    const ordenes = rows.map((r, index) => ({
-      id: index + 1,
-      codigo: r[encabezados["codigo"]] || "",
-      arrendatario: r[encabezados["inquilino"]] || "",
-      telefono: r[encabezados["telefono"]] || "",
-      tecnico: r[encabezados["tecnico"]] || "",
-      estado: r[encabezados["estado"]] || "",
-      observacion: r[encabezados["descripcion"]] || "",
-    }));
-
-    console.log("✅ Órdenes cargadas correctamente:", ordenes.length);
-    res.json(ordenes);
+    console.log("✅ Órdenes cargadas correctamente:", rows.length);
+    res.json(rows);
   } catch (error) {
     console.error("❌ Error al obtener órdenes:", error);
-    res.status(500).json({ error: "Error al obtener órdenes" });
+    res.status(500).json({ error: "Error al obtener las órdenes" });
   }
 });
 
-// 📌 Crear nueva orden
+// 🟩 Crear una nueva orden
 router.post("/", async (req, res) => {
   try {
     const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
 
-    if (!codigo || !arrendatario || !telefono) {
-      return res.status(400).json({ message: "Faltan datos obligatorios" });
+    const nuevaFila = [
+      "BLUE HOME INMOBILIARIA",
+      new Date().toLocaleString("es-CO"),
+      arrendatario || "Sin nombre",
+      telefono || "",
+      codigo || "",
+      observacion || "",
+      tecnico || "Sin asignar",
+      "Pendiente",
+    ];
+
+    await appendRow("Órdenes", nuevaFila);
+    console.log("✅ Orden creada correctamente:", nuevaFila);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Error al crear la orden:", error);
+    res.status(500).json({ error: "Error al crear la orden" });
+  }
+});
+
+// 🟨 Obtener una orden específica por ID o código
+router.get("/:codigo", async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const { rows } = await getSheet();
+
+    const orden = rows.find(
+      (o) => o["Código"]?.toString().trim() === codigo.toString().trim()
+    );
+
+    if (!orden) {
+      return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    const sheet = await getSheet();
-    const nuevaFila = {
-      Cliente: "BLUE HOME INMOBILIARIA",
-      Fecha: new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" }),
-      Inquilino: arrendatario,
-      Telefono: telefono,
-      Código: codigo,
-      Descripcion: observacion,
-      Tecnico: tecnico || "Sin asignar",
-      Estado: "Pendiente",
-    };
-
-    await sheet.addRow(nuevaFila);
-    console.log("✅ Orden creada correctamente:", nuevaFila);
-    res.status(201).json({ message: "Orden creada correctamente", orden: nuevaFila });
+    res.json(orden);
   } catch (error) {
-    console.error("❌ Error al crear orden:", error);
-    res.status(500).json({ error: "Error al crear la orden" });
+    console.error("❌ Error al obtener orden individual:", error);
+    res.status(500).json({ error: "Error al buscar la orden" });
   }
 });
 
