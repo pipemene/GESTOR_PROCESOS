@@ -1,34 +1,14 @@
-import express from "express";
-import { GoogleSpreadsheet } from "google-spreadsheet";
-import { JWT } from "google-auth-library";
-import dotenv from "dotenv";
-
-dotenv.config();
+const express = require("express");
 const router = express.Router();
+const { getSheet } = require("../services/googleSheets");
 
-// 🔐 Credenciales
-const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-
-// 🔗 Autenticación
-const auth = new JWT({
-  email: SERVICE_ACCOUNT_EMAIL,
-  key: PRIVATE_KEY,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
-
-// 📄 Conexión al documento
-async function getSheet() {
-  const doc = new GoogleSpreadsheet(SHEET_ID, auth);
-  await doc.loadInfo();
-  const sheet = doc.sheetsByTitle["Órdenes"] || doc.sheetsByTitle["ordenes"];
-  return sheet || doc.sheetsByIndex[0];
-}
-
-// 🧠 Función para limpiar encabezados con espacios o caracteres raros
-function limpiarCampo(nombre) {
-  return nombre?.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// ✅ Utilidad para limpiar nombres de columnas (quita espacios y acentos)
+function limpiarCampo(campo) {
+  return campo
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 }
 
 // 📋 Obtener todas las órdenes
@@ -39,15 +19,17 @@ router.get("/", async (req, res) => {
 
     if (!rows.length) return res.json([]);
 
-    // 👇 ESTE CONSOLE.LOG ES LA CLAVE
+    // 👇 Registro de encabezados para diagnóstico
     console.log("Encabezados detectados:", Object.keys(rows[0]));
 
+    // 🔍 Mapeo automático de encabezados (corrige mayúsculas, acentos y espacios)
     const encabezados = Object.keys(rows[0]).reduce((mapa, clave) => {
       const limpio = limpiarCampo(clave);
       mapa[limpio] = clave;
       return mapa;
     }, {});
 
+    // 🧩 Transformar filas en objetos orden
     const ordenes = rows.map((r, index) => ({
       id: index + 1,
       codigo: r[encabezados["codigo"]] || "",
@@ -66,20 +48,19 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 🆕 Crear orden
+// 📌 Crear nueva orden
 router.post("/", async (req, res) => {
   try {
     const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
-    if (!codigo || !arrendatario) {
-      return res.status(400).json({ message: "Código y arrendatario son obligatorios" });
+
+    if (!codigo || !arrendatario || !telefono) {
+      return res.status(400).json({ message: "Faltan datos obligatorios" });
     }
 
     const sheet = await getSheet();
-    const fecha = new Date().toLocaleString("es-CO");
-
-    const nuevaOrden = {
-      cliente: "BLUE HOME INMOBILIARIA",
-      Fecha: fecha,
+    const nuevaFila = {
+      Cliente: "BLUE HOME INMOBILIARIA",
+      Fecha: new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" }),
       Inquilino: arrendatario,
       Telefono: telefono,
       Código: codigo,
@@ -88,13 +69,13 @@ router.post("/", async (req, res) => {
       Estado: "Pendiente",
     };
 
-    await sheet.addRow(nuevaOrden);
-    console.log("✅ Orden creada correctamente:", nuevaOrden);
-    res.status(201).json({ message: "Orden creada correctamente", data: nuevaOrden });
+    await sheet.addRow(nuevaFila);
+    console.log("✅ Orden creada correctamente:", nuevaFila);
+    res.status(201).json({ message: "Orden creada correctamente", orden: nuevaFila });
   } catch (error) {
     console.error("❌ Error al crear orden:", error);
     res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
-export default router;
+module.exports = router;
