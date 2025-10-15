@@ -3,115 +3,91 @@ import fs from "fs";
 import {
   GOOGLE_SERVICE_ACCOUNT_EMAIL,
   GOOGLE_PRIVATE_KEY,
-  DRIVE_FOLDER_ID
+  GOOGLE_DRIVE_FOLDER_ID
 } from "../config.js";
 
 /**
- * Autenticación con Google Drive
- */
-function getDriveClient() {
-  const auth = new google.auth.JWT(
-    GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    null,
-    GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/drive"]
-  );
-  return google.drive({ version: "v3", auth });
-}
-
-/**
- * 🔹 Crea una carpeta para una orden (si no existe)
- */
-export async function ensureOrderFolder(codigo) {
-  const drive = getDriveClient();
-
-  // Buscar si ya existe carpeta con el nombre del código
-  const query = `name='${codigo}' and '${DRIVE_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const res = await drive.files.list({ q: query, fields: "files(id, name)" });
-
-  if (res.data.files.length > 0) {
-    return res.data.files[0].id;
-  }
-
-  // Crear nueva carpeta
-  const folderMetadata = {
-    name: codigo,
-    mimeType: "application/vnd.google-apps.folder",
-    parents: [DRIVE_FOLDER_ID],
-  };
-
-  const folder = await drive.files.create({
-    resource: folderMetadata,
-    fields: "id",
-  });
-
-  return folder.data.id;
-}
-
-/**
- * 🔹 Subir un PDF (usado al finalizar orden o por contabilidad)
+ * 🔹 Sube un archivo PDF a Google Drive
+ * @param {string} filePath - Ruta temporal del archivo en el servidor
+ * @param {string} codigo - Código de la orden (usado para nombrar el PDF)
+ * @returns {Promise<string>} - URL pública del archivo subido
  */
 export async function uploadPDFToDrive(filePath, codigo) {
-  const drive = getDriveClient();
-  const folderId = await ensureOrderFolder(codigo);
+  try {
+    // Autenticación con cuenta de servicio
+    const auth = new google.auth.JWT(
+      GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      null,
+      GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      ["https://www.googleapis.com/auth/drive"]
+    );
 
-  const fileMetadata = {
-    name: `${codigo}.pdf`,
-    parents: [folderId],
-  };
+    const drive = google.drive({ version: "v3", auth });
 
-  const media = {
-    mimeType: "application/pdf",
-    body: fs.createReadStream(filePath),
-  };
+    // Metadata del archivo
+    const fileMetadata = {
+      name: `Orden_${codigo}.pdf`,
+      parents: [GOOGLE_DRIVE_FOLDER_ID], // Carpeta principal en Drive
+    };
 
-  const { data } = await drive.files.create({
-    resource: fileMetadata,
-    media,
-    fields: "id, webViewLink",
-  });
+    const media = {
+      mimeType: "application/pdf",
+      body: fs.createReadStream(filePath),
+    };
 
-  // Hacer público el archivo
-  await drive.permissions.create({
-    fileId: data.id,
-    requestBody: { role: "reader", type: "anyone" },
-  });
+    // Subir archivo
+    const { data } = await drive.files.create({
+      resource: fileMetadata,
+      media,
+      fields: "id, webViewLink",
+    });
 
-  return data.webViewLink;
+    // Hacerlo público
+    await drive.permissions.create({
+      fileId: data.id,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+    });
+
+    console.log(`✅ Archivo subido a Drive: ${data.webViewLink}`);
+    return data.webViewLink;
+  } catch (error) {
+    console.error("❌ Error al subir PDF a Drive:", error);
+    throw new Error("Error al subir PDF a Google Drive");
+  }
 }
 
 /**
- * 🔹 Subir una imagen base64 (fotos o firmas)
+ * 🔹 Crea una carpeta dentro de la carpeta raíz de Drive (si querés separar órdenes)
+ * @param {string} nombre - Nombre de la carpeta
+ * @returns {Promise<string>} - ID de la carpeta creada
  */
-export async function uploadBase64ImageToDrive(base64Data, fileName, codigo) {
-  const drive = getDriveClient();
-  const folderId = await ensureOrderFolder(codigo);
+export async function createOrderFolder(nombre) {
+  try {
+    const auth = new google.auth.JWT(
+      GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      null,
+      GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      ["https://www.googleapis.com/auth/drive"]
+    );
 
-  // Decodificar base64
-  const buffer = Buffer.from(base64Data.split(",")[1], "base64");
+    const drive = google.drive({ version: "v3", auth });
 
-  const fileMetadata = {
-    name: fileName,
-    parents: [folderId],
-  };
+    const { data } = await drive.files.create({
+      resource: {
+        name: nombre,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [GOOGLE_DRIVE_FOLDER_ID],
+      },
+      fields: "id",
+    });
 
-  const media = {
-    mimeType: "image/jpeg",
-    body: Buffer.from(buffer),
-  };
-
-  // Subir la imagen a Drive
-  const { data } = await drive.files.create({
-    resource: fileMetadata,
-    media,
-    fields: "id, webViewLink",
-  });
-
-  // Hacer público el archivo
-  await drive.permissions.create({
-    fileId: data.id,
-    requestBody: { role: "reader", type: "anyone" },
-  });
-
-  return data.webViewLink;
+    console.log(`📁 Carpeta creada en Drive: ${nombre} (ID: ${data.id})`);
+    return data.id;
+  } catch (error) {
+    console.error("❌ Error al crear carpeta en Drive:", error);
+    throw new Error("Error creando carpeta en Google Drive");
+  }
 }
