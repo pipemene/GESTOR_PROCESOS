@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { google } from "googleapis";
 
 /**
  * Inicializa la conexión con Google Sheets API usando la cuenta de servicio
@@ -7,12 +7,12 @@ function getSheetsClient() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
-  return google.sheets({ version: 'v4', auth });
+  return google.sheets({ version: "v4", auth });
 }
 
 /**
@@ -21,10 +21,14 @@ function getSheetsClient() {
  */
 export async function getSheetData(sheetName) {
   const sheets = getSheetsClient();
+  const spreadsheetId =
+    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.SPREADSHEET_ID,
+    spreadsheetId,
     range: sheetName,
   });
+
   return res.data.values || [];
 }
 
@@ -35,10 +39,13 @@ export async function getSheetData(sheetName) {
  */
 export async function appendRow(sheetName, rowData) {
   const sheets = getSheetsClient();
+  const spreadsheetId =
+    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+
   await sheets.spreadsheets.values.append({
-    spreadsheetId: process.env.SPREADSHEET_ID,
+    spreadsheetId,
     range: sheetName,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: "USER_ENTERED",
     resource: { values: [rowData] },
   });
 }
@@ -51,10 +58,13 @@ export async function appendRow(sheetName, rowData) {
  */
 export async function updateCell(sheetName, range, value) {
   const sheets = getSheetsClient();
+  const spreadsheetId =
+    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+
   await sheets.spreadsheets.values.update({
-    spreadsheetId: process.env.SPREADSHEET_ID,
+    spreadsheetId,
     range,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: "USER_ENTERED",
     resource: { values: [[value]] },
   });
 }
@@ -65,20 +75,26 @@ export async function updateCell(sheetName, range, value) {
  */
 export async function deleteRow(sheetName, rowIndex) {
   const sheets = getSheetsClient();
+  const spreadsheetId =
+    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+
   const range = `${sheetName}!A${rowIndex}:Z${rowIndex}`;
   await sheets.spreadsheets.values.clear({
-    spreadsheetId: process.env.SPREADSHEET_ID,
+    spreadsheetId,
     range,
   });
 }
-// === Compatibilidad para routes/orders.js ===
-// Devuelve la hoja "Órdenes" completa (primer fila como encabezados)
+
+/**
+ * Devuelve todas las filas formateadas de la hoja "Órdenes"
+ * para uso directo en /routes/orders.js
+ */
 export async function getSheet() {
-  const data = await getSheetData('Órdenes');
+  const data = await getSheetData("Órdenes");
   if (!data.length) return { headers: [], rows: [] };
 
   const headers = data[0];
-  const rows = data.slice(1).map(row => {
+  const rows = data.slice(1).map((row) => {
     const obj = {};
     headers.forEach((h, i) => (obj[h] = row[i] || ""));
     return obj;
@@ -86,4 +102,3 @@ export async function getSheet() {
 
   return { headers, rows };
 }
-
