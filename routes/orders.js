@@ -6,16 +6,19 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
+// 🔐 Credenciales
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
+// 🔗 Autenticación
 const auth = new JWT({
   email: SERVICE_ACCOUNT_EMAIL,
   key: PRIVATE_KEY,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
+// 📄 Conexión al documento
 async function getSheet() {
   const doc = new GoogleSpreadsheet(SHEET_ID, auth);
   await doc.loadInfo();
@@ -23,24 +26,39 @@ async function getSheet() {
   return sheet || doc.sheetsByIndex[0];
 }
 
-// 📋 Obtener todas las órdenes
+// 🧠 Función para limpiar encabezados con espacios o caracteres raros
+function limpiarCampo(nombre) {
+  return nombre?.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// 📋 Obtener órdenes
 router.get("/", async (req, res) => {
   try {
     const sheet = await getSheet();
     const rows = await sheet.getRows();
 
-    // 🧩 Mapear con los nombres REALES de tus columnas
+    if (!rows.length) {
+      return res.json([]);
+    }
+
+    // Normalizamos encabezados (por si hay tildes o espacios)
+    const encabezados = Object.keys(rows[0]).reduce((mapa, clave) => {
+      const limpio = limpiarCampo(clave);
+      mapa[limpio] = clave;
+      return mapa;
+    }, {});
+
     const ordenes = rows.map((r, index) => ({
       id: index + 1,
-      codigo: r["Código"] || "",
-      arrendatario: r["Inquilino"] || "",
-      telefono: r["Telefono"] || "",
-      tecnico: r["Tecnico"] || "",
-      estado: r["Estado"] || "",
-      observacion: r["Descripcion"] || "",
+      codigo: r[encabezados["codigo"]] || "",
+      arrendatario: r[encabezados["inquilino"]] || "",
+      telefono: r[encabezados["telefono"]] || "",
+      tecnico: r[encabezados["tecnico"]] || "",
+      estado: r[encabezados["estado"]] || "",
+      observacion: r[encabezados["descripcion"]] || "",
     }));
 
-    console.log("✅ Órdenes leídas correctamente:", ordenes.length);
+    console.log("✅ Órdenes cargadas correctamente:", ordenes.length);
     res.json(ordenes);
   } catch (error) {
     console.error("❌ Error al obtener órdenes:", error);
@@ -48,11 +66,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 🆕 Crear nueva orden
+// 🆕 Crear orden
 router.post("/", async (req, res) => {
   try {
     const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
-
     if (!codigo || !arrendatario) {
       return res.status(400).json({ message: "Código y arrendatario son obligatorios" });
     }
