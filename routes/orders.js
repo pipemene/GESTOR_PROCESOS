@@ -1,8 +1,9 @@
-const express = require("express");
-const router = express.Router();
-const { getSheet } = require("../services/googleSheets");
+import express from "express";
+import { getSheet } from "../services/googleSheets.js";
 
-// ✅ Utilidad para limpiar nombres de columnas (quita espacios y acentos)
+const router = express.Router();
+
+// ✅ Función auxiliar para limpiar nombres de columnas
 function limpiarCampo(campo) {
   return campo
     .normalize("NFD")
@@ -19,17 +20,17 @@ router.get("/", async (req, res) => {
 
     if (!rows.length) return res.json([]);
 
-    // 👇 Registro de encabezados para diagnóstico
+    // 👇 Log de diagnóstico
     console.log("Encabezados detectados:", Object.keys(rows[0]));
 
-    // 🔍 Mapeo automático de encabezados (corrige mayúsculas, acentos y espacios)
+    // 🔍 Normalizar encabezados
     const encabezados = Object.keys(rows[0]).reduce((mapa, clave) => {
       const limpio = limpiarCampo(clave);
       mapa[limpio] = clave;
       return mapa;
     }, {});
 
-    // 🧩 Transformar filas en objetos orden
+    // 🧩 Convertir filas en objetos orden
     const ordenes = rows.map((r, index) => ({
       id: index + 1,
       codigo: r[encabezados["codigo"]] || "",
@@ -78,4 +79,4 @@ router.post("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
