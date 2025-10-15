@@ -144,7 +144,9 @@
     <div id="mensaje" class="mensaje" style="display:none;"></div>
 
     <!-- 🔙 Botón de volver -->
-    <button id="btnVolverDashboard" class="btn-volver">⬅ Volver al Dashboard</button>
+    <button id="btnVolverDashboard" class="btn-volver" onclick="window.location.href='/dashboard.html'">
+      ⬅ Volver al Dashboard
+    </button>
 
     <!-- 🧾 Formulario -->
     <section class="formulario">
@@ -212,6 +214,87 @@
     </section>
   </div>
 
-  <script src="/js/ordenes.js"></script>
+  <!-- ⚙️ Lógica principal -->
+  <script>
+    const apiUrl = '/api/orders';
+
+    // 🟦 Cargar todas las órdenes al iniciar
+    async function cargarOrdenes() {
+      const tabla = document.querySelector("#tablaOrdenes tbody");
+      tabla.innerHTML = '<tr><td colspan="7">Cargando órdenes...</td></tr>';
+
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          tabla.innerHTML = '<tr><td colspan="7">No hay órdenes registradas</td></tr>';
+          return;
+        }
+
+        tabla.innerHTML = "";
+        data.forEach((orden) => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${orden["Código"] || orden["Codigo"] || "-"}</td>
+            <td>${orden["Inquilino"] || orden["Arrendatario"] || "-"}</td>
+            <td>${orden["Telefono"] || orden["Teléfono"] || "-"}</td>
+            <td>${orden["Tecnico"] || "-"}</td>
+            <td>${orden["Estado"] || "Pendiente"}</td>
+            <td>${orden["Descripcion"] || "-"}</td>
+            <td><button class="btn-ver" onclick="verOrden('${orden["Código"] || orden["Codigo"]}')">🔍 Ver</button></td>
+          `;
+          tabla.appendChild(fila);
+        });
+      } catch (err) {
+        console.error("Error al cargar órdenes:", err);
+        tabla.innerHTML = '<tr><td colspan="7">Error al cargar las órdenes</td></tr>';
+      }
+    }
+
+    // 🟩 Crear nueva orden
+    document.querySelector("#formOrden").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const codigo = document.querySelector("#codigo").value.trim();
+      const arrendatario = document.querySelector("#arrendatario").value.trim();
+      const telefono = document.querySelector("#telefono").value.trim();
+      const tecnico = document.querySelector("#tecnico").value;
+      const observacion = document.querySelector("#observacion").value.trim();
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo, arrendatario, telefono, tecnico, observacion }),
+        });
+
+        if (res.ok) {
+          mostrarMensaje("✅ Orden creada correctamente", true);
+          e.target.reset();
+          cargarOrdenes();
+        } else {
+          mostrarMensaje("❌ Error al crear la orden", false);
+        }
+      } catch (error) {
+        mostrarMensaje("⚠ Error de conexión con el servidor", false);
+      }
+    });
+
+    // 🟨 Ver orden individual
+    function verOrden(codigo) {
+      window.location.href = `/orden.html?codigo=${codigo}`;
+    }
+
+    // 🟩 Mostrar mensaje de éxito o error
+    function mostrarMensaje(texto, exito = true) {
+      const mensaje = document.getElementById("mensaje");
+      mensaje.textContent = texto;
+      mensaje.className = `mensaje ${exito ? "exito" : "error"}`;
+      mensaje.style.display = "block";
+      setTimeout(() => (mensaje.style.display = "none"), 4000);
+    }
+
+    document.addEventListener("DOMContentLoaded", cargarOrdenes);
+  </script>
 </body>
 </html>
