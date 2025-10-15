@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/orders");
       const data = await res.json();
+
       tabla.innerHTML = "";
 
       if (!Array.isArray(data) || data.length === 0) {
@@ -30,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${o.codigo || "—"}</td>
           <td>${o.arrendatario || "—"}</td>
           <td>${o.telefono || "—"}</td>
-          <td>${o.tecnico || "Sin asignar"}</td>
+          <td>${o.tecnico || "—"}</td>
           <td>${o.estado || "Pendiente"}</td>
           <td>${o.observacion || "—"}</td>
           <td><button class="btn-ver" data-codigo="${o.codigo}">🔍 Ver</button></td>
@@ -38,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tabla.appendChild(fila);
       });
 
-      // Evento para abrir detalle
+      // 🔍 Abrir orden individual
       document.querySelectorAll(".btn-ver").forEach((btn) => {
         btn.addEventListener("click", () => {
           const codigo = btn.dataset.codigo;
@@ -53,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 🚀 Enviar formulario
+  // 🚀 Crear nueva orden
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     btnCrear.disabled = true;
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         await cargarOrdenes();
       } else {
-        mostrarMensaje(`❌ ${respuesta.error || "No se pudo crear la orden"}`, "error");
+        mostrarMensaje(`❌ ${respuesta.error || "Error al crear orden"}`, "error");
       }
     } catch (err) {
       mostrarMensaje("❌ Error de conexión con el servidor", "error");
@@ -92,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 💬 Mostrar mensajes visuales
   function mostrarMensaje(texto, tipo) {
     mensaje.textContent = texto;
     mensaje.className = tipo === "exito" ? "mensaje exito" : "mensaje error";

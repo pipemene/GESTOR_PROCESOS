@@ -19,7 +19,8 @@ const auth = new JWT({
 async function getSheet() {
   const doc = new GoogleSpreadsheet(SHEET_ID, auth);
   await doc.loadInfo();
-  return doc.sheetsByTitle["Órdenes"] || doc.sheetsByTitle["ordenes"] || doc.sheetsByIndex[0];
+  const sheet = doc.sheetsByTitle["Órdenes"] || doc.sheetsByTitle["ordenes"];
+  return sheet || doc.sheetsByIndex[0];
 }
 
 // 📋 Obtener todas las órdenes
@@ -33,11 +34,12 @@ router.get("/", async (req, res) => {
       codigo: r["Código"] || "",
       arrendatario: r["Inquilino"] || "",
       telefono: r["Telefono"] || "",
-      tecnico: r["Tecnico"] || "",
+      tecnico: r["Tecnico"] || "Sin asignar",
       estado: r["Estado"] || "Pendiente",
       observacion: r["Descripcion"] || "",
     }));
 
+    console.log("✅ Órdenes enviadas al frontend:", ordenes.length);
     res.json(ordenes);
   } catch (error) {
     console.error("❌ Error al obtener órdenes:", error);
@@ -48,10 +50,11 @@ router.get("/", async (req, res) => {
 // 🆕 Crear nueva orden
 router.post("/", async (req, res) => {
   try {
-    const { codigo, arrendatario, telefono = "", tecnico = "Sin asignar", observacion = "" } = req.body;
+    const { codigo, arrendatario, telefono, tecnico, observacion } = req.body;
 
-    if (!codigo || !arrendatario)
+    if (!codigo || !arrendatario) {
       return res.status(400).json({ message: "Código y arrendatario son obligatorios" });
+    }
 
     const sheet = await getSheet();
     const fecha = new Date().toLocaleString("es-CO");
@@ -63,13 +66,14 @@ router.post("/", async (req, res) => {
       Telefono: telefono,
       Código: codigo,
       Descripcion: observacion,
-      Tecnico: tecnico,
+      Tecnico: tecnico || "Sin asignar",
       Estado: "Pendiente",
     };
 
     await sheet.addRow(nuevaOrden);
-    console.log("✅ Orden creada:", nuevaOrden);
-    res.status(201).json({ message: "✅ Orden creada correctamente", data: nuevaOrden });
+    console.log("✅ Orden creada correctamente:", nuevaOrden);
+
+    res.status(201).json({ message: "Orden creada correctamente", data: nuevaOrden });
   } catch (error) {
     console.error("❌ Error al crear orden:", error);
     res.status(500).json({ error: "Error al crear la orden" });
