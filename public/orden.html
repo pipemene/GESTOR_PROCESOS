@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Orden | Blue Home Inmobiliaria</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
+      padding: 0;
+    }
+    .contenedor {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 20px;
+    }
+    .btn-volver {
+      background-color: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 14px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-volver:hover {
+      background-color: #4b5563;
+    }
+    .campo {
+      margin-bottom: 15px;
+    }
+    .campo label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+      color: #374151;
+    }
+    .campo input, .campo textarea, .campo select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .botones {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .btn-guardar {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-guardar:hover {
+      background-color: #1e40af;
+    }
+    .estado {
+      font-weight: bold;
+      color: #1d4ed8;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <button class="btn-volver" onclick="window.location.href='/ordenes.html'">⬅ Volver</button>
+    <h2>🧾 Detalle de Orden</h2>
+    <div id="detalle"></div>
+  </div>
+
+  <script>
+    const apiUrl = '/api/orders';
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get('codigo');
+
+    async function cargarDetalle() {
+      const contenedor = document.getElementById('detalle');
+      contenedor.innerHTML = 'Cargando...';
+
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        const orden = data.find(o => (o["Código"] || o["Codigo"]) == codigo);
+
+        if (!orden) {
+          contenedor.innerHTML = `<p>No se encontró la orden con código <strong>${codigo}</strong>.</p>`;
+          return;
+        }
+
+        contenedor.innerHTML = `
+          <div class="campo"><label>Código:</label><div class="estado">${orden["Código"] || orden["Codigo"]}</div></div>
+          <div class="campo"><label>Arrendatario:</label><input type="text" id="arrendatario" value="${orden["Inquilino"] || orden["Arrendatario"] || ""}"></div>
+          <div class="campo"><label>Teléfono:</label><input type="text" id="telefono" value="${orden["Telefono"] || ""}"></div>
+          <div class="campo"><label>Técnico:</label><input type="text" id="tecnico" value="${orden["Tecnico"] || "Sin asignar"}"></div>
+          <div class="campo"><label>Estado:</label>
+            <select id="estado">
+              <option ${orden["Estado"] === "Pendiente" ? "selected" : ""}>Pendiente</option>
+              <option ${orden["Estado"] === "En Proceso" ? "selected" : ""}>En Proceso</option>
+              <option ${orden["Estado"] === "Finalizada" ? "selected" : ""}>Finalizada</option>
+            </select>
+          </div>
+          <div class="campo"><label>Descripción:</label><textarea id="descripcion">${orden["Descripcion"] || ""}</textarea></div>
+
+          <div class="botones">
+            <button class="btn-guardar" onclick="guardarCambios()">💾 Guardar Cambios</button>
+          </div>
+        `;
+      } catch (error) {
+        contenedor.innerHTML = "Error al cargar los datos de la orden.";
+      }
+    }
+
+    async function guardarCambios() {
+      const estado = document.getElementById("estado").value;
+      const descripcion = document.getElementById("descripcion").value;
+
+      alert(`✅ Cambios guardados localmente (por ahora no se suben a Sheets).
+Estado: ${estado}
+Descripción: ${descripcion}`);
+    }
+
+    document.addEventListener("DOMContentLoaded", cargarDetalle);
+  </script>
+</body>
+</html>
