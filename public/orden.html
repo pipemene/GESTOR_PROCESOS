@@ -1,141 +1,288 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalle de Orden | Blue Home Inmobiliaria</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detalle de Orden | Blue Home</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f5f7fa;
-      margin: 0;
-      padding: 0;
-    }
-    .contenedor {
-      max-width: 800px;
-      margin: 40px auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px 40px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      color: #1e3a8a;
-      margin-bottom: 20px;
-    }
-    .btn-volver {
-      background-color: #6b7280;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 8px 14px;
-      margin-bottom: 20px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .btn-volver:hover {
-      background-color: #4b5563;
-    }
-    .campo {
-      margin-bottom: 15px;
-    }
-    .campo label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 4px;
-      color: #374151;
-    }
-    .campo input, .campo textarea, .campo select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    .botones {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
-    }
-    .btn-guardar {
-      background-color: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 10px 15px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .btn-guardar:hover {
-      background-color: #1e40af;
-    }
-    .estado {
-      font-weight: bold;
-      color: #1d4ed8;
-      text-transform: uppercase;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background:#f5f7fa; margin:0; }
+    .contenedor{ max-width:900px; margin:32px auto; background:#fff; border-radius:12px; padding:24px 28px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    h2{ text-align:center; color:#1e3a8a; margin:10px 0 24px; }
+    .header-actions{ display:flex; gap:8px; margin-bottom:16px; }
+    .btn{ border:0; background:#1d4ed8; color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; }
+    .btn--gray{ background:#6b7280; }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .campo label{ display:block; font-weight:600; color:#374151; margin-bottom:4px; }
+    .campo input, .campo textarea, .campo select{ width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; }
+    .campo textarea{ min-height:90px; resize:vertical; }
+    .card{ border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-top:16px; }
+    .card h3{ margin:0 0 12px; color:#1e40af; }
+    .row{ display:flex; gap:16px; flex-wrap:wrap; }
+    .filebox{ border:1px dashed #cbd5e1; border-radius:10px; padding:12px; display:flex; gap:12px; align-items:center; }
+    .filebox img{ width:120px; height:90px; object-fit:cover; border-radius:8px; background:#f1f5f9; }
+    .pill{ display:inline-block; background:#eef2ff; color:#3730a3; padding:4px 10px; border-radius:999px; font-weight:600; }
+    canvas{ width:100%; max-width:450px; height:180px; border:1px dashed #cbd5e1; border-radius:10px; background:#f8fafc; }
+    .footer-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .muted{ color:#6b7280; font-size:13px; }
   </style>
 </head>
 <body>
   <div class="contenedor">
-    <button class="btn-volver" onclick="window.location.href='/ordenes.html'">⬅ Volver</button>
+    <div class="header-actions">
+      <button class="btn btn--gray" onclick="window.location.href='/ordenes.html'">⬅ Volver</button>
+      <span id="estadoPill" class="pill"></span>
+      <span id="asignacionPill" class="pill"></span>
+      <button id="btnAsignarme" class="btn" style="display:none">Asignarme</button>
+    </div>
+
     <h2>🧾 Detalle de Orden</h2>
-    <div id="detalle"></div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="campo">
+          <label>Código</label>
+          <input id="codigo" readonly />
+        </div>
+        <div class="campo">
+          <label>Arrendatario</label>
+          <input id="arrendatario" readonly />
+        </div>
+        <div class="campo">
+          <label>Teléfono</label>
+          <input id="telefono" readonly />
+        </div>
+        <div class="campo">
+          <label>Técnico</label>
+          <input id="tecnico" readonly />
+        </div>
+        <div class="campo">
+          <label>Estado</label>
+          <input id="estado" readonly />
+        </div>
+        <div class="campo">
+          <label>Descripción</label>
+          <textarea id="descripcion" readonly></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📷 Evidencias</h3>
+      <div class="row">
+        <div class="filebox">
+          <img id="previewAntes" alt="Antes"/>
+          <div>
+            <div class="muted">Foto antes</div>
+            <input type="file" id="fileAntes" accept="image/*" />
+          </div>
+        </div>
+        <div class="filebox">
+          <img id="previewDespues" alt="Después"/>
+          <div>
+            <div class="muted">Foto después</div>
+            <input type="file" id="fileDespues" accept="image/*" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🧰 Materiales y Trabajo</h3>
+      <div class="grid">
+        <div class="campo">
+          <label>Materiales utilizados</label>
+          <textarea id="materiales" placeholder="Ej: 1 metro tubo PVC 1/2'', 3 codos, 1 pegamento..." ></textarea>
+        </div>
+        <div class="campo">
+          <label>Trabajo realizado</label>
+          <textarea id="trabajo" placeholder="Describe qué hiciste, hallazgos, etc."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>✍️ Firma del inquilino</h3>
+      <canvas id="pad" ></canvas>
+      <div class="footer-actions">
+        <button class="btn btn--gray" id="btnLimpiar">Limpiar firma</button>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn" id="btnTerminar">✅ Terminar trabajo</button>
+    </div>
   </div>
 
   <script>
-    const apiUrl = '/api/orders';
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get('codigo');
+    // Helpers
+    const qs = new URLSearchParams(location.search);
+    const codigo = qs.get("codigo");
+    const tecnicoQS = qs.get("tecnico") || "";
 
-    async function cargarDetalle() {
-      const contenedor = document.getElementById('detalle');
-      contenedor.innerHTML = 'Cargando...';
+    const $ = sel => document.querySelector(sel);
+    const estadoPill = $("#estadoPill");
+    const asignacionPill = $("#asignacionPill");
+    const btnAsignarme = $("#btnAsignarme");
 
+    // Firma simple
+    const canvas = document.getElementById("pad");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+
+    function resizeCanvas() {
+      const r = canvas.getBoundingClientRect();
+      const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      canvas.width = r.width;
+      canvas.height = 180;
+      ctx.putImageData(img,0,0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function pos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.touches ? evt.touches[0].clientX : evt.clientX) - rect.left;
+      const y = (evt.touches ? evt.touches[0].clientY : evt.clientY) - rect.top;
+      return {x,y};
+    }
+    function start(e){ drawing = true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    function move(e){ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle="#111827"; ctx.lineWidth=2; ctx.stroke(); }
+    function end(){ drawing=false; }
+
+    canvas.addEventListener("mousedown", start);
+    canvas.addEventListener("mousemove", move);
+    canvas.addEventListener("mouseup", end);
+    canvas.addEventListener("mouseleave", end);
+    canvas.addEventListener("touchstart", e=>{start(e); e.preventDefault();});
+    canvas.addEventListener("touchmove", e=>{move(e); e.preventDefault();});
+    canvas.addEventListener("touchend", e=>{end(e); e.preventDefault();});
+
+    document.getElementById("btnLimpiar").onclick = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+    };
+
+    // Previews
+    function preview(fileInput, imgEl) {
+      fileInput.addEventListener("change", () => {
+        const f = fileInput.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => imgEl.src = reader.result;
+        reader.readAsDataURL(f);
+      });
+    }
+    preview(document.getElementById("fileAntes"), document.getElementById("previewAntes"));
+    preview(document.getElementById("fileDespues"), document.getElementById("previewDespues"));
+
+    // Cargar detalle
+    let ordenGlobal = null;
+    async function cargar() {
       try {
-        const res = await fetch(apiUrl);
+        const res = await fetch("/api/orders");
         const data = await res.json();
-        const orden = data.find(o => (o["Código"] || o["Codigo"]) == codigo);
+        const o = data.find(x => (x["Codigo"] || x["Código"]) == codigo);
+        if (!o) { alert("No se encontró la orden."); return; }
+        ordenGlobal = o;
 
-        if (!orden) {
-          contenedor.innerHTML = `<p>No se encontró la orden con código <strong>${codigo}</strong>.</p>`;
-          return;
+        $("#codigo").value = o["Codigo"] || o["Código"] || "";
+        $("#arrendatario").value = o["Inquilino"] || o["Arrendatario"] || "";
+        $("#telefono").value = o["Telefono"] || "";
+        $("#tecnico").value = o["Tecnico"] || "Sin asignar";
+        $("#estado").value = o["Estado"] || "Pendiente";
+        $("#descripcion").value = o["Descripcion"] || "";
+
+        // Chips
+        estadoPill.textContent = `Estado: ${$("#estado").value}`;
+        asignacionPill.textContent = `Técnico: ${$("#tecnico").value}`;
+
+        // Mostrar "Asignarme" si aplica
+        if (tecnicoQS && ($("#tecnico").value === "Sin asignar")) {
+          btnAsignarme.style.display = "inline-block";
+          btnAsignarme.onclick = async () => {
+            btnAsignarme.disabled = true;
+            btnAsignarme.textContent = "Asignando...";
+            const r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/assign`, {
+              method:"PATCH",
+              headers:{ "Content-Type":"application/json" },
+              body: JSON.stringify({ tecnico: tecnicoQS })
+            });
+            if (!r.ok) { alert("No se pudo asignar."); btnAsignarme.disabled=false; btnAsignarme.textContent="Asignarme"; return; }
+            location.reload();
+          };
         }
 
-        contenedor.innerHTML = `
-          <div class="campo"><label>Código:</label><div class="estado">${orden["Código"] || orden["Codigo"]}</div></div>
-          <div class="campo"><label>Arrendatario:</label><input type="text" id="arrendatario" value="${orden["Inquilino"] || orden["Arrendatario"] || ""}"></div>
-          <div class="campo"><label>Teléfono:</label><input type="text" id="telefono" value="${orden["Telefono"] || ""}"></div>
-          <div class="campo"><label>Técnico:</label><input type="text" id="tecnico" value="${orden["Tecnico"] || "Sin asignar"}"></div>
-          <div class="campo"><label>Estado:</label>
-            <select id="estado">
-              <option ${orden["Estado"] === "Pendiente" ? "selected" : ""}>Pendiente</option>
-              <option ${orden["Estado"] === "En Proceso" ? "selected" : ""}>En Proceso</option>
-              <option ${orden["Estado"] === "Finalizada" ? "selected" : ""}>Finalizada</option>
-            </select>
-          </div>
-          <div class="campo"><label>Descripción:</label><textarea id="descripcion">${orden["Descripcion"] || ""}</textarea></div>
+        // Si hay URLs guardadas en hojas para fotos, podrías precargarlas:
+        if (o.FotoAntesURL) document.getElementById("previewAntes").src = o.FotoAntesURL;
+        if (o.FotoDespuesURL) document.getElementById("previewDespues").src = o.FotoDespuesURL;
 
-          <div class="botones">
-            <button class="btn-guardar" onclick="guardarCambios()">💾 Guardar Cambios</button>
-          </div>
-        `;
-      } catch (error) {
-        contenedor.innerHTML = "Error al cargar los datos de la orden.";
+      } catch (e) {
+        alert("Error cargando detalle.");
       }
     }
 
-    async function guardarCambios() {
-      const estado = document.getElementById("estado").value;
-      const descripcion = document.getElementById("descripcion").value;
-
-      alert(`✅ Cambios guardados localmente (por ahora no se suben a Sheets).
-Estado: ${estado}
-Descripción: ${descripcion}`);
+    // Subir archivo como base64 al backend
+    async function subirArchivo(file, tipo) {
+      if (!file) return null;
+      const form = new FormData();
+      form.append("file", file);
+      form.append("tipo", tipo); // 'antes' | 'despues'
+      const r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/upload-photo`, {
+        method:"POST",
+        body: form
+      });
+      if (!r.ok) throw new Error("Error subiendo " + tipo);
+      const j = await r.json();
+      return j.url; // URL en Drive
     }
 
-    document.addEventListener("DOMContentLoaded", cargarDetalle);
+    // Terminar trabajo
+    document.getElementById("btnTerminar").onclick = async () => {
+      try {
+        const fileAntes = document.getElementById("fileAntes").files[0] || null;
+        const fileDespues = document.getElementById("fileDespues").files[0] || null;
+
+        // 1) Subir fotos si hay
+        let urlAntes = null, urlDespues = null;
+        if (fileAntes) urlAntes = await subirArchivo(fileAntes, "antes");
+        if (fileDespues) urlDespues = await subirArchivo(fileDespues, "despues");
+
+        // 2) Notas del trabajo
+        const payload = {
+          materiales: document.getElementById("materiales").value,
+          trabajo: document.getElementById("trabajo").value,
+          fotoAntesURL: urlAntes || null,
+          fotoDespuesURL: urlDespues || null
+        };
+        let r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/feedback`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error("Error guardando notas");
+
+        // 3) Firma inquilino
+        const firmaDataURL = canvas.toDataURL("image/png"); // base64
+        r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/sign`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ firmaInquilino: firmaDataURL })
+        });
+        if (!r.ok) throw new Error("Error guardando firma");
+
+        // 4) Finalizar (estado Finalizada). El envío de PDF lo activamos fase 2.
+        r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/finish`, { method:"POST" });
+        if (!r.ok) throw new Error("Error finalizando orden");
+
+        alert("✅ Trabajo finalizado. Se guardaron evidencias y firma.");
+        window.location.href = "/ordenes.html" + (tecnicoQS ? `?tecnico=${encodeURIComponent(tecnicoQS)}` : "");
+
+      } catch (err) {
+        console.error(err);
+        alert("Ocurrió un error al terminar el trabajo.");
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", cargar);
   </script>
 </body>
 </html>

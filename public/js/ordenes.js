@@ -102,3 +102,89 @@ document.addEventListener("DOMContentLoaded", () => {
 
   cargarOrdenes();
 });
+// Filtro por técnico desde querystring (?tecnico=Nombre)
+function getQS(name) {
+  const u = new URL(window.location.href);
+  return u.searchParams.get(name) || "";
+}
+
+async function cargarOrdenes() {
+  const tbody = document.querySelector("#tablaOrdenes tbody");
+  tbody.innerHTML = `<tr><td colspan="7">Cargando...</td></tr>`;
+
+  try {
+    const res = await fetch("/api/orders");
+    const data = await res.json();
+
+    const tecnicoQS = getQS("tecnico"); // p.ej. Mauricio
+    let filtradas = data;
+
+    if (tecnicoQS) {
+      filtradas = data.filter(o => {
+        const t = (o.Tecnico || o["Tecnico"] || "").trim();
+        return t === "Sin asignar" || t === tecnicoQS;
+      });
+    }
+
+    if (!filtradas.length) {
+      tbody.innerHTML = `<tr><td colspan="7">No hay órdenes registradas</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = "";
+    filtradas.forEach(o => {
+      const codigo = o["Codigo"] || o["Código"] || "";
+      const arr = o["Inquilino"] || o["Arrendatario"] || "";
+      const tel = o["Telefono"] || o["Teléfono"] || "";
+      const tec = o["Tecnico"] || "Sin asignar";
+      const est = o["Estado"] || "Pendiente";
+      const desc = o["Descripcion"] || "";
+
+      const verHref = `/orden.html?codigo=${encodeURIComponent(codigo)}${tecnicoQS ? `&tecnico=${encodeURIComponent(tecnicoQS)}` : ""}`;
+
+      const btnAsignarme = (tecnicoQS && tec === "Sin asignar")
+        ? `<button class="btn-ver" data-asignar="${codigo}">Asignarme</button>`
+        : `<a class="btn-ver" href="${verHref}">Ver</a>`;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${codigo || "—"}</td>
+        <td>${arr || "—"}</td>
+        <td>${tel || "—"}</td>
+        <td>${tec || "—"}</td>
+        <td>${est || "Pendiente"}</td>
+        <td>${desc || "—"}</td>
+        <td>${btnAsignarme}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Delegado: asignarme
+    tbody.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-asignar]");
+      if (!btn) return;
+      const codigo = btn.getAttribute("data-asignar");
+      const tecnico = getQS("tecnico");
+      if (!tecnico) return alert("No se detectó el técnico en la URL (?tecnico=Nombre).");
+
+      btn.disabled = true;
+      btn.textContent = "Asignando...";
+      try {
+        const r = await fetch(`/api/orders/${encodeURIComponent(codigo)}/assign`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tecnico })
+        });
+        if (!r.ok) throw new Error("No se pudo asignar");
+        await cargarOrdenes();
+      } catch (err) {
+        alert("Error al asignar la orden.");
+      }
+    });
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7">Error cargando órdenes</td></tr>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", cargarOrdenes);
