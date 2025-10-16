@@ -17,7 +17,7 @@ function getDriveClient() {
     ["https://www.googleapis.com/auth/drive"]
   );
 
-  // ✅ Cliente Drive con soporte para unidades compartidas
+  // ✅ Cliente Drive con soporte para Shared Drives
   return google.drive({
     version: "v3",
     auth,
@@ -86,7 +86,6 @@ export async function uploadPDFToDrive(filePath, codigo) {
       supportsAllDrives: true,
     });
 
-    // Permisos públicos
     await drive.permissions.create({
       fileId: data.id,
       requestBody: { role: "reader", type: "anyone" },
@@ -108,12 +107,21 @@ export async function uploadPDFToDrive(filePath, codigo) {
 
 /**
  * 🖼️ Sube una imagen base64 (firma o evidencia) a Drive
+ * Acepta tanto strings "data:image/png;base64,..." como objetos { data, type }
  */
 export async function uploadBase64ImageToDrive({ dataUrl, filename, folderId }) {
   try {
     const drive = getDriveClient();
-    const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64Data, "base64");
+
+    // Soporta ambos tipos de entrada
+    const base64String =
+      typeof dataUrl === "object" && dataUrl.data
+        ? dataUrl.data
+        : dataUrl || "";
+
+    const cleanData = base64String.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(cleanData, "base64");
+
     const tempFilePath = `/tmp/${filename}`;
     fs.writeFileSync(tempFilePath, buffer);
 
@@ -142,7 +150,7 @@ export async function uploadBase64ImageToDrive({ dataUrl, filename, folderId }) 
 }
 
 /**
- * 💾 Sube un archivo en buffer (por multer) a Drive
+ * 💾 Sube un archivo desde un buffer (por multer)
  */
 export async function uploadFileBufferToDrive({ buffer, mimeType, filename, folderId }) {
   try {
@@ -150,11 +158,7 @@ export async function uploadFileBufferToDrive({ buffer, mimeType, filename, fold
     const tempFilePath = `/tmp/${filename}`;
     fs.writeFileSync(tempFilePath, buffer);
 
-    const fileMetadata = {
-      name: filename,
-      parents: [folderId],
-    };
-
+    const fileMetadata = { name: filename, parents: [folderId] };
     const media = {
       mimeType: mimeType || "application/octet-stream",
       body: fs.createReadStream(tempFilePath),
