@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
-import ordersRouter from './routes/orders.js';
+import { router as ordersRouter } from './routes/orders.js'; // 🔥 CAMBIO AQUÍ
 
 dotenv.config();
 const app = express();
@@ -14,7 +14,7 @@ app.use(express.static('public'));
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
-app.use('/api/orders', ordersRouter);
+app.use('/api/orders', ordersRouter); // ✅ ahora sí coincide con export nombrado
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ PROGESTOR ejecutándose en puerto ${PORT}`));
