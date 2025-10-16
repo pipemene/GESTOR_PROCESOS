@@ -6,9 +6,6 @@ import {
   GOOGLE_DRIVE_FOLDER_ID
 } from "../config.js";
 
-/**
- * 🧩 Inicializa autenticación con Google Drive
- */
 function getDriveClient() {
   const auth = new google.auth.JWT(
     GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -19,18 +16,16 @@ function getDriveClient() {
   return google.drive({ version: "v3", auth });
 }
 
-/**
- * 📁 Verifica si existe carpeta de orden o la crea
- */
+/** 📁 Crear carpeta de orden si no existe */
 export async function ensureOrderFolder(codigo) {
   const drive = getDriveClient();
-
   const query = `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='Orden_${codigo}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+
   const res = await drive.files.list({
     q: query,
     fields: "files(id, name)",
+    includeItemsFromAllDrives: true,
     supportsAllDrives: true,
-    includeItemsFromAllDrives: true
   });
 
   if (res.data.files.length > 0) return res.data.files[0].id;
@@ -44,55 +39,45 @@ export async function ensureOrderFolder(codigo) {
   const folder = await drive.files.create({
     resource: folderMetadata,
     fields: "id",
-    supportsAllDrives: true
+    supportsAllDrives: true,
   });
 
-  console.log(`📂 Carpeta creada para la orden ${codigo}: ${folder.data.id}`);
+  console.log(`📂 Carpeta creada: ${folder.data.id}`);
   return folder.data.id;
 }
 
-/**
- * ☁️ Subir PDF dentro de carpeta
- */
+/** ☁️ Subir PDF a Drive */
 export async function uploadPDFToDrive(filePath, codigo) {
-  try {
-    const drive = getDriveClient();
-    const folderId = await ensureOrderFolder(codigo);
-
-    const fileMetadata = { name: `Orden_${codigo}.pdf`, parents: [folderId] };
-    const media = { mimeType: "application/pdf", body: fs.createReadStream(filePath) };
-
-    const { data } = await drive.files.create({
-      resource: fileMetadata,
-      media,
-      fields: "id, webViewLink",
-      supportsAllDrives: true
-    });
-
-    await drive.permissions.create({
-      fileId: data.id,
-      requestBody: { role: "reader", type: "anyone" },
-      supportsAllDrives: true
-    });
-
-    console.log(`✅ PDF subido correctamente: ${data.webViewLink}`);
-    return { webViewLink: data.webViewLink };
-  } catch (error) {
-    console.error("❌ Error subiendo PDF a Drive:", error);
-    throw new Error("Error al subir PDF a Google Drive");
-  }
-}
-
-/**
- * 🖋️ Subir firma en base64 (acepta objeto o string)
- */
-export async function uploadBase64ImageToDrive(input, nombre, codigo) {
   const drive = getDriveClient();
   const folderId = await ensureOrderFolder(codigo);
 
-  const base64String = typeof input === "string" ? input : input?.dataUrl || input?.data || "";
-  if (!base64String) throw new Error("Firma inválida: no contiene datos base64.");
+  const fileMetadata = { name: `Orden_${codigo}.pdf`, parents: [folderId] };
+  const media = { mimeType: "application/pdf", body: fs.createReadStream(filePath) };
 
+  const { data } = await drive.files.create({
+    resource: fileMetadata,
+    media,
+    fields: "id, webViewLink",
+    supportsAllDrives: true,
+  });
+
+  await drive.permissions.create({
+    fileId: data.id,
+    requestBody: { role: "reader", type: "anyone" },
+    supportsAllDrives: true,
+  });
+
+  console.log(`✅ PDF subido: ${data.webViewLink}`);
+  return { webViewLink: data.webViewLink };
+}
+
+/** 🖋️ Subir imagen base64 (firma) */
+export async function uploadBase64ImageToDrive(base64Input, nombre, codigo) {
+  const drive = getDriveClient();
+  const folderId = await ensureOrderFolder(codigo);
+
+  const base64String =
+    typeof base64Input === "string" ? base64Input : base64Input?.dataUrl || "";
   const base64Data = base64String.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
 
@@ -106,28 +91,24 @@ export async function uploadBase64ImageToDrive(input, nombre, codigo) {
     resource: fileMetadata,
     media,
     fields: "id, webViewLink",
-    supportsAllDrives: true
+    supportsAllDrives: true,
   });
 
   await drive.permissions.create({
     fileId: data.id,
     requestBody: { role: "reader", type: "anyone" },
-    supportsAllDrives: true
+    supportsAllDrives: true,
   });
 
   fs.unlinkSync(tempFilePath);
   return data.webViewLink;
 }
 
-/**
- * 💾 Subir archivo desde buffer (por multer)
- */
+/** 💾 Subir archivos desde buffer (fotos antes/después) */
 export async function uploadFileBufferToDrive(fileInput, fileName, codigo) {
   const drive = getDriveClient();
   const folderId = await ensureOrderFolder(codigo);
-
   const fileBuffer = fileInput?.buffer || fileInput;
-  if (!Buffer.isBuffer(fileBuffer)) throw new Error("Archivo inválido: se esperaba un buffer.");
 
   const tempFilePath = `/tmp/${fileName}`;
   fs.writeFileSync(tempFilePath, fileBuffer);
@@ -139,13 +120,13 @@ export async function uploadFileBufferToDrive(fileInput, fileName, codigo) {
     resource: fileMetadata,
     media,
     fields: "id, webViewLink",
-    supportsAllDrives: true
+    supportsAllDrives: true,
   });
 
   await drive.permissions.create({
     fileId: data.id,
     requestBody: { role: "reader", type: "anyone" },
-    supportsAllDrives: true
+    supportsAllDrives: true,
   });
 
   fs.unlinkSync(tempFilePath);
