@@ -4,8 +4,12 @@ import { getSheetData, updateCell, appendRow } from "../services/sheetsService.j
 import {
   uploadBase64ImageToDrive,
   uploadFileBufferToDrive,
-  ensureOrderFolder
+  ensureOrderFolder,
+  uploadPDFToDrive
 } from "../services/driveService.js";
+import { generateOrderPDF } from "../services/pdfService.js";
+import { sendEmail } from "../services/mailService.js";
+import fs from "fs";
 
 export const router = express.Router();
 const upload = multer();
@@ -38,18 +42,10 @@ router.get("/", async (req, res) => {
 // ======================================================
 router.post("/", async (req, res) => {
   try {
-    console.log("📩 Datos recibidos en /api/orders:", req.body);
-
     const { codigo, arrendatario, telefono, tecnico, descripcion, observacion } = req.body;
     const descripcionFinal = descripcion || observacion || "";
 
     if (!codigo || !arrendatario || !telefono || !descripcionFinal) {
-      console.warn("⚠️ Faltan datos obligatorios:", {
-        codigo,
-        arrendatario,
-        telefono,
-        descripcionFinal
-      });
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
@@ -68,8 +64,8 @@ router.post("/", async (req, res) => {
     console.log(`✅ Nueva orden registrada: ${codigo} (${arrendatario})`);
     res.json({ ok: true });
   } catch (e) {
-    console.error("❌ Error al crear la orden:", e.message, e.stack);
-    res.status(500).json({ error: e.message || "Error al crear la orden" });
+    console.error("❌ Error al crear la orden:", e.message);
+    res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
@@ -219,7 +215,7 @@ router.post("/:codigo/sign", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/finish → Marcar orden como finalizada
+// 🔹 POST /api/orders/:codigo/finish → Finalizar (PDF + correo)
 // ======================================================
 router.post("/:codigo/finish", async (req, res) => {
   try {
@@ -227,15 +223,47 @@ router.post("/:codigo/finish", async (req, res) => {
     const found = await findRowByCode(codigo);
     if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
+    // 1️⃣ Actualizar estado en hoja
     const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
     if (idxEstado >= 0) {
       const letter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
       await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, "Finalizada");
     }
 
-    res.json({ ok: true });
+    // 2️⃣ Generar PDF
+    const pdfPath = await generateOrderPDF(codigo);
+
+    // 3️⃣ Subir PDF a Drive
+    const { webViewLink } = await uploadPDFToDrive(pdfPath, codigo);
+
+    // 4️⃣ Enviar correo con PDF adjunto
+    await sendEmail({
+      to: "reparaciones@bluehomeinmo.co",
+      subject: `Orden finalizada ${codigo} – Evidencias y firma`,
+      html: `
+        <p>Hola equipo,</p>
+        <p>La orden <b>${codigo}</b> ha sido finalizada.</p>
+        <p>Pueden ver el PDF en Drive:</p>
+        <p><a href="${webViewLink}" target="_blank">${webViewLink}</a></p>
+        <p>— Blue Home Gestor</p>
+      `,
+      attachments: [
+        {
+          filename: `Orden_${codigo}.pdf`,
+          path: pdfPath,
+          contentType: "application/pdf"
+        }
+      ]
+    });
+
+    // 5️⃣ Borrar PDF temporal
+    try { fs.unlinkSync(pdfPath); } catch {}
+
+    res.json({ ok: true, pdfLink: webViewLink });
   } catch (e) {
-    console.error("❌ Error al finalizar orden:", e);
+    console.error("❌ Error al finalizar orden (PDF/correo):", e);
     res.status(500).json({ error: "finish failed" });
   }
 });
+
+export default router;
