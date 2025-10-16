@@ -114,22 +114,30 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
   try {
     const { codigo } = req.params;
     const tipo = (req.body.tipo || "").toLowerCase();
+
     if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
-    if (!["antes", "despues"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
+    if (!["antes", "despues"].includes(tipo))
+      return res.status(400).json({ error: "Tipo inválido" });
 
-    const url = await uploadFileBufferToDrive(req.file, `${tipo}_${Date.now()}.jpg`, codigo);
+    // ✅ Corrección: pasamos Buffer, filename y código
+    const { viewLink, downloadLink } = await uploadFileBufferToDrive(
+      req.file.buffer,
+      `${tipo}_${Date.now()}.jpg`,
+      codigo
+    );
 
+    // ✅ Guardar link en Google Sheets
     const found = await findRowByCode(codigo);
     if (found) {
       const colName = tipo === "antes" ? /foto.?antes/i : /foto.?despues/i;
       const colIdx = found.headers.findIndex(h => colName.test(h));
       if (colIdx >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + colIdx);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink);
       }
     }
 
-    res.json({ ok: true, url });
+    res.json({ ok: true, viewLink, downloadLink });
   } catch (e) {
     console.error("❌ Error al subir foto:", e);
     res.status(500).json({ error: "upload-photo failed" });
@@ -174,18 +182,22 @@ router.post("/:codigo/sign", async (req, res) => {
     const { firmaInquilino } = req.body;
     if (!firmaInquilino) return res.status(400).json({ error: "Firma requerida" });
 
-    const url = await uploadBase64ImageToDrive(firmaInquilino, `firma_inquilino_${Date.now()}`, codigo);
+    const { viewLink, downloadLink } = await uploadBase64ImageToDrive(
+      firmaInquilino,
+      `firma_inquilino_${Date.now()}`,
+      codigo
+    );
 
     const found = await findRowByCode(codigo);
     if (found) {
       const idxFirma = found.headers.findIndex(h => /firma$/i.test(h));
       if (idxFirma >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + idxFirma);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink);
       }
     }
 
-    res.json({ ok: true, url });
+    res.json({ ok: true, viewLink, downloadLink });
   } catch (e) {
     console.error("❌ Error al subir firma:", e);
     res.status(500).json({ error: "sign failed" });
@@ -212,7 +224,7 @@ router.post("/:codigo/finish", async (req, res) => {
     const pdfPath = await generateOrderPDF(codigo);
 
     // 3️⃣ Subir PDF a Drive
-    const { webViewLink } = await uploadPDFToDrive(pdfPath, codigo);
+    const { viewLink, downloadLink } = await uploadPDFToDrive(pdfPath, codigo);
 
     // 4️⃣ Enviar correo con PDF
     await sendEmail({
@@ -221,7 +233,8 @@ router.post("/:codigo/finish", async (req, res) => {
       html: `
         <p>Hola equipo,</p>
         <p>La orden <b>${codigo}</b> ha sido finalizada.</p>
-        <p>📎 <a href="${webViewLink}" target="_blank">Descargar PDF</a></p>
+        <p>📎 <a href="${viewLink}" target="_blank">Ver PDF</a></p>
+        <p>⬇ <a href="${downloadLink}" target="_blank">Descargar PDF</a></p>
         <p>— Blue Home Gestor</p>
       `,
       attachments: [
@@ -233,17 +246,13 @@ router.post("/:codigo/finish", async (req, res) => {
       ]
     });
 
-    // 5️⃣ Eliminar PDF temporal
     try { fs.unlinkSync(pdfPath); } catch {}
-
-    // 6️⃣ Devolver link de descarga directa
-    const directDownload = webViewLink.replace("/view?usp=drivesdk", "/export?format=pdf");
 
     res.json({
       ok: true,
       message: "Orden finalizada con éxito.",
-      pdfLink: webViewLink,
-      download: directDownload
+      viewLink,
+      downloadLink
     });
   } catch (e) {
     console.error("❌ Error al finalizar orden:", e);
