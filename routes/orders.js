@@ -259,5 +259,97 @@ router.post("/:codigo/finish", async (req, res) => {
     res.status(500).json({ error: "finish failed" });
   }
 });
+// ======================================================
+// 🔹 PATCH /api/orders/:codigo/review → Dayan revisa y firma
+// ======================================================
+router.patch("/:codigo/review", async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const { valor, firmaDayan, observacion } = req.body;
+    const found = await findRowByCode(codigo);
+    if (!found) return res.status(404).json({ error: "Orden no encontrada" });
+
+    // subir firma de Dayan si la envía
+    let firmaUrl = "";
+    if (firmaDayan) {
+      const { viewLink } = await uploadBase64ImageToDrive(firmaDayan, `firma_dayan_${Date.now()}`, codigo);
+      firmaUrl = viewLink;
+    }
+
+    // actualizar columnas
+    const headers = found.headers;
+    const idxValor = headers.findIndex(h => /valor/i.test(h));
+    const idxFirmaDayan = headers.findIndex(h => /firma.?dayan/i.test(h));
+    const idxObs = headers.findIndex(h => /observa/i.test(h));
+    const idxEstado = headers.findIndex(h => /estado/i.test(h));
+
+    const setCell = async (idx, val) => {
+      if (idx >= 0) {
+        const letter = String.fromCharCode("A".charCodeAt(0) + idx);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, val);
+      }
+    };
+
+    await setCell(idxValor, valor || "");
+    await setCell(idxFirmaDayan, firmaUrl);
+    await setCell(idxObs, observacion || "");
+    await setCell(idxEstado, "Contabilidad Aitana");
+
+    res.json({ ok: true, message: "Revisión de Dayan registrada." });
+  } catch (e) {
+    console.error("❌ Error en review:", e);
+    res.status(500).json({ error: "review failed" });
+  }
+});
+
+// ======================================================
+// 🔹 POST /api/orders/:codigo/invoice → Aitana sube factura
+// ======================================================
+router.post("/:codigo/invoice", upload.single("file"), async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
+
+    const { viewLink } = await uploadFileBufferToDrive(req.file.buffer, `factura_${Date.now()}.pdf`, codigo);
+
+    const found = await findRowByCode(codigo);
+    if (found) {
+      const idxFactura = found.headers.findIndex(h => /factura/i.test(h));
+      const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
+
+      const setCell = async (idx, val) => {
+        if (idx >= 0) {
+          const letter = String.fromCharCode("A".charCodeAt(0) + idx);
+          await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, val);
+        }
+      };
+
+      await setCell(idxFactura, viewLink);
+      await setCell(idxEstado, "Finalizado");
+    }
+
+    res.json({ ok: true, message: "Factura subida correctamente." });
+  } catch (e) {
+    console.error("❌ Error al subir factura:", e);
+    res.status(500).json({ error: "invoice failed" });
+  }
+});
+
+// ======================================================
+// 🔹 GET /api/orders/:codigo/final-pdf → Daniela descarga consolidado
+// ======================================================
+router.get("/:codigo/final-pdf", async (req, res) => {
+  try {
+    const { codigo } = req.params;
+    const pdfPath = await generateOrderPDF(codigo, { modo: "final" });
+    res.download(pdfPath, `Orden_${codigo}_final.pdf`, err => {
+      if (!err) fs.unlinkSync(pdfPath);
+    });
+  } catch (e) {
+    console.error("❌ Error al generar PDF final:", e);
+    res.status(500).json({ error: "final-pdf failed" });
+  }
+});
+
 
 export default router;

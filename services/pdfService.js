@@ -1,141 +1,87 @@
-// services/pdfService.js
-import fs from "fs";
-import os from "os";
-import path from "path";
 import PDFDocument from "pdfkit";
+import fs from "fs";
 import axios from "axios";
 import { getSheetData } from "./sheetsService.js";
+import { ensureOrderFolder } from "./driveService.js";
 
-/**
- * Descarga una imagen remota a buffer (si la URL es pública).
- */
-async function downloadImage(url) {
-  if (!url) return null;
+async function loadImageToBuffer(url) {
   try {
-    const { data } = await axios.get(url, { responseType: "arraybuffer" });
-    return Buffer.from(data);
+    if (!url) return null;
+    const res = await axios.get(url, { responseType: "arraybuffer" });
+    return Buffer.from(res.data, "binary");
   } catch {
+    console.warn("⚠️ No se pudo cargar imagen:", url);
     return null;
   }
 }
 
-/**
- * Busca la fila de una orden por código y devuelve { headers, row, rowIndex }
- */
-async function findRowByCode(codigo) {
+export async function generateOrderPDF(codigo, { modo = "tecnico" } = {}) {
   const rows = await getSheetData("Órdenes");
-  const headers = rows[0] || [];
-  const idxCodigo = headers.findIndex((h) => /c[óo]digo/i.test(h));
-  if (idxCodigo < 0) throw new Error("No existe columna Código en la hoja Órdenes");
-  for (let i = 1; i < rows.length; i++) {
-    if ((rows[i][idxCodigo] || "").toString().trim() === codigo.toString().trim()) {
-      return { headers, row: rows[i], rowIndex: i + 1 };
+  const headers = rows[0];
+  const idxCodigo = headers.findIndex(h => /c[óo]digo/i.test(h));
+  const orderRow = rows.find(r => r[idxCodigo] == codigo);
+  if (!orderRow) throw new Error("Orden no encontrada en hoja");
+
+  const data = {};
+  headers.forEach((h, i) => (data[h] = orderRow[i] || ""));
+
+  const pdfPath = `/tmp/Orden_${codigo}_${modo}.pdf`;
+  const doc = new PDFDocument({ size: "A4", margin: 40 });
+  doc.pipe(fs.createWriteStream(pdfPath));
+
+  doc.fontSize(18).text(`Blue Home Inmobiliaria`, { align: "center" });
+  doc.moveDown();
+  doc.fontSize(14).text(`Orden de Servicio ${codigo}`, { align: "center" });
+  doc.moveDown(1);
+
+  doc.fontSize(11).text(`Arrendatario: ${data["Arrendatario"] || ""}`);
+  doc.text(`Teléfono: ${data["Teléfono"] || ""}`);
+  doc.text(`Técnico: ${data["Técnico"] || ""}`);
+  doc.text(`Estado: ${data["Estado"] || ""}`);
+  doc.text(`Descripción: ${data["Descripción"] || data["Observación"] || ""}`);
+  doc.moveDown();
+
+  const fotoAntes = await loadImageToBuffer(data["Foto Antes"]);
+  if (fotoAntes) doc.image(fotoAntes, { fit: [250, 150], align: "left" });
+
+  const fotoDespues = await loadImageToBuffer(data["Foto Después"]);
+  if (fotoDespues) {
+    doc.moveDown();
+    doc.image(fotoDespues, { fit: [250, 150], align: "left" });
+  }
+
+  doc.moveDown(2);
+  const firmaInq = await loadImageToBuffer(data["Firma Inquilino"]);
+  if (firmaInq) {
+    doc.text("Firma Inquilino:", { align: "left" });
+    doc.image(firmaInq, { width: 100 });
+  }
+
+  if (modo !== "tecnico") {
+    const firmaDayan = await loadImageToBuffer(data["Firma Dayan"]);
+    if (firmaDayan) {
+      doc.moveDown();
+      doc.text("Firma Dayan (Revisión):", { align: "left" });
+      doc.image(firmaDayan, { width: 100 });
+    }
+
+    if (data["Valor"]) {
+      doc.moveDown();
+      doc.fontSize(13).text(`Valor aprobado: $${data["Valor"]}`, { align: "left" });
     }
   }
-  return null;
-}
 
-/**
- * Genera el PDF de la orden y lo guarda en un archivo temporal.
- * Devuelve la ruta absoluta del PDF creado.
- */
-export async function generateOrderPDF(codigo) {
-  const found = await findRowByCode(codigo);
-  if (!found) throw new Error("Orden no encontrada para generar PDF");
-
-  const { headers, row } = found;
-  const getVal = (regex) => {
-    const idx = headers.findIndex((h) => regex.test(h));
-    return idx >= 0 ? (row[idx] || "") : "";
-  };
-
-  const data = {
-    codigo,
-    cliente: getVal(/arrendatario|cliente/i),
-    telefono: getVal(/tel[ée]fono/i),
-    tecnico: getVal(/t[ée]cnico/i),
-    estado: getVal(/estado/i),
-    descripcion: getVal(/descripci[óo]n|observaci[óo]n/i),
-    materiales: getVal(/material(es)?/i),
-    trabajo: getVal(/trabajo/i),
-    fotoAntesURL: getVal(/foto.?antes/i),
-    fotoDespuesURL: getVal(/foto.?despues/i),
-    firmaURL: getVal(/firma$/i),
-    fecha: getVal(/fecha/i),
-  };
-
-  // Descargar evidencias
-  const [imgAntes, imgDespues, imgFirma] = await Promise.all([
-    downloadImage(data.fotoAntesURL),
-    downloadImage(data.fotoDespuesURL),
-    downloadImage(data.firmaURL),
-  ]);
-
-  // Archivo temporal
-  const tmpDir = os.tmpdir();
-  const pdfPath = path.join(tmpDir, `Orden_${codigo}.pdf`);
-
-  const doc = new PDFDocument({ margin: 40 });
-  const stream = fs.createWriteStream(pdfPath);
-  doc.pipe(stream);
-
-  // PORTADA
-  doc
-    .fontSize(20)
-    .text("Blue Home Inmobiliaria", { align: "center" })
-    .moveDown(0.3);
-  doc.fontSize(16).text("Orden de Trabajo", { align: "center" });
-  doc.moveDown(1);
-
-  // Datos principales
-  doc.fontSize(12);
-  doc.text(`Código: ${data.codigo}`);
-  doc.text(`Fecha: ${data.fecha || "-"}`);
-  doc.text(`Cliente/Arrendatario: ${data.cliente || "-"}`);
-  doc.text(`Teléfono: ${data.telefono || "-"}`);
-  doc.text(`Técnico: ${data.tecnico || "-"}`);
-  doc.text(`Estado: ${data.estado || "-"}`);
-  doc.moveDown(0.5);
-  doc.text(`Descripción: ${data.descripcion || "-"}`);
-  doc.moveDown(1);
-
-  // Materiales y trabajo
-  doc.fontSize(14).text("Materiales usados", { underline: true });
-  doc.fontSize(12).text(data.materiales || "-", { align: "left" }).moveDown(0.8);
-
-  doc.fontSize(14).text("Trabajo realizado", { underline: true });
-  doc.fontSize(12).text(data.trabajo || "-", { align: "left" }).moveDown(1);
-
-  // Fotos
-  doc.fontSize(14).text("Evidencias", { underline: true }).moveDown(0.5);
-  const maxW = 240;
-  const maxH = 240;
-
-  if (imgAntes) {
-    doc.fontSize(12).text("Foto Antes:");
-    doc.image(imgAntes, { fit: [maxW, maxH] }).moveDown(0.5);
+  if (modo === "final") {
+    const factura = await loadImageToBuffer(data["Factura"]);
+    if (factura) {
+      doc.addPage();
+      doc.fontSize(14).text("Factura adjunta:", { align: "center" });
+      doc.image(factura, { fit: [450, 500], align: "center" });
+    }
   }
-  if (imgDespues) {
-    doc.fontSize(12).text("Foto Después:");
-    doc.image(imgDespues, { fit: [maxW, maxH] }).moveDown(0.5);
-  }
-
-  // Firma
-  if (imgFirma) {
-    doc.moveDown(0.5);
-    doc.fontSize(12).text("Firma del Inquilino:");
-    doc.image(imgFirma, { fit: [200, 80] }).moveDown(0.5);
-  }
-
-  // Cierre
-  doc.moveDown(1.2);
-  doc.fontSize(10).fillColor("#666")
-    .text("Este documento fue generado automáticamente por Blue Home Gestor.", { align: "center" });
 
   doc.end();
-
-  // Esperar a que termine de escribir
-  await new Promise((resolve) => stream.on("finish", resolve));
-
+  await ensureOrderFolder(codigo);
+  console.log(`✅ PDF generado para ${codigo} (${modo})`);
   return pdfPath;
 }
