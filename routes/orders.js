@@ -9,10 +9,9 @@ import {
   uploadPDFToDrive
 } from "../services/driveService.js";
 import { generateOrderPDF } from "../services/pdfService.js";
-import { sendEmail } from "../services/mailService.js";
 
 export const router = express.Router();
-const upload = multer(); // para manejar fotos (antes/después)
+const upload = multer(); // para manejar archivos binarios (fotos)
 
 // ======================================================
 // 🔹 GET /api/orders → Listar órdenes desde Google Sheets
@@ -61,7 +60,6 @@ router.post("/", async (req, res) => {
 
     await appendRow("Órdenes", nuevaFila);
     console.log(`✅ Nueva orden creada correctamente (${codigo})`);
-
     res.json({ ok: true });
   } catch (e) {
     console.error("❌ Error al crear orden:", e);
@@ -114,30 +112,23 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
   try {
     const { codigo } = req.params;
     const tipo = (req.body.tipo || "").toLowerCase();
-
     if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
-    if (!["antes", "despues"].includes(tipo))
-      return res.status(400).json({ error: "Tipo inválido" });
+    if (!["antes", "despues"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
 
-    // ✅ Corrección: pasamos Buffer, filename y código
-    const { viewLink, downloadLink } = await uploadFileBufferToDrive(
-      req.file.buffer,
-      `${tipo}_${Date.now()}.jpg`,
-      codigo
-    );
+    const url = await uploadFileBufferToDrive(req.file, `${tipo}_${Date.now()}.jpg`, codigo);
 
-    // ✅ Guardar link en Google Sheets
     const found = await findRowByCode(codigo);
     if (found) {
       const colName = tipo === "antes" ? /foto.?antes/i : /foto.?despues/i;
       const colIdx = found.headers.findIndex(h => colName.test(h));
       if (colIdx >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + colIdx);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
       }
     }
 
-    res.json({ ok: true, viewLink, downloadLink });
+    console.log(`✅ Imagen subida: ${url}`);
+    res.json({ ok: true, url });
   } catch (e) {
     console.error("❌ Error al subir foto:", e);
     res.status(500).json({ error: "upload-photo failed" });
@@ -182,22 +173,18 @@ router.post("/:codigo/sign", async (req, res) => {
     const { firmaInquilino } = req.body;
     if (!firmaInquilino) return res.status(400).json({ error: "Firma requerida" });
 
-    const { viewLink, downloadLink } = await uploadBase64ImageToDrive(
-      firmaInquilino,
-      `firma_inquilino_${Date.now()}`,
-      codigo
-    );
+    const url = await uploadBase64ImageToDrive(firmaInquilino, `firma_inquilino_${Date.now()}`, codigo);
 
     const found = await findRowByCode(codigo);
     if (found) {
       const idxFirma = found.headers.findIndex(h => /firma$/i.test(h));
       if (idxFirma >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + idxFirma);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
       }
     }
 
-    res.json({ ok: true, viewLink, downloadLink });
+    res.json({ ok: true, url });
   } catch (e) {
     console.error("❌ Error al subir firma:", e);
     res.status(500).json({ error: "sign failed" });
@@ -205,151 +192,53 @@ router.post("/:codigo/sign", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/finish → Finalizar (PDF + correo + descarga)
+// 🔹 POST /api/orders/:codigo/finish → Finalizar (sin correo)
 // ======================================================
 router.post("/:codigo/finish", async (req, res) => {
   try {
     const { codigo } = req.params;
-    const found = await findRowByCode(codigo);
-    if (!found) return res.status(404).json({ error: "Orden no encontrada" });
+    console.log(`🚀 Finalizando orden ${codigo}...`);
 
-    // 1️⃣ Actualizar estado
-    const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
-    if (idxEstado >= 0) {
-      const letter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
-      await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, "Finalizada");
+    const found = await findRowByCode(codigo);
+    if (!found) {
+      console.warn(`⚠️ Orden ${codigo} no encontrada`);
+      return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    // 2️⃣ Generar PDF temporal
-    const pdfPath = await generateOrderPDF(codigo);
+    // 1️⃣ Cambiar estado a "Revisión Dayan"
+    const headers = found.headers;
+    const idxEstado = headers.findIndex(h => /estado/i.test(h));
+    if (idxEstado >= 0) {
+      const colLetter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
+      await updateCell("Órdenes", `Órdenes!${colLetter}${found.rowIndex}`, "Revisión Dayan");
+    }
 
-    // 3️⃣ Subir PDF a Drive
-    const { viewLink, downloadLink } = await uploadPDFToDrive(pdfPath, codigo);
+    // 2️⃣ Generar PDF técnico
+    console.log("🧾 Generando PDF técnico...");
+    const pdfPath = await generateOrderPDF(codigo, { modo: "tecnico" });
 
-    // 4️⃣ Enviar correo con PDF
-    await sendEmail({
-      to: "reparaciones@bluehomeinmo.co",
-      subject: `Orden finalizada ${codigo}`,
-      html: `
-        <p>Hola equipo,</p>
-        <p>La orden <b>${codigo}</b> ha sido finalizada.</p>
-        <p>📎 <a href="${viewLink}" target="_blank">Ver PDF</a></p>
-        <p>⬇ <a href="${downloadLink}" target="_blank">Descargar PDF</a></p>
-        <p>— Blue Home Gestor</p>
-      `,
-      attachments: [
-        {
-          filename: `Orden_${codigo}.pdf`,
-          path: pdfPath,
-          contentType: "application/pdf"
-        }
-      ]
-    });
+    // 3️⃣ Subir PDF a Google Drive
+    const { webViewLink } = await uploadPDFToDrive(pdfPath, codigo);
+    console.log("✅ PDF subido correctamente:", webViewLink);
 
+    // 4️⃣ (Correo desactivado temporalmente)
+    console.log("📭 Envío de correo desactivado temporalmente.");
+
+    // 5️⃣ Eliminar archivo temporal
     try { fs.unlinkSync(pdfPath); } catch {}
 
+    // 6️⃣ Responder al frontend
+    const download = webViewLink.replace("/view?usp=drivesdk", "/uc?export=download&id=");
     res.json({
       ok: true,
-      message: "Orden finalizada con éxito.",
-      viewLink,
-      downloadLink
+      message: "Orden finalizada y enviada a revisión de Dayan.",
+      pdfLink: webViewLink,
+      download
     });
   } catch (e) {
     console.error("❌ Error al finalizar orden:", e);
-    res.status(500).json({ error: "finish failed" });
+    res.status(500).json({ error: e.message || "finish failed" });
   }
 });
-// ======================================================
-// 🔹 PATCH /api/orders/:codigo/review → Dayan revisa y firma
-// ======================================================
-router.patch("/:codigo/review", async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    const { valor, firmaDayan, observacion } = req.body;
-    const found = await findRowByCode(codigo);
-    if (!found) return res.status(404).json({ error: "Orden no encontrada" });
-
-    // subir firma de Dayan si la envía
-    let firmaUrl = "";
-    if (firmaDayan) {
-      const { viewLink } = await uploadBase64ImageToDrive(firmaDayan, `firma_dayan_${Date.now()}`, codigo);
-      firmaUrl = viewLink;
-    }
-
-    // actualizar columnas
-    const headers = found.headers;
-    const idxValor = headers.findIndex(h => /valor/i.test(h));
-    const idxFirmaDayan = headers.findIndex(h => /firma.?dayan/i.test(h));
-    const idxObs = headers.findIndex(h => /observa/i.test(h));
-    const idxEstado = headers.findIndex(h => /estado/i.test(h));
-
-    const setCell = async (idx, val) => {
-      if (idx >= 0) {
-        const letter = String.fromCharCode("A".charCodeAt(0) + idx);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, val);
-      }
-    };
-
-    await setCell(idxValor, valor || "");
-    await setCell(idxFirmaDayan, firmaUrl);
-    await setCell(idxObs, observacion || "");
-    await setCell(idxEstado, "Contabilidad Aitana");
-
-    res.json({ ok: true, message: "Revisión de Dayan registrada." });
-  } catch (e) {
-    console.error("❌ Error en review:", e);
-    res.status(500).json({ error: "review failed" });
-  }
-});
-
-// ======================================================
-// 🔹 POST /api/orders/:codigo/invoice → Aitana sube factura
-// ======================================================
-router.post("/:codigo/invoice", upload.single("file"), async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
-
-    const { viewLink } = await uploadFileBufferToDrive(req.file.buffer, `factura_${Date.now()}.pdf`, codigo);
-
-    const found = await findRowByCode(codigo);
-    if (found) {
-      const idxFactura = found.headers.findIndex(h => /factura/i.test(h));
-      const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
-
-      const setCell = async (idx, val) => {
-        if (idx >= 0) {
-          const letter = String.fromCharCode("A".charCodeAt(0) + idx);
-          await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, val);
-        }
-      };
-
-      await setCell(idxFactura, viewLink);
-      await setCell(idxEstado, "Finalizado");
-    }
-
-    res.json({ ok: true, message: "Factura subida correctamente." });
-  } catch (e) {
-    console.error("❌ Error al subir factura:", e);
-    res.status(500).json({ error: "invoice failed" });
-  }
-});
-
-// ======================================================
-// 🔹 GET /api/orders/:codigo/final-pdf → Daniela descarga consolidado
-// ======================================================
-router.get("/:codigo/final-pdf", async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    const pdfPath = await generateOrderPDF(codigo, { modo: "final" });
-    res.download(pdfPath, `Orden_${codigo}_final.pdf`, err => {
-      if (!err) fs.unlinkSync(pdfPath);
-    });
-  } catch (e) {
-    console.error("❌ Error al generar PDF final:", e);
-    res.status(500).json({ error: "final-pdf failed" });
-  }
-});
-
 
 export default router;
