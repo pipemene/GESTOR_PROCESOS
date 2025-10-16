@@ -7,7 +7,7 @@ import {
   ensureOrderFolder
 } from "../services/driveService.js";
 
-export const router = express.Router(); // 🔥 export nombrado, no default
+export const router = express.Router(); // Export nombrado (index usa import { router as ordersRouter } from "./routes/orders.js")
 const upload = multer(); // memoria (buffer)
 
 // ======================================================
@@ -38,20 +38,29 @@ router.get("/", async (req, res) => {
 // ======================================================
 router.post("/", async (req, res) => {
   try {
+    console.log("📩 Datos recibidos en /api/orders:", req.body);
+
     const { codigo, arrendatario, telefono, tecnico, descripcion } = req.body;
 
     if (!codigo || !arrendatario || !telefono || !descripcion) {
+      console.warn("⚠️ Faltan datos obligatorios:", {
+        codigo,
+        arrendatario,
+        telefono,
+        descripcion
+      });
+      // Respuesta con 400 para frontend
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
     const estado = "Pendiente";
     const nuevaFila = [
-      codigo,
-      arrendatario,
-      telefono,
+      codigo || "SIN_CODIGO",
+      arrendatario || "SIN_ARRENDATARIO",
+      telefono || "SIN_TEL",
       tecnico || "Sin asignar",
       estado,
-      descripcion
+      descripcion || "SIN_DESCRIPCION"
     ];
 
     await appendRow("Órdenes", nuevaFila);
@@ -111,7 +120,8 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
     const { codigo } = req.params;
     const tipo = (req.body.tipo || "").toLowerCase();
     if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
-    if (!["antes", "despues"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
+    if (!["antes", "despues"].includes(tipo))
+      return res.status(400).json({ error: "Tipo inválido" });
 
     const folderId = await ensureOrderFolder(codigo);
     const url = await uploadFileBufferToDrive({
@@ -144,7 +154,12 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
 router.post("/:codigo/feedback", async (req, res) => {
   try {
     const { codigo } = req.params;
-    const { materiales = "", trabajo = "", fotoAntesURL = null, fotoDespuesURL = null } = req.body;
+    const {
+      materiales = "",
+      trabajo = "",
+      fotoAntesURL = null,
+      fotoDespuesURL = null
+    } = req.body;
     const found = await findRowByCode(codigo);
     if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
@@ -172,7 +187,7 @@ router.post("/:codigo/feedback", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/sign → Firma del inquilino (base64)
+// 🔹 POST /api/orders/:codigo/sign → Firma del inquilino
 // ======================================================
 router.post("/:codigo/sign", async (req, res) => {
   try {
@@ -224,4 +239,3 @@ router.post("/:codigo/finish", async (req, res) => {
     res.status(500).json({ error: "finish failed" });
   }
 });
-
