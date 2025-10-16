@@ -1,242 +1,268 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Orden de Trabajo | Blue Home Inmobiliaria</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Orden | Blue Home Inmobiliaria</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f5f7fa;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f6f8;
       margin: 0;
-      padding: 0;
+      padding: 20px;
+      color: #1e3a8a;
     }
-    .contenedor {
-      max-width: 800px;
-      margin: 30px auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 25px 30px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     h2 {
       text-align: center;
       color: #1e3a8a;
     }
-    .campo {
-      margin-bottom: 15px;
+    .section {
+      margin-top: 25px;
+      border-top: 2px solid #1d4ed8;
+      padding-top: 15px;
     }
     label {
+      font-weight: bold;
       display: block;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
-    input, textarea {
+    input[type="text"],
+    textarea,
+    select {
       width: 100%;
       padding: 8px;
-      border: 1px solid #d1d5db;
-      border-radius: 5px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
-    textarea {
-      height: 70px;
-      resize: none;
-    }
-    .fotos {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .fotos div {
-      flex: 1;
-      text-align: center;
-    }
-    .btn {
+    button {
       background-color: #1d4ed8;
       color: white;
       border: none;
-      padding: 10px 15px;
       border-radius: 6px;
+      padding: 10px 15px;
       cursor: pointer;
-      transition: 0.2s;
+      margin-right: 8px;
     }
-    .btn:hover {
+    button:hover {
       background-color: #2563eb;
     }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row div {
+      flex: 1;
+    }
+    .photo-preview {
+      width: 100%;
+      max-height: 250px;
+      object-fit: cover;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
     canvas {
-      border: 2px solid #9ca3af;
+      border: 2px solid #1d4ed8;
       border-radius: 6px;
       width: 100%;
       height: 200px;
-      touch-action: none;
     }
-    .mensaje {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: 600;
+    .success {
+      background: #bbf7d0;
+      color: #065f46;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
-    .exito { color: #059669; }
-    .error { color: #dc2626; }
+    .error {
+      background: #fecaca;
+      color: #991b1b;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
+
 <body>
-  <div class="contenedor">
+  <div class="container">
     <h2>🧰 Orden de Trabajo</h2>
-    <div id="mensaje" class="mensaje"></div>
+    <div id="mensaje"></div>
 
-    <div id="datosOrden"></div>
+    <div id="orden-info"></div>
 
-    <hr style="margin:20px 0;">
+    <div class="section">
+      <h3>📸 Evidencias del trabajo</h3>
+      <label>Foto Antes:</label>
+      <input type="file" id="fotoAntes" accept="image/*" />
+      <img id="previewAntes" class="photo-preview" />
 
-    <form id="formEvidencia">
-      <div class="fotos">
-        <div>
-          <label>📸 Foto Antes</label>
-          <input type="file" id="fotoAntes" accept="image/*">
-        </div>
-        <div>
-          <label>📸 Foto Después</label>
-          <input type="file" id="fotoDespues" accept="image/*">
-        </div>
-      </div>
+      <label>Foto Después:</label>
+      <input type="file" id="fotoDespues" accept="image/*" />
+      <img id="previewDespues" class="photo-preview" />
+    </div>
 
-      <div class="campo">
-        <label for="materiales">Materiales Utilizados</label>
-        <textarea id="materiales" placeholder="Ejemplo: tornillos, soporte TV, pintura, silicona..."></textarea>
-      </div>
+    <div class="section">
+      <h3>🧱 Materiales y Trabajo Realizado</h3>
+      <label>Materiales Usados</label>
+      <textarea id="materiales" placeholder="Ejemplo: pintura blanca, silicona, tornillos..."></textarea>
 
-      <div class="campo">
-        <label for="trabajo">Descripción del Trabajo Realizado</label>
-        <textarea id="trabajo" placeholder="Describe brevemente lo que hiciste..."></textarea>
-      </div>
+      <label>Descripción del Trabajo</label>
+      <textarea id="trabajo" placeholder="Ejemplo: se instaló el letrero, se sellaron juntas..."></textarea>
 
-      <div class="campo">
-        <label>Firma del Inquilino</label>
-        <canvas id="canvasFirma"></canvas>
-        <button type="button" class="btn" id="btnLimpiarFirma">Limpiar Firma</button>
-      </div>
+      <button id="btnGuardarFeedback">💾 Guardar Retroalimentación</button>
+    </div>
 
-      <button type="submit" class="btn">✅ Terminar Trabajo</button>
-    </form>
+    <div class="section">
+      <h3>✍️ Firma del Inquilino</h3>
+      <canvas id="firmaCanvas"></canvas><br />
+      <button id="btnLimpiarFirma">🧹 Limpiar</button>
+      <button id="btnGuardarFirma">💾 Guardar Firma</button>
+    </div>
+
+    <div class="section" style="text-align:center;">
+      <button id="btnFinalizar" style="background:#16a34a;">✅ Marcar como Finalizada</button>
+    </div>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("codigo");
+    const API_BASE = "/api/orders";
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigo = urlParams.get("codigo");
     const mensaje = document.getElementById("mensaje");
-    const datosOrdenDiv = document.getElementById("datosOrden");
-    const canvas = document.getElementById("canvasFirma");
-    const ctx = canvas.getContext("2d");
+    const infoDiv = document.getElementById("orden-info");
 
+    if (!codigo) {
+      mensaje.innerHTML = '<div class="error">⚠️ No se proporcionó el código de la orden.</div>';
+    } else {
+      cargarOrden();
+    }
+
+    async function cargarOrden() {
+      try {
+        const res = await fetch(`${API_BASE}`);
+        const data = await res.json();
+        const orden = data.find(o => o.Código === codigo || o.codigo === codigo);
+        if (!orden) {
+          infoDiv.innerHTML = "<div class='error'>Orden no encontrada</div>";
+          return;
+        }
+
+        infoDiv.innerHTML = `
+          <p><b>Código:</b> ${orden.Código || orden.codigo}</p>
+          <p><b>Arrendatario:</b> ${orden.Arrendatario || orden.arrendatario}</p>
+          <p><b>Técnico:</b> ${orden.Técnico || orden.tecnico}</p>
+          <p><b>Estado:</b> ${orden.Estado || orden.estado}</p>
+          <p><b>Descripción:</b> ${orden.Descripción || orden.descripcion}</p>
+        `;
+      } catch (err) {
+        infoDiv.innerHTML = "<div class='error'>Error al cargar orden.</div>";
+      }
+    }
+
+    // FOTO ANTES
+    document.getElementById("fotoAntes").addEventListener("change", async (e) => {
+      await subirFoto(e.target.files[0], "antes", "previewAntes");
+    });
+
+    // FOTO DESPUÉS
+    document.getElementById("fotoDespues").addEventListener("change", async (e) => {
+      await subirFoto(e.target.files[0], "despues", "previewDespues");
+    });
+
+    async function subirFoto(file, tipo, previewId) {
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tipo", tipo);
+
+      try {
+        const res = await fetch(`${API_BASE}/${codigo}/upload-photo`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById(previewId).src = data.url;
+          mostrarMensaje("✅ Foto subida correctamente", "success");
+        } else {
+          mostrarMensaje("❌ Error al subir foto", "error");
+        }
+      } catch (err) {
+        mostrarMensaje("❌ Error al subir foto", "error");
+      }
+    }
+
+    // GUARDAR FEEDBACK
+    document.getElementById("btnGuardarFeedback").addEventListener("click", async () => {
+      const materiales = document.getElementById("materiales").value;
+      const trabajo = document.getElementById("trabajo").value;
+
+      const res = await fetch(`${API_BASE}/${codigo}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ materiales, trabajo })
+      });
+      const data = await res.json();
+      if (data.ok) mostrarMensaje("✅ Retroalimentación guardada", "success");
+      else mostrarMensaje("❌ Error al guardar retroalimentación", "error");
+    });
+
+    // FIRMA
+    const canvas = document.getElementById("firmaCanvas");
+    const ctx = canvas.getContext("2d");
     let dibujando = false;
 
-    // ✏️ Firma con el dedo o mouse
-    function iniciarDibujo(e) {
-      dibujando = true;
-      ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
-    }
+    canvas.addEventListener("mousedown", e => { dibujando = true; ctx.beginPath(); });
+    canvas.addEventListener("mouseup", e => dibujando = false);
+    canvas.addEventListener("mousemove", dibujar);
 
     function dibujar(e) {
       if (!dibujando) return;
       ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.strokeStyle = "#1d4ed8";
-      ctx.lineTo(e.offsetX, e.offsetY);
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
       ctx.stroke();
     }
-
-    function detenerDibujo() {
-      dibujando = false;
-    }
-
-    canvas.addEventListener("mousedown", iniciarDibujo);
-    canvas.addEventListener("mousemove", dibujar);
-    canvas.addEventListener("mouseup", detenerDibujo);
-    canvas.addEventListener("mouseleave", detenerDibujo);
-
-    // 📱 soporte táctil
-    canvas.addEventListener("touchstart", e => {
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      ctx.beginPath();
-      ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-    });
-
-    canvas.addEventListener("touchmove", e => {
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-      ctx.stroke();
-    });
 
     document.getElementById("btnLimpiarFirma").addEventListener("click", () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 
-    // 📋 Cargar datos de la orden
-    async function cargarOrden() {
-      try {
-        const res = await fetch(`/api/orders/${codigo}`);
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error || "No se encontró la orden");
-
-        datosOrdenDiv.innerHTML = `
-          <p><strong>Código:</strong> ${data.codigo}</p>
-          <p><strong>Arrendatario:</strong> ${data.arrendatario}</p>
-          <p><strong>Técnico:</strong> ${data.tecnico}</p>
-          <p><strong>Descripción:</strong> ${data.observacion}</p>
-        `;
-      } catch (err) {
-        mensaje.textContent = "❌ Error cargando la orden";
-        mensaje.className = "mensaje error";
-      }
-    }
-
-    // 🚀 Enviar evidencias
-    document.getElementById("formEvidencia").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const fotoAntes = document.getElementById("fotoAntes").files[0];
-      const fotoDespues = document.getElementById("fotoDespues").files[0];
-      const materiales = document.getElementById("materiales").value.trim();
-      const trabajo = document.getElementById("trabajo").value.trim();
-      const firma = canvas.toDataURL("image/png");
-
-      const formData = new FormData();
-      formData.append("fotoAntes", fotoAntes);
-      formData.append("fotoDespues", fotoDespues);
-      formData.append("materiales", materiales);
-      formData.append("trabajo", trabajo);
-      formData.append("firma", firma);
-
-      try {
-        const res = await fetch(`/api/orders/${codigo}/finalizar`, {
-          method: "POST",
-          body: formData
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          mensaje.textContent = "✅ Trabajo finalizado correctamente";
-          mensaje.className = "mensaje exito";
-        } else {
-          mensaje.textContent = "❌ Error al finalizar la orden";
-          mensaje.className = "mensaje error";
-        }
-      } catch (err) {
-        console.error(err);
-        mensaje.textContent = "⚠️ Error de conexión con el servidor";
-        mensaje.className = "mensaje error";
-      }
+    document.getElementById("btnGuardarFirma").addEventListener("click", async () => {
+      const dataUrl = canvas.toDataURL("image/png");
+      const res = await fetch(`${API_BASE}/${codigo}/sign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firmaInquilino: dataUrl })
+      });
+      const data = await res.json();
+      if (data.ok) mostrarMensaje("✅ Firma guardada correctamente", "success");
+      else mostrarMensaje("❌ Error al guardar firma", "error");
     });
 
-    cargarOrden();
+    // FINALIZAR ORDEN
+    document.getElementById("btnFinalizar").addEventListener("click", async () => {
+      const res = await fetch(`${API_BASE}/${codigo}/finish`, { method: "POST" });
+      const data = await res.json();
+      if (data.ok) mostrarMensaje("✅ Orden marcada como finalizada", "success");
+      else mostrarMensaje("❌ Error al finalizar orden", "error");
+    });
+
+    function mostrarMensaje(texto, tipo) {
+      mensaje.innerHTML = `<div class='${tipo}'>${texto}</div>`;
+      setTimeout(() => (mensaje.innerHTML = ""), 3500);
+    }
   </script>
 </body>
 </html>
