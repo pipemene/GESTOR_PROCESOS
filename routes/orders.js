@@ -7,8 +7,8 @@ import {
   ensureOrderFolder
 } from "../services/driveService.js";
 
-export const router = express.Router(); // Export nombrado (index usa import { router as ordersRouter } from "./routes/orders.js")
-const upload = multer(); // memoria (buffer)
+export const router = express.Router();
+const upload = multer();
 
 // ======================================================
 // 🔹 GET /api/orders → Listar órdenes desde Google Sheets
@@ -40,16 +40,16 @@ router.post("/", async (req, res) => {
   try {
     console.log("📩 Datos recibidos en /api/orders:", req.body);
 
-    const { codigo, arrendatario, telefono, tecnico, descripcion } = req.body;
+    const { codigo, arrendatario, telefono, tecnico, descripcion, observacion } = req.body;
+    const descripcionFinal = descripcion || observacion || "";
 
-    if (!codigo || !arrendatario || !telefono || !descripcion) {
+    if (!codigo || !arrendatario || !telefono || !descripcionFinal) {
       console.warn("⚠️ Faltan datos obligatorios:", {
         codigo,
         arrendatario,
         telefono,
-        descripcion
+        descripcionFinal
       });
-      // Respuesta con 400 para frontend
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
@@ -60,7 +60,7 @@ router.post("/", async (req, res) => {
       telefono || "SIN_TEL",
       tecnico || "Sin asignar",
       estado,
-      descripcion || "SIN_DESCRIPCION"
+      descripcionFinal || "SIN_DESCRIPCION"
     ];
 
     await appendRow("Órdenes", nuevaFila);
@@ -74,7 +74,7 @@ router.post("/", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 Función auxiliar: buscar fila por código
+// 🔹 Buscar fila por código
 // ======================================================
 async function findRowByCode(codigo) {
   const rows = await getSheetData("Órdenes");
