@@ -27,7 +27,6 @@ function getDriveClient() {
 export async function ensureOrderFolder(codigo) {
   const drive = getDriveClient();
 
-  // Buscar carpeta existente
   const query = `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='Orden_${codigo}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   const res = await drive.files.list({
     q: query,
@@ -38,7 +37,6 @@ export async function ensureOrderFolder(codigo) {
     return res.data.files[0].id;
   }
 
-  // Si no existe, crearla
   const folderMetadata = {
     name: `Orden_${codigo}`,
     mimeType: "application/vnd.google-apps.folder",
@@ -78,13 +76,14 @@ export async function uploadPDFToDrive(filePath, codigo) {
       fields: "id, webViewLink",
     });
 
+    // Hacerlo público para ver sin iniciar sesión
     await drive.permissions.create({
       fileId: data.id,
       requestBody: { role: "reader", type: "anyone" },
     });
 
-    console.log(`✅ PDF subido: ${data.webViewLink}`);
-    return data.webViewLink;
+    console.log(`✅ PDF subido correctamente: ${data.webViewLink}`);
+    return { webViewLink: data.webViewLink };
   } catch (error) {
     console.error("❌ Error subiendo PDF a Drive:", error);
     throw new Error("Error al subir PDF a Google Drive");
@@ -92,23 +91,29 @@ export async function uploadPDFToDrive(filePath, codigo) {
 }
 
 /**
- * 🖼️ Sube una imagen codificada en base64 a Drive
+ * 🖋️ Sube una firma en base64 o DataURL (maneja objeto o string)
  */
-export async function uploadBase64ImageToDrive(base64Data, nombre, codigo) {
+export async function uploadBase64ImageToDrive(input, nombre, codigo) {
   const drive = getDriveClient();
   const folderId = await ensureOrderFolder(codigo);
 
+  // Acepta objeto tipo { dataUrl: "..." } o string directo
+  const base64String = typeof input === "string" ? input : input?.dataUrl || input?.data || "";
+  if (!base64String) throw new Error("Firma inválida: no contiene datos base64.");
+
+  const base64Data = base64String.replace(/^data:image\/\w+;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
-  const tempFilePath = `/tmp/${nombre}.jpg`;
+
+  const tempFilePath = `/tmp/${nombre}.png`;
   fs.writeFileSync(tempFilePath, buffer);
 
   const fileMetadata = {
-    name: `${nombre}.jpg`,
+    name: `${nombre}.png`,
     parents: [folderId],
   };
 
   const media = {
-    mimeType: "image/jpeg",
+    mimeType: "image/png",
     body: fs.createReadStream(tempFilePath),
   };
 
@@ -128,11 +133,14 @@ export async function uploadBase64ImageToDrive(base64Data, nombre, codigo) {
 }
 
 /**
- * 💾 Sube directamente un archivo en buffer (por multer)
+ * 💾 Sube directamente un archivo en buffer (por multer o buffer directo)
  */
-export async function uploadFileBufferToDrive(fileBuffer, fileName, codigo) {
+export async function uploadFileBufferToDrive(fileInput, fileName, codigo) {
   const drive = getDriveClient();
   const folderId = await ensureOrderFolder(codigo);
+
+  const fileBuffer = fileInput?.buffer || fileInput;
+  if (!Buffer.isBuffer(fileBuffer)) throw new Error("Archivo inválido: se esperaba un buffer.");
 
   const tempFilePath = `/tmp/${fileName}`;
   fs.writeFileSync(tempFilePath, fileBuffer);
