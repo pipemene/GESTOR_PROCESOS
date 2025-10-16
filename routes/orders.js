@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import fs from "fs";
 import { getSheetData, updateCell, appendRow } from "../services/sheetsService.js";
 import {
   uploadBase64ImageToDrive,
@@ -9,10 +10,9 @@ import {
 } from "../services/driveService.js";
 import { generateOrderPDF } from "../services/pdfService.js";
 import { sendEmail } from "../services/mailService.js";
-import fs from "fs";
 
 export const router = express.Router();
-const upload = multer();
+const upload = multer(); // para manejar fotos (antes/después)
 
 // ======================================================
 // 🔹 GET /api/orders → Listar órdenes desde Google Sheets
@@ -32,13 +32,13 @@ router.get("/", async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.error("❌ Error al obtener órdenes desde Google Sheets:", error);
+    console.error("❌ Error al obtener órdenes:", error);
     res.status(500).json({ error: "Error al cargar las órdenes" });
   }
 });
 
 // ======================================================
-// 🔹 POST /api/orders → Crear nueva orden (alineada con hoja actual)
+// 🔹 POST /api/orders → Crear nueva orden
 // ======================================================
 router.post("/", async (req, res) => {
   try {
@@ -50,37 +50,34 @@ router.post("/", async (req, res) => {
     }
 
     const estado = "Pendiente";
-
     const nuevaFila = [
-      arrendatario || "SIN_CLIENTE",
-      new Date().toLocaleString("es-CO"),
-      arrendatario || "SIN_INQUILINO",
-      telefono || "SIN_TEL",
-      codigo || "SIN_CODIGO",
-      descripcionFinal || "SIN_DESC",
+      codigo,
+      arrendatario,
+      telefono,
       tecnico || "Sin asignar",
       estado,
-      "", "", "", ""
+      descripcionFinal
     ];
 
     await appendRow("Órdenes", nuevaFila);
+    console.log(`✅ Nueva orden creada correctamente (${codigo})`);
 
-    console.log(`✅ Nueva orden registrada correctamente (${codigo})`);
     res.json({ ok: true });
   } catch (e) {
-    console.error("❌ Error al crear la orden:", e.message);
+    console.error("❌ Error al crear orden:", e);
     res.status(500).json({ error: "Error al crear la orden" });
   }
 });
 
 // ======================================================
-// 🔹 Buscar fila por código
+// 🔹 Utilidad → Buscar fila por código
 // ======================================================
 async function findRowByCode(codigo) {
   const rows = await getSheetData("Órdenes");
   const headers = rows[0] || [];
   const idxCodigo = headers.findIndex(h => /c[óo]digo/i.test(h));
   if (idxCodigo < 0) throw new Error("No existe columna Código");
+
   for (let i = 1; i < rows.length; i++) {
     if ((rows[i][idxCodigo] || "").toString().trim() === codigo.toString().trim()) {
       return { rowIndex: i + 1, headers, row: rows[i] };
@@ -100,12 +97,10 @@ router.patch("/:codigo/assign", async (req, res) => {
     if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
     const idxTec = found.headers.findIndex(h => /t[ée]cnico/i.test(h));
-    if (idxTec < 0) return res.status(400).json({ error: "No existe columna Técnico" });
-
     const colLetter = String.fromCharCode("A".charCodeAt(0) + idxTec);
     await updateCell("Órdenes", `Órdenes!${colLetter}${found.rowIndex}`, tecnico || "Sin asignar");
 
-    return res.json({ ok: true });
+    res.json({ ok: true });
   } catch (e) {
     console.error("❌ Error al asignar técnico:", e);
     res.status(500).json({ error: "Assign failed" });
@@ -120,16 +115,9 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
     const { codigo } = req.params;
     const tipo = (req.body.tipo || "").toLowerCase();
     if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
-    if (!["antes", "despues"].includes(tipo))
-      return res.status(400).json({ error: "Tipo inválido" });
+    if (!["antes", "despues"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
 
-    const folderId = await ensureOrderFolder(codigo);
-    const url = await uploadFileBufferToDrive({
-      buffer: req.file.buffer,
-      mimeType: req.file.mimetype || "image/jpeg",
-      filename: `${tipo}_${Date.now()}.jpg`,
-      folderId
-    });
+    const url = await uploadFileBufferToDrive(req.file, `${tipo}_${Date.now()}.jpg`, codigo);
 
     const found = await findRowByCode(codigo);
     if (found) {
@@ -154,19 +142,12 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
 router.post("/:codigo/feedback", async (req, res) => {
   try {
     const { codigo } = req.params;
-    const {
-      materiales = "",
-      trabajo = "",
-      fotoAntesURL = null,
-      fotoDespuesURL = null
-    } = req.body;
+    const { materiales = "", trabajo = "" } = req.body;
     const found = await findRowByCode(codigo);
     if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
     const idxMat = found.headers.findIndex(h => /material(es)?/i.test(h));
     const idxTrab = found.headers.findIndex(h => /trabajo/i.test(h));
-    const idxFA = found.headers.findIndex(h => /foto.?antes/i.test(h));
-    const idxFD = found.headers.findIndex(h => /foto.?despues/i.test(h));
 
     const setCell = async (idx, value) => {
       if (idx < 0) return;
@@ -176,8 +157,6 @@ router.post("/:codigo/feedback", async (req, res) => {
 
     await setCell(idxMat, materiales);
     await setCell(idxTrab, trabajo);
-    if (fotoAntesURL) await setCell(idxFA, fotoAntesURL);
-    if (fotoDespuesURL) await setCell(idxFD, fotoDespuesURL);
 
     res.json({ ok: true });
   } catch (e) {
@@ -195,12 +174,7 @@ router.post("/:codigo/sign", async (req, res) => {
     const { firmaInquilino } = req.body;
     if (!firmaInquilino) return res.status(400).json({ error: "Firma requerida" });
 
-    const folderId = await ensureOrderFolder(codigo);
-    const url = await uploadBase64ImageToDrive({
-      dataUrl: firmaInquilino,
-      filename: `firma_inquilino_${Date.now()}.png`,
-      folderId
-    });
+    const url = await uploadBase64ImageToDrive(firmaInquilino, `firma_inquilino_${Date.now()}`, codigo);
 
     const found = await findRowByCode(codigo);
     if (found) {
@@ -219,7 +193,7 @@ router.post("/:codigo/sign", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/finish → Finalizar (PDF + correo)
+// 🔹 POST /api/orders/:codigo/finish → Finalizar (PDF + correo + descarga)
 // ======================================================
 router.post("/:codigo/finish", async (req, res) => {
   try {
@@ -227,23 +201,27 @@ router.post("/:codigo/finish", async (req, res) => {
     const found = await findRowByCode(codigo);
     if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
+    // 1️⃣ Actualizar estado
     const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
     if (idxEstado >= 0) {
       const letter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
       await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, "Finalizada");
     }
 
+    // 2️⃣ Generar PDF temporal
     const pdfPath = await generateOrderPDF(codigo);
+
+    // 3️⃣ Subir PDF a Drive
     const { webViewLink } = await uploadPDFToDrive(pdfPath, codigo);
 
+    // 4️⃣ Enviar correo con PDF
     await sendEmail({
       to: "reparaciones@bluehomeinmo.co",
-      subject: `Orden finalizada ${codigo} – Evidencias y firma`,
+      subject: `Orden finalizada ${codigo}`,
       html: `
         <p>Hola equipo,</p>
         <p>La orden <b>${codigo}</b> ha sido finalizada.</p>
-        <p>Pueden ver el PDF en Drive:</p>
-        <p><a href="${webViewLink}" target="_blank">${webViewLink}</a></p>
+        <p>📎 <a href="${webViewLink}" target="_blank">Descargar PDF</a></p>
         <p>— Blue Home Gestor</p>
       `,
       attachments: [
@@ -255,11 +233,20 @@ router.post("/:codigo/finish", async (req, res) => {
       ]
     });
 
+    // 5️⃣ Eliminar PDF temporal
     try { fs.unlinkSync(pdfPath); } catch {}
 
-    res.json({ ok: true, pdfLink: webViewLink });
+    // 6️⃣ Devolver link de descarga directa
+    const directDownload = webViewLink.replace("/view?usp=drivesdk", "/export?format=pdf");
+
+    res.json({
+      ok: true,
+      message: "Orden finalizada con éxito.",
+      pdfLink: webViewLink,
+      download: directDownload
+    });
   } catch (e) {
-    console.error("❌ Error al finalizar orden (PDF/correo):", e);
+    console.error("❌ Error al finalizar orden:", e);
     res.status(500).json({ error: "finish failed" });
   }
 });
