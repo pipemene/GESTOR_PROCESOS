@@ -17,7 +17,6 @@ function getDriveClient() {
     ["https://www.googleapis.com/auth/drive"]
   );
 
-  // ✅ Cliente Drive con soporte para Shared Drives
   return google.drive({
     version: "v3",
     auth,
@@ -26,12 +25,13 @@ function getDriveClient() {
 }
 
 /**
- * 📁 Crea o recupera la carpeta de una orden dentro de la unidad compartida
+ * 📁 Crea o recupera la carpeta de una orden dentro de la unidad compartida (sin duplicados)
  */
 export async function ensureOrderFolder(codigo) {
   const drive = getDriveClient();
+  const folderName = `Orden_${String(codigo).trim().toUpperCase()}`;
 
-  const query = `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='Orden_${codigo}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const query = `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
 
   const res = await drive.files.list({
     q: query,
@@ -40,13 +40,13 @@ export async function ensureOrderFolder(codigo) {
     includeItemsFromAllDrives: true,
   });
 
-  if (res.data.files.length > 0) {
+  if (res.data.files && res.data.files.length > 0) {
+    console.log(`📁 Carpeta existente para ${folderName}`);
     return res.data.files[0].id;
   }
 
-  // Crear carpeta si no existe
   const folderMetadata = {
-    name: `Orden_${codigo}`,
+    name: folderName,
     mimeType: "application/vnd.google-apps.folder",
     parents: [GOOGLE_DRIVE_FOLDER_ID],
   };
@@ -57,7 +57,7 @@ export async function ensureOrderFolder(codigo) {
     supportsAllDrives: true,
   });
 
-  console.log(`📂 Carpeta creada para la orden ${codigo}: ${folder.data.id}`);
+  console.log(`📂 Carpeta creada para la orden ${folderName}: ${folder.data.id}`);
   return folder.data.id;
 }
 
@@ -96,7 +96,7 @@ export async function uploadPDFToDrive(filePath, codigo) {
     const downloadLink = `https://drive.google.com/uc?export=download&id=${data.id}`;
 
     console.log(`✅ PDF subido: ${viewLink}`);
-    console.log(`⬇ Enlace de descarga directa: ${downloadLink}`);
+    console.log(`⬇ Enlace directo: ${downloadLink}`);
 
     return { viewLink, downloadLink };
   } catch (error) {
@@ -118,6 +118,10 @@ export async function uploadBase64ImageToDrive({ dataUrl, filename, folderId }) 
       typeof dataUrl === "object" && dataUrl.data
         ? dataUrl.data
         : dataUrl || "";
+
+    if (!base64String || typeof base64String !== "string") {
+      throw new Error("Formato de imagen inválido o vacío");
+    }
 
     const cleanData = base64String.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(cleanData, "base64");
@@ -142,6 +146,7 @@ export async function uploadBase64ImageToDrive({ dataUrl, filename, folderId }) 
     });
 
     fs.unlinkSync(tempFilePath);
+    console.log(`🖋️ Imagen subida correctamente: ${data.webViewLink}`);
     return data.webViewLink;
   } catch (error) {
     console.error("❌ Error al subir imagen base64 a Drive:", error);
@@ -178,6 +183,7 @@ export async function uploadFileBufferToDrive({ buffer, mimeType, filename, fold
     });
 
     fs.unlinkSync(tempFilePath);
+    console.log(`📸 Archivo subido: ${data.webViewLink}`);
     return data.webViewLink;
   } catch (error) {
     console.error("❌ Error al subir archivo a Drive:", error);
