@@ -10,7 +10,9 @@ import {
 export const router = express.Router(); // 🔥 export nombrado, no default
 const upload = multer(); // memoria (buffer)
 
+// ======================================================
 // 🔹 GET /api/orders → Listar órdenes desde Google Sheets
+// ======================================================
 router.get("/", async (req, res) => {
   try {
     const rows = await getSheetData("Órdenes");
@@ -31,7 +33,40 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 🔹 Utilidad interna: busca fila por código
+// ======================================================
+// 🔹 POST /api/orders → Crear nueva orden
+// ======================================================
+router.post("/", async (req, res) => {
+  try {
+    const { codigo, arrendatario, telefono, tecnico, descripcion } = req.body;
+
+    if (!codigo || !arrendatario || !telefono || !descripcion) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    const estado = "Pendiente";
+    const nuevaFila = [
+      codigo,
+      arrendatario,
+      telefono,
+      tecnico || "Sin asignar",
+      estado,
+      descripcion
+    ];
+
+    await appendRow("Órdenes", nuevaFila);
+
+    console.log(`✅ Nueva orden registrada: ${codigo} (${arrendatario})`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al crear la orden:", e.message, e.stack);
+    res.status(500).json({ error: e.message || "Error al crear la orden" });
+  }
+});
+
+// ======================================================
+// 🔹 Función auxiliar: buscar fila por código
+// ======================================================
 async function findRowByCode(codigo) {
   const rows = await getSheetData("Órdenes");
   const headers = rows[0] || [];
@@ -45,7 +80,9 @@ async function findRowByCode(codigo) {
   return null;
 }
 
-// 🔹 PATCH /api/orders/:codigo/assign → asignar técnico
+// ======================================================
+// 🔹 PATCH /api/orders/:codigo/assign → Asignar técnico
+// ======================================================
 router.patch("/:codigo/assign", async (req, res) => {
   try {
     const { codigo } = req.params;
@@ -61,12 +98,14 @@ router.patch("/:codigo/assign", async (req, res) => {
 
     return res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error al asignar técnico:", e);
     res.status(500).json({ error: "Assign failed" });
   }
 });
 
-// 🔹 POST /api/orders/:codigo/upload-photo → subir foto antes/después
+// ======================================================
+// 🔹 POST /api/orders/:codigo/upload-photo → Foto antes/después
+// ======================================================
 router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => {
   try {
     const { codigo } = req.params;
@@ -94,12 +133,14 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
 
     res.json({ ok: true, url });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error al subir foto:", e);
     res.status(500).json({ error: "upload-photo failed" });
   }
 });
 
-// 🔹 POST /api/orders/:codigo/feedback → materiales y trabajo realizado
+// ======================================================
+// 🔹 POST /api/orders/:codigo/feedback → Materiales y trabajo
+// ======================================================
 router.post("/:codigo/feedback", async (req, res) => {
   try {
     const { codigo } = req.params;
@@ -125,12 +166,14 @@ router.post("/:codigo/feedback", async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error en feedback:", e);
     res.status(500).json({ error: "feedback failed" });
   }
 });
 
-// 🔹 POST /api/orders/:codigo/sign → firma del inquilino (base64)
+// ======================================================
+// 🔹 POST /api/orders/:codigo/sign → Firma del inquilino (base64)
+// ======================================================
 router.post("/:codigo/sign", async (req, res) => {
   try {
     const { codigo } = req.params;
@@ -155,12 +198,14 @@ router.post("/:codigo/sign", async (req, res) => {
 
     res.json({ ok: true, url });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error al subir firma:", e);
     res.status(500).json({ error: "sign failed" });
   }
 });
 
-// 🔹 POST /api/orders/:codigo/finish → marcar finalizada
+// ======================================================
+// 🔹 POST /api/orders/:codigo/finish → Marcar orden como finalizada
+// ======================================================
 router.post("/:codigo/finish", async (req, res) => {
   try {
     const { codigo } = req.params;
@@ -175,7 +220,8 @@ router.post("/:codigo/finish", async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error al finalizar orden:", e);
     res.status(500).json({ error: "finish failed" });
   }
 });
+
