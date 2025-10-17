@@ -4,6 +4,8 @@ import cors from 'cors';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import { router as ordersRouter } from './routes/orders.js'; // 🔥 CAMBIO AQUÍ
+import usersRouter from "./routes/users.js";
+app.use("/api/users", usersRouter);
 
 dotenv.config();
 const app = express();

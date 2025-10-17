@@ -55,38 +55,39 @@
   </div>
 
   <script>
-    // 🔹 Usuarios registrados en el sistema (puedes ampliarlo o leerlo desde Google Sheets)
-    const usuarios = [
-      { usuario: "pipe", nombre: "Andrés Felipe", contrasena: "bluehome2025", rol: "oficina" },
-      { usuario: "dayan", nombre: "Dayan", contrasena: "reparaciones2025", rol: "reparaciones" },
-      { usuario: "aitana", nombre: "Aitana", contrasena: "contabilidad2025", rol: "contabilidad" },
-      { usuario: "daniela", nombre: "Daniela", contrasena: "arrendamientos2025", rol: "arrendamiento" }
-    ];
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
-      e.preventDefault();
+    const user = document.getElementById("usuario").value.trim().toLowerCase();
+    const pass = document.getElementById("contrasena").value.trim();
+    const msg = document.getElementById("msgError");
 
-      const user = document.getElementById("usuario").value.trim().toLowerCase();
-      const pass = document.getElementById("contrasena").value.trim();
-      const msg = document.getElementById("msgError");
+    try {
+      const res = await fetch("/api/users");
+      const users = await res.json();
 
-      const encontrado = usuarios.find(u => u.usuario === user && u.contrasena === pass);
+      const encontrado = users.find(
+        u => u.usuario.toLowerCase() === user && u.contrasena === pass
+      );
 
       if (!encontrado) {
         msg.textContent = "❌ Usuario o contraseña incorrectos.";
         return;
       }
 
-      // Guardar sesión activa
       localStorage.setItem("usuarioActivo", JSON.stringify({
         nombre: encontrado.nombre,
         rol: encontrado.rol
       }));
 
-      // Redirigir al dashboard
       window.location.href = "dashboard.html";
-    });
-  </script>
+    } catch (err) {
+      msg.textContent = "⚠️ Error conectando con el servidor.";
+      console.error(err);
+    }
+  });
+</script>
+
 <script>
   // 🕒 Expiración automática de sesión (10 min)
   let tiempoInactividad;
