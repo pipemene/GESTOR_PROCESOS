@@ -1,36 +1,111 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { getSheetData, appendRow, updateCell, deleteRow } from '../services/sheetsService.js';
+import express from "express";
+import { google } from "googleapis";
+import { getAllUsers } from "../services/usersService.js";
 
 const router = express.Router();
+const sheets = google.sheets("v4");
+const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
-// Middleware de autenticación
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Token faltante' });
+// ✅ Listar usuarios
+router.get("/", async (req, res) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(403).json({ error: 'Token inválido' });
-  }
-}
-
-// 🔹 Listar usuarios
-router.get('/', authMiddleware, async (req, res) => {
-  try {
-    const data = await getSheetData(process.env.USERS_SHEET);
-    const headers = data[0];
-    const users = data.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((key, i) => (obj[key] = row[i] || ''));
-      return obj;
-    });
+    const users = await getAllUsers();
     res.json(users);
-  } catch (err) {
-    console.error('❌ Error al leer usuarios:', err);
-    res.status(500).json({ error: 'Error al obtener usuarios' });
+  } catch (e) {
+    console.error("❌ Error al listar usuarios:", e);
+    res.status(500).json({ error: "Error al listar usuarios" });
+  }
+});
+
+// ✅ Crear usuario
+router.post("/", async (req, res) => {
+  try {
+    const { nombre, usuario, contrasena, rol } = req.body;
+    if (!nombre || !usuario || !contrasena || !rol)
+      return res.status(400).json({ error: "Faltan datos" });
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+
+    const client = await auth.getClient();
+    await sheets.spreadsheets.values.append({
+      auth: client,
+      spreadsheetId: SHEET_ID,
+      range: "Usuarios!A:D",
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[nombre, usuario, contrasena, rol]] }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al crear usuario:", e);
+    res.status(500).json({ error: "Error al crear usuario" });
+  }
+});
+
+// ✅ Actualizar usuario
+router.patch("/update", async (req, res) => {
+  try {
+    const { fila, nombre, usuario, contrasena, rol } = req.body;
+    if (!fila) return res.status(400).json({ error: "Fila requerida" });
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+
+    const client = await auth.getClient();
+    const range = `Usuarios!A${fila}:D${fila}`;
+    await sheets.spreadsheets.values.update({
+      auth: client,
+      spreadsheetId: SHEET_ID,
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[nombre, usuario, contrasena, rol]] }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al actualizar usuario:", e);
+    res.status(500).json({ error: "Error al actualizar usuario" });
+  }
+});
+
+// ✅ Eliminar usuario
+router.delete("/delete/:fila", async (req, res) => {
+  try {
+    const fila = parseInt(req.params.fila);
+    if (isNaN(fila)) return res.status(400).json({ error: "Fila inválida" });
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+
+    const client = await auth.getClient();
+    await sheets.spreadsheets.batchUpdate({
+      auth: client,
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        requests: [{ deleteDimension: { range: { sheetId: 0, dimension: "ROWS", startIndex: fila - 1, endIndex: fila } } }]
+      }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al eliminar usuario:", e);
+    res.status(500).json({ error: "Error al eliminar usuario" });
   }
 });
 
