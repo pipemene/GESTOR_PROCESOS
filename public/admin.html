@@ -18,18 +18,6 @@
       justify-content: space-between;
       align-items: center;
     }
-    header h4 {
-      margin: 0;
-      color: #00b4ff;
-    }
-    .table-container {
-      max-width: 1000px;
-      margin: 40px auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
     .btn-primary {
       background-color: #006bb3;
       border: none;
@@ -37,21 +25,33 @@
     .btn-primary:hover {
       background-color: #004c80;
     }
+    .card {
+      max-width: 1100px;
+      margin: 40px auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
+
 <body>
   <header>
-    <h4>⚙️ Panel de Administración — Blue Home</h4>
     <div>
-      <span id="nombreUsuario" class="me-3"></span>
-      <button class="btn btn-sm btn-outline-light" onclick="cerrarSesion()">Cerrar Sesión</button>
+      <h5 class="m-0">
+        ⚙️ Panel de Administración — <span class="text-info">Blue Home</span>
+      </h5>
+    </div>
+    <div>
+      <button class="btn btn-sm btn-light me-2" onclick="irMenuPrincipal()">🏠 Menú Principal</button>
+      <span id="usuarioInfo" class="me-3 fw-semibold"></span>
+      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
   </header>
 
-  <div class="table-container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="fw-bold text-primary">Gestión de Usuarios</h5>
-      <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">➕ Nuevo Usuario</button>
+  <div class="card p-4">
+    <h4 class="text-primary mb-4">Gestión de Usuarios</h4>
+    <div class="text-end mb-3">
+      <button class="btn btn-success btn-sm" id="btnNuevo">➕ Nuevo Usuario</button>
     </div>
 
     <table class="table table-bordered text-center align-middle">
@@ -68,80 +68,26 @@
     </table>
   </div>
 
-  <!-- MODAL NUEVO/EDITAR USUARIO -->
-  <div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form id="formUsuario">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title" id="tituloModal">Nuevo Usuario</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="filaIndex">
-            <div class="mb-3">
-              <label class="form-label">Nombre completo</label>
-              <input type="text" class="form-control" id="nombre" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Usuario</label>
-              <input type="text" class="form-control" id="usuario" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Contraseña</label>
-              <input type="text" class="form-control" id="contrasena" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Rol</label>
-              <select id="rol" class="form-select" required>
-                <option value="">Seleccionar rol...</option>
-                <option value="admin">Administrador</option>
-                <option value="arrendamiento">Arrendamiento</option>
-                <option value="reparaciones">Reparaciones</option>
-                <option value="contabilidad">Contabilidad</option>
-                <option value="tecnico">Técnico</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Guardar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
     if (!usuario.nombre || usuario.rol.toLowerCase() !== "admin") {
-      alert("⚠️ Acceso restringido. Solo los administradores pueden ingresar aquí.");
-      window.location.href = "login.html";
+      alert("⚠️ Acceso restringido al área de administración.");
+      window.location.href = "index.html";
     }
-    document.getElementById("nombreUsuario").textContent =
+    document.getElementById("usuarioInfo").textContent =
       `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
 
     const tabla = document.getElementById("tablaUsuarios");
-    const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
-    const form = document.getElementById("formUsuario");
-
-    let usuarios = [];
 
     async function cargarUsuarios() {
-      try {
-        const res = await fetch("/api/users");
-        usuarios = await res.json();
-        renderTabla();
-      } catch (e) {
-        console.error(e);
-        alert("Error al cargar usuarios");
-      }
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      renderTabla(data);
     }
 
-    function renderTabla() {
+    function renderTabla(usuarios) {
       tabla.innerHTML = "";
-      usuarios.forEach((u, i) => {
+      usuarios.forEach(u => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${u.nombre}</td>
@@ -149,70 +95,21 @@
           <td>${u.contrasena}</td>
           <td>${u.rol}</td>
           <td>
-            <button class="btn btn-sm btn-info me-2" onclick="editarUsuario(${i})">✏️ Editar</button>
-            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${i})">🗑️ Eliminar</button>
+            <button class="btn btn-info btn-sm me-1">✏️ Editar</button>
+            <button class="btn btn-danger btn-sm">🗑️ Eliminar</button>
           </td>
         `;
         tabla.appendChild(tr);
       });
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const nuevo = {
-        nombre: document.getElementById("nombre").value.trim(),
-        usuario: document.getElementById("usuario").value.trim(),
-        contrasena: document.getElementById("contrasena").value.trim(),
-        rol: document.getElementById("rol").value
-      };
-      const fila = document.getElementById("filaIndex").value;
-
-      if (fila !== "") {
-        usuarios[fila] = nuevo;
-      } else {
-        usuarios.push(nuevo);
-      }
-
-      await guardarUsuarios();
-      modal.hide();
-      renderTabla();
-      form.reset();
-    });
-
-    async function guardarUsuarios() {
-      try {
-        await fetch("/api/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(usuarios)
-        });
-      } catch (e) {
-        alert("Error al guardar cambios");
-        console.error(e);
-      }
-    }
-
-    function editarUsuario(i) {
-      const u = usuarios[i];
-      document.getElementById("filaIndex").value = i;
-      document.getElementById("tituloModal").textContent = "Editar Usuario";
-      document.getElementById("nombre").value = u.nombre;
-      document.getElementById("usuario").value = u.usuario;
-      document.getElementById("contrasena").value = u.contrasena;
-      document.getElementById("rol").value = u.rol;
-      modal.show();
-    }
-
-    async function eliminarUsuario(i) {
-      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
-      usuarios.splice(i, 1);
-      await guardarUsuarios();
-      renderTabla();
-    }
-
     function cerrarSesion() {
       localStorage.clear();
-      window.location.href = "login.html";
+      window.location.href = "index.html";
+    }
+
+    function irMenuPrincipal() {
+      window.location.href = "dashboard.html";
     }
 
     cargarUsuarios();
