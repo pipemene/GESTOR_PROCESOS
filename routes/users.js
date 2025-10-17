@@ -1,6 +1,5 @@
 import express from "express";
 import { google } from "googleapis";
-import { getAllUsers } from "../services/usersService.js";
 
 const router = express.Router();
 const sheets = google.sheets("v4");
@@ -9,7 +8,29 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 // ✅ Listar usuarios
 router.get("/", async (req, res) => {
   try {
-    const users = await getAllUsers();
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    });
+
+    const client = await auth.getClient();
+    const response = await sheets.spreadsheets.values.get({
+      auth: client,
+      spreadsheetId: SHEET_ID,
+      range: "Usuarios!A2:D",
+    });
+
+    const users = (response.data.values || []).map((u, i) => ({
+      fila: i + 2,
+      nombre: u[0],
+      usuario: u[1],
+      contrasena: u[2],
+      rol: u[3],
+    }));
+
     res.json(users);
   } catch (e) {
     console.error("❌ Error al listar usuarios:", e);
@@ -27,9 +48,9 @@ router.post("/", async (req, res) => {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const client = await auth.getClient();
@@ -38,7 +59,7 @@ router.post("/", async (req, res) => {
       spreadsheetId: SHEET_ID,
       range: "Usuarios!A:D",
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[nombre, usuario, contrasena, rol]] }
+      requestBody: { values: [[nombre, usuario, contrasena, rol]] },
     });
 
     res.json({ ok: true });
@@ -57,9 +78,9 @@ router.patch("/update", async (req, res) => {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const client = await auth.getClient();
@@ -69,7 +90,7 @@ router.patch("/update", async (req, res) => {
       spreadsheetId: SHEET_ID,
       range,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[nombre, usuario, contrasena, rol]] }
+      requestBody: { values: [[nombre, usuario, contrasena, rol]] },
     });
 
     res.json({ ok: true });
@@ -88,9 +109,9 @@ router.delete("/delete/:fila", async (req, res) => {
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const client = await auth.getClient();
@@ -98,8 +119,14 @@ router.delete("/delete/:fila", async (req, res) => {
       auth: client,
       spreadsheetId: SHEET_ID,
       requestBody: {
-        requests: [{ deleteDimension: { range: { sheetId: 0, dimension: "ROWS", startIndex: fila - 1, endIndex: fila } } }]
-      }
+        requests: [
+          {
+            deleteDimension: {
+              range: { sheetId: 0, dimension: "ROWS", startIndex: fila - 1, endIndex: fila },
+            },
+          },
+        ],
+      },
     });
 
     res.json({ ok: true });

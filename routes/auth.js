@@ -1,18 +1,17 @@
 import express from "express";
 import { google } from "googleapis";
-import jwt from "jsonwebtoken";
 import { GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_SHEET_ID } from "../config.js";
 
 const router = express.Router();
 
 // ==============================
-// 🔐 AUTENTICACIÓN GOOGLE SHEETS
+// 🔐 Autenticación con Google Sheets
 // ==============================
 const auth = new google.auth.JWT(
   GOOGLE_SERVICE_ACCOUNT_EMAIL,
   null,
   GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets"]
+  ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 );
 
 const sheets = google.sheets({ version: "v4", auth });
@@ -22,48 +21,42 @@ const sheets = google.sheets({ version: "v4", auth });
 // ==============================
 router.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { usuario, contrasena } = req.body;
 
-    if (!username || !password) {
+    if (!usuario || !contrasena) {
       return res.status(400).json({ message: "Usuario y contraseña requeridos" });
     }
 
-    // Leer la hoja "Usuarios"
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: "Usuarios!A2:C",
+      range: "Usuarios!A2:D", // ✅ A-D (nombre, usuario, contraseña, rol)
     });
 
     const rows = response.data.values || [];
     const user = rows.find(
-      (r) => r[0]?.trim().toLowerCase() === username.trim().toLowerCase()
+      (r) => r[1]?.trim().toLowerCase() === usuario.trim().toLowerCase()
     );
 
     if (!user) {
-      console.log(`⚠️ Usuario no encontrado: ${username}`);
       return res.status(401).json({ message: "Usuario no encontrado" });
     }
 
-    const [userName, userPassword, userRole] = user;
+    const [nombre, username, password, rol] = user;
 
-    if (userPassword.trim() !== password.trim()) {
-      console.log(`❌ Contraseña incorrecta para ${username}`);
+    if (password.trim() !== contrasena.trim()) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
-    // Crear token JWT
-    const token = jwt.sign(
-      { username: userName, role: userRole },
-      process.env.JWT_SECRET,
-      { expiresIn: "8h" }
-    );
-
-    console.log(`✅ Usuario autenticado: ${username} (${userRole})`);
+    // 🔑 Generar token Base64 (no JWT, para tu middleware actual)
+    const tokenData = { nombre, usuario: username, rol };
+    const token = Buffer.from(JSON.stringify(tokenData)).toString("base64");
 
     res.json({
+      ok: true,
       message: "Inicio de sesión exitoso",
       token,
-      role: userRole,
+      rol,
+      nombre,
     });
   } catch (error) {
     console.error("❌ Error en login:", error);
