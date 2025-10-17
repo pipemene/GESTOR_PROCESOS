@@ -12,6 +12,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      font-family: 'Segoe UI', sans-serif;
     }
     .login-card {
       background: #fff;
@@ -19,7 +20,7 @@
       padding: 40px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
     .login-card h3 {
       color: #003366;
@@ -30,6 +31,11 @@
       width: 100px;
       display: block;
       margin: 0 auto 20px;
+    }
+    #msgBienvenida {
+      font-weight: 600;
+      color: #006bb3;
+      margin-top: 15px;
     }
   </style>
 </head>
@@ -52,6 +58,7 @@
     </form>
 
     <div id="msgError" class="text-danger mt-3 fw-semibold"></div>
+    <div id="msgBienvenida"></div>
   </div>
 
   <script>
@@ -61,6 +68,9 @@
     const user = document.getElementById("usuario").value.trim().toLowerCase();
     const pass = document.getElementById("contrasena").value.trim();
     const msg = document.getElementById("msgError");
+    const msgBienvenida = document.getElementById("msgBienvenida");
+    msg.textContent = "";
+    msgBienvenida.textContent = "";
 
     try {
       const res = await fetch("/api/users");
@@ -75,47 +85,67 @@
         return;
       }
 
+      // Guardar sesión
       localStorage.setItem("usuarioActivo", JSON.stringify({
         nombre: encontrado.nombre,
         rol: encontrado.rol
       }));
 
-      window.location.href = "dashboard.html";
+      // Mostrar mensaje de bienvenida
+      msgBienvenida.textContent = `👋 Bienvenido(a) ${encontrado.nombre}, cargando tu panel...`;
+
+      // Redirección según rol
+      const rol = encontrado.rol.toLowerCase();
+      setTimeout(() => {
+        switch (rol) {
+          case "admin":
+            window.location.href = "admin.html";
+            break;
+          case "arrendamiento":
+            window.location.href = "arrendamiento.html"; // Daniela puede crear órdenes
+            break;
+          case "reparaciones":
+            window.location.href = "reparaciones.html"; // Dayan también puede crear órdenes
+            break;
+          case "contabilidad":
+            window.location.href = "facturacion.html";
+            break;
+          case "tecnico":
+            window.location.href = "ordenes.html";
+            break;
+          default:
+            window.location.href = "dashboard.html";
+            break;
+        }
+      }, 1500); // pequeño delay elegante
+
     } catch (err) {
       msg.textContent = "⚠️ Error conectando con el servidor.";
       console.error(err);
     }
   });
-</script>
+  </script>
 
-<script>
-  // 🕒 Expiración automática de sesión (10 min)
+  <script>
+  // 🔒 Control de sesión / inactividad
   let tiempoInactividad;
   const TIEMPO_LIMITE = 10 * 60 * 1000; // 10 minutos
 
   function reiniciarTemporizador() {
     clearTimeout(tiempoInactividad);
     tiempoInactividad = setTimeout(() => {
-      alert(⚠️ Tu sesión ha expirado por inactividad.");
+      alert("⚠️ Tu sesión ha expirado por inactividad.");
       localStorage.clear();
       window.location.href = "login.html";
     }, TIEMPO_LIMITE);
   }
 
-  // Detectar actividad del usuario
   ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach(evt =>
     document.addEventListener(evt, reiniciarTemporizador)
   );
 
-  // Si no hay usuario activo → redirigir al login
-  const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-  if (!usuario.nombre) {
-    window.location.href = "login.html";
-  }
-
   reiniciarTemporizador();
-</script>
+  </script>
 
 </body>
 </html>
-
