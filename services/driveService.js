@@ -1,186 +1,101 @@
-import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
-import {
+import { google } from "googleapis";
+import { GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_DRIVE_FOLDER_ID } from "../config.js";
+
+const auth = new google.auth.JWT(
   GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  GOOGLE_PRIVATE_KEY,
-  GOOGLE_DRIVE_FOLDER_ID
-} from "../config.js";
+  null,
+  GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  ["https://www.googleapis.com/auth/drive"]
+);
+const drive = google.drive({ version: "v3", auth });
 
-function getDriveClient() {
-  const auth = new google.auth.JWT(
-    GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    null,
-    GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/drive"]
-  );
-  return google.drive({ version: "v3", auth });
-}
-
-/** Busca o crea carpeta de la orden dentro de la carpeta raíz configurada */
+// ✅ Crea carpeta para cada orden (si no existe)
 export async function ensureOrderFolder(codigo) {
-  const drive = getDriveClient();
+  const folderName = `Orden_${codigo}`;
+  const res = await drive.files.list({
+    q: `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: "files(id, name)",
+  });
 
-  // Buscar existente
-  const q = [
-    `'${GOOGLE_DRIVE_FOLDER_ID}' in parents`,
-    `name='Orden_${codigo}'`,
-    `mimeType='application/vnd.google-apps.folder'`,
-    `trashed=false`
-  ].join(" and ");
-
-  const found = await drive.files.list({ q, fields: "files(id,name)" });
-  if (found.data.files?.length) {
-    console.log(`📁 Carpeta existente para Orden_${codigo}`);
-    return found.data.files[0].id;
+  if (res.data.files.length) {
+    console.log("📁 Carpeta existente para", folderName);
+    return res.data.files[0].id;
   }
 
-  // Crear si no existe
-  const { data } = await drive.files.create({
-    resource: {
-      name: `Orden_${codigo}`,
+  const folder = await drive.files.create({
+    requestBody: {
+      name: folderName,
       mimeType: "application/vnd.google-apps.folder",
       parents: [GOOGLE_DRIVE_FOLDER_ID],
     },
     fields: "id",
-    supportsAllDrives: true
   });
 
-  console.log(`📂 Carpeta creada para la orden Orden_${codigo}: ${data.id}`);
-  return data.id;
+  console.log("📂 Carpeta creada para la orden", folderName, ":", folder.data.id);
+  return folder.data.id;
 }
 
-/** Sube un archivo físico (PDF) a Drive y devuelve links */
-export async function uploadPDFToDrive(filePath, codigo) {
-  const drive = getDriveClient();
-  const folderId = await ensureOrderFolder(codigo);
-
-  const fileMetadata = {
-    name: `Orden_${codigo}.pdf`,
-    parents: [folderId],
-  };
-
-  const media = {
-    mimeType: "application/pdf",
-    body: fs.createReadStream(filePath),
-  };
-
-  const { data } = await drive.files.create({
-    resource: fileMetadata,
-    media,
-    fields: "id",
-    supportsAllDrives: true,
-  });
-
-  // Público (con enlace)
-  await drive.permissions.create({
-    fileId: data.id,
-    requestBody: { role: "reader", type: "anyone" },
-    supportsAllDrives: true,
-  });
-
-  const viewLink = `https://drive.google.com/file/d/${data.id}/view?usp=drivesdk`;
-  const downloadLink = `https://drive.google.com/uc?export=download&id=${data.id}`;
-
-  console.log(`✅ PDF subido: ${viewLink}`);
-  console.log(`⬇ Enlace directo: ${downloadLink}`);
-
-  return { id: data.id, viewLink, downloadLink };
-}
-
-/** Normaliza entrada (Buffer o objeto Multer) y devuelve {buffer, mime} */
-function normalizeFileInput(fileOrBuffer, fallbackMime = "application/octet-stream") {
-  if (Buffer.isBuffer(fileOrBuffer)) {
-    return { buffer: fileOrBuffer, mime: fallbackMime };
-  }
-  if (fileOrBuffer && fileOrBuffer.buffer) {
-    return { buffer: fileOrBuffer.buffer, mime: fileOrBuffer.mimetype || fallbackMime };
-  }
-  throw new TypeError("Se esperaba un Buffer o el objeto de Multer con 'buffer'.");
-}
-
-/** Sube archivo binario (fotos antes/después) usando buffer o objeto Multer */
-export async function uploadFileBufferToDrive(fileOrBuffer, fileName, codigo) {
+// ✅ Sube un archivo a Drive desde buffer
+export async function uploadFileBufferToDrive(file, filename, codigo) {
   try {
-    const drive = getDriveClient();
     const folderId = await ensureOrderFolder(codigo);
+    const tempPath = path.join("/tmp", filename);
 
-    const { buffer, mime } = normalizeFileInput(fileOrBuffer, "application/octet-stream");
+    fs.writeFileSync(tempPath, file.buffer); // ✅ Ahora es buffer real
 
-    const tmp = `/tmp/${Date.now()}_${fileName}`;
-    fs.writeFileSync(tmp, buffer); // <— aquí necesitábamos un Buffer
-    const media = { mimeType: mime, body: fs.createReadStream(tmp) };
-
-    const { data } = await drive.files.create({
-      resource: { name: fileName, parents: [folderId] },
-      media,
-      fields: "id",
-      supportsAllDrives: true,
+    const res = await drive.files.create({
+      requestBody: {
+        name: filename,
+        parents: [folderId],
+      },
+      media: {
+        mimeType: file.mimetype,
+        body: fs.createReadStream(tempPath),
+      },
+      fields: "id, webViewLink, webContentLink",
     });
 
-    await drive.permissions.create({
-      fileId: data.id,
-      requestBody: { role: "reader", type: "anyone" },
-      supportsAllDrives: true,
-    });
+    fs.unlinkSync(tempPath); // 🔥 Limpieza
+    const { id, webViewLink, webContentLink } = res.data;
+    const viewLink = `https://drive.google.com/file/d/${id}/view?usp=drivesdk`;
+    const downloadLink = `https://drive.google.com/uc?export=download&id=${id}`;
 
-    try { fs.unlinkSync(tmp); } catch {}
-
-    const viewLink = `https://drive.google.com/file/d/${data.id}/view?usp=drivesdk`;
-    const downloadLink = `https://drive.google.com/uc?export=download&id=${data.id}`;
-    console.log(`✅ Archivo subido: ${viewLink}`);
-
-    return { id: data.id, viewLink, downloadLink };
+    console.log("✅ Archivo subido:", viewLink);
+    return { viewLink, downloadLink };
   } catch (err) {
     console.error("❌ Error al subir archivo a Drive:", err);
     throw new Error("Error al subir archivo a Google Drive");
   }
 }
 
-/** Sube imagen base64 (firma) y devuelve links */
-export async function uploadBase64ImageToDrive(dataUrlOrBase64, fileNameNoExt, codigo) {
-  try {
-    const drive = getDriveClient();
-    const folderId = await ensureOrderFolder(codigo);
+// ✅ Sube imágenes base64 (firmas)
+export async function uploadBase64ImageToDrive(base64, filename, codigo) {
+  const buffer = Buffer.from(base64.split(",")[1], "base64");
+  return await uploadFileBufferToDrive({ buffer, mimetype: "image/png" }, `${filename}.png`, codigo);
+}
 
-    // dataURL o base64 pelado
-    let mime = "image/png";
-    let base64 = dataUrlOrBase64 || "";
-    if (base64.startsWith("data:")) {
-      const [head, b64] = base64.split(",");
-      base64 = b64 || "";
-      const m = /data:(.*?);base64/.exec(head);
-      if (m) mime = m[1] || mime;
-    }
-    if (!base64) throw new Error("Formato de imagen inválido o vacío");
+// ✅ Sube PDFs
+export async function uploadPDFToDrive(pdfPath, codigo) {
+  const folderId = await ensureOrderFolder(codigo);
+  const fileName = `orden_${codigo}.pdf`;
 
-    const buffer = Buffer.from(base64, "base64");
+  const res = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: [folderId],
+    },
+    media: {
+      mimeType: "application/pdf",
+      body: fs.createReadStream(pdfPath),
+    },
+    fields: "id, webViewLink, webContentLink",
+  });
 
-    const tmp = `/tmp/${fileNameNoExt}.${mime.includes("jpeg") ? "jpg" : "png"}`;
-    fs.writeFileSync(tmp, buffer);
+  const { id, webViewLink, webContentLink } = res.data;
+  const viewLink = `https://drive.google.com/file/d/${id}/view?usp=drivesdk`;
+  const downloadLink = `https://drive.google.com/uc?export=download&id=${id}`;
 
-    const { data } = await drive.files.create({
-      resource: { name: path.basename(tmp), parents: [folderId] },
-      media: { mimeType: mime, body: fs.createReadStream(tmp) },
-      fields: "id",
-      supportsAllDrives: true,
-    });
-
-    await drive.permissions.create({
-      fileId: data.id,
-      requestBody: { role: "reader", type: "anyone" },
-      supportsAllDrives: true,
-    });
-
-    try { fs.unlinkSync(tmp); } catch {}
-
-    const viewLink = `https://drive.google.com/file/d/${data.id}/view?usp=drivesdk`;
-    const downloadLink = `https://drive.google.com/uc?export=download&id=${data.id}`;
-    console.log(`✅ Imagen subida: ${viewLink}`);
-
-    return { id: data.id, viewLink, downloadLink };
-  } catch (err) {
-    console.error("❌ Error al subir imagen base64 a Drive:", err);
-    throw new Error("Error al subir imagen");
-  }
+  return { viewLink, downloadLink };
 }
