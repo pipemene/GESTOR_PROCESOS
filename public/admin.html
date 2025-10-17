@@ -3,163 +3,213 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Administración | Blue Home</title>
+  <title>Administración | Blue Home Gestor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f4f7fa; }
-    .card { border-radius: 12px; }
-    .table th { background-color: #003366; color: white; }
+    body {
+      background-color: #eef3f8;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    header {
+      background-color: #003366;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h4 {
+      margin: 0;
+      color: #00b4ff;
+    }
+    .table-container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .btn-primary {
+      background-color: #006bb3;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #004c80;
+    }
   </style>
 </head>
 <body>
-  <div class="container py-4">
-    <h3 class="fw-bold text-primary mb-4">⚙️ Panel de Administración — Blue Home</h3>
+  <header>
+    <h4>⚙️ Panel de Administración — Blue Home</h4>
+    <div>
+      <span id="nombreUsuario" class="me-3"></span>
+      <button class="btn btn-sm btn-outline-light" onclick="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+  </header>
 
-    <div class="d-flex justify-content-between mb-4">
-      <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
-      <button class="btn btn-danger" onclick="cerrarSesion()">Cerrar sesión</button>
+  <div class="table-container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold text-primary">Gestión de Usuarios</h5>
+      <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">➕ Nuevo Usuario</button>
     </div>
 
-    <!-- 🔹 Crear nuevo usuario -->
-    <div class="card mb-4 shadow-sm">
-      <div class="card-body">
-        <h5 class="fw-bold">👤 Crear o Editar Usuario</h5>
-        <form id="formUsuario" class="row g-3">
-          <input type="hidden" id="fila" />
-          <div class="col-md-3">
-            <input class="form-control" id="nombre" placeholder="Nombre completo" required>
+    <table class="table table-bordered text-center align-middle">
+      <thead class="table-primary">
+        <tr>
+          <th>Nombre</th>
+          <th>Usuario</th>
+          <th>Contraseña</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaUsuarios"></tbody>
+    </table>
+  </div>
+
+  <!-- MODAL NUEVO/EDITAR USUARIO -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="formUsuario">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="tituloModal">Nuevo Usuario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="col-md-3">
-            <input class="form-control" id="usuario" placeholder="Usuario" required>
+          <div class="modal-body">
+            <input type="hidden" id="filaIndex">
+            <div class="mb-3">
+              <label class="form-label">Nombre completo</label>
+              <input type="text" class="form-control" id="nombre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Usuario</label>
+              <input type="text" class="form-control" id="usuario" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contraseña</label>
+              <input type="text" class="form-control" id="contrasena" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rol</label>
+              <select id="rol" class="form-select" required>
+                <option value="">Seleccionar rol...</option>
+                <option value="admin">Administrador</option>
+                <option value="arrendamiento">Arrendamiento</option>
+                <option value="reparaciones">Reparaciones</option>
+                <option value="contabilidad">Contabilidad</option>
+                <option value="tecnico">Técnico</option>
+              </select>
+            </div>
           </div>
-          <div class="col-md-3">
-            <input class="form-control" id="contrasena" placeholder="Contraseña" required>
-          </div>
-          <div class="col-md-2">
-            <select class="form-select" id="rol" required>
-              <option value="">Selecciona Rol</option>
-              <option value="admin">Admin</option>
-              <option value="arrendamiento">Arrendamiento</option>
-              <option value="reparaciones">Reparaciones</option>
-              <option value="contabilidad">Contabilidad</option>
-              <option value="tecnico">Técnico</option>
-            </select>
-          </div>
-          <div class="col-md-1">
-            <button type="submit" class="btn btn-success w-100">💾</button>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           </div>
         </form>
       </div>
     </div>
-
-    <!-- 🔹 Tabla de usuarios -->
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="fw-bold mb-3">📋 Usuarios registrados</h5>
-        <table class="table table-striped align-middle">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaUsuarios"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const usuarioActivo = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-
-    // ✅ Validar rol
-    if (usuarioActivo.rol !== "admin") {
-      alert("⚠️ No tienes permiso para acceder a este módulo.");
-      window.location.href = "dashboard.html";
+    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    if (!usuario.nombre || usuario.rol.toLowerCase() !== "admin") {
+      alert("⚠️ Acceso restringido. Solo los administradores pueden ingresar aquí.");
+      window.location.href = "login.html";
     }
+    document.getElementById("nombreUsuario").textContent =
+      `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
 
     const tabla = document.getElementById("tablaUsuarios");
+    const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
     const form = document.getElementById("formUsuario");
 
-    async function cargarUsuarios() {
-      tabla.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>`;
-      const res = await fetch("/api/users");
-      const data = await res.json();
+    let usuarios = [];
 
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch("/api/users");
+        usuarios = await res.json();
+        renderTabla();
+      } catch (e) {
+        console.error(e);
+        alert("Error al cargar usuarios");
+      }
+    }
+
+    function renderTabla() {
       tabla.innerHTML = "";
-      data.forEach((u, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${i + 1}</td>
+      usuarios.forEach((u, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
           <td>${u.nombre}</td>
           <td>${u.usuario}</td>
+          <td>${u.contrasena}</td>
           <td>${u.rol}</td>
           <td>
-            <button class="btn btn-sm btn-warning me-1" onclick="editar(${i + 2}, '${u.nombre}', '${u.usuario}', '${u.contrasena}', '${u.rol}')">✏️</button>
-            <button class="btn btn-sm btn-danger" onclick="eliminar(${i + 2})">🗑️</button>
+            <button class="btn btn-sm btn-info me-2" onclick="editarUsuario(${i})">✏️ Editar</button>
+            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${i})">🗑️ Eliminar</button>
           </td>
         `;
-        tabla.appendChild(row);
+        tabla.appendChild(tr);
       });
     }
 
-    // Crear o editar usuario
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fila = document.getElementById("fila").value;
-      const datos = {
-        nombre: nombre.value,
-        usuario: usuario.value,
-        contrasena: contrasena.value,
-        rol: rol.value,
-        fila
+      const nuevo = {
+        nombre: document.getElementById("nombre").value.trim(),
+        usuario: document.getElementById("usuario").value.trim(),
+        contrasena: document.getElementById("contrasena").value.trim(),
+        rol: document.getElementById("rol").value
       };
+      const fila = document.getElementById("filaIndex").value;
 
-      const endpoint = fila ? "/api/users/update" : "/api/users";
-      const method = fila ? "PATCH" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos)
-      });
-
-      if (res.ok) {
-        alert("✅ Usuario guardado correctamente.");
-        form.reset();
-        document.getElementById("fila").value = "";
-        cargarUsuarios();
+      if (fila !== "") {
+        usuarios[fila] = nuevo;
       } else {
-        alert("❌ Error al guardar usuario.");
+        usuarios.push(nuevo);
       }
+
+      await guardarUsuarios();
+      modal.hide();
+      renderTabla();
+      form.reset();
     });
 
-    // Editar usuario
-    function editar(fila, nombreVal, usuarioVal, contrasenaVal, rolVal) {
-      nombre.value = nombreVal;
-      usuario.value = usuarioVal;
-      contrasena.value = contrasenaVal;
-      rol.value = rolVal;
-      document.getElementById("fila").value = fila;
-      window.scrollTo(0, 0);
-    }
-
-    // Eliminar usuario
-    async function eliminar(fila) {
-      if (!confirm("¿Eliminar este usuario?")) return;
-      const res = await fetch(`/api/users/delete/${fila}`, { method: "DELETE" });
-      if (res.ok) {
-        alert("🗑️ Usuario eliminado.");
-        cargarUsuarios();
-      } else {
-        alert("❌ Error al eliminar usuario.");
+    async function guardarUsuarios() {
+      try {
+        await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(usuarios)
+        });
+      } catch (e) {
+        alert("Error al guardar cambios");
+        console.error(e);
       }
     }
 
-    // Cerrar sesión
+    function editarUsuario(i) {
+      const u = usuarios[i];
+      document.getElementById("filaIndex").value = i;
+      document.getElementById("tituloModal").textContent = "Editar Usuario";
+      document.getElementById("nombre").value = u.nombre;
+      document.getElementById("usuario").value = u.usuario;
+      document.getElementById("contrasena").value = u.contrasena;
+      document.getElementById("rol").value = u.rol;
+      modal.show();
+    }
+
+    async function eliminarUsuario(i) {
+      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+      usuarios.splice(i, 1);
+      await guardarUsuarios();
+      renderTabla();
+    }
+
     function cerrarSesion() {
       localStorage.clear();
       window.location.href = "login.html";
