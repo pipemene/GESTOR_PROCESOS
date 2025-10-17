@@ -1,35 +1,28 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import authRouter from './routes/auth.js';
-import usersRouter from './routes/users.js';
-import { router as ordersRouter } from './routes/orders.js'; // 🔥 CAMBIO AQUÍ
-import usersRouter from "./routes/users.js";
-app.use("/api/users", usersRouter);
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
 
+// 🔹 Rutas
+import authRouter from "./routes/auth.js";
+import usersRouter from "./routes/users.js";
+import { router as ordersRouter } from "./routes/orders.js"; // ✅ Import correcto
+
+// 🔹 Configuración de entorno
 dotenv.config();
+
+// 🔹 Inicialización de Express
 const app = express();
 
+// 🔹 Middlewares globales
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static("public"));
 
-app.use('/api/auth', authRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/orders', ordersRouter); // ✅ ahora sí coincide con export nombrado
+// 🔹 Rutas principales
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/orders", ordersRouter);
 
+// 🔹 Puerto
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ PROGESTOR ejecutándose en puerto ${PORT}`));
-
-// middleware/auth.js
-export function verificarSesion(req, res, next) {
-  const token = req.headers["x-user-token"];
-  if (!token) return res.status(401).json({ error: "No autorizado" });
-  try {
-    const user = JSON.parse(Buffer.from(token, "base64").toString("utf8"));
-    req.user = user;
-    next();
-  } catch (err) {
-    res.status(401).json({ error: "Token inválido" });
-  }
-}
