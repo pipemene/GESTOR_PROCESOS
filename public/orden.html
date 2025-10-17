@@ -3,265 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Orden | Blue Home Inmobiliaria</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background-color: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      color: #1e3a8a;
-    }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    h2 {
-      text-align: center;
-      color: #1e3a8a;
-    }
-    .section {
-      margin-top: 25px;
-      border-top: 2px solid #1d4ed8;
-      padding-top: 15px;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 6px;
-    }
-    input[type="text"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      background-color: #1d4ed8;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 15px;
-      cursor: pointer;
-      margin-right: 8px;
-    }
-    button:hover {
-      background-color: #2563eb;
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-    }
-    .row div {
-      flex: 1;
-    }
-    .photo-preview {
-      width: 100%;
-      max-height: 250px;
-      object-fit: cover;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-    canvas {
-      border: 2px solid #1d4ed8;
-      border-radius: 6px;
-      width: 100%;
-      height: 200px;
-    }
-    .success {
-      background: #bbf7d0;
-      color: #065f46;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .error {
-      background: #fecaca;
-      color: #991b1b;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-  </style>
+  <title>Orden de Trabajo | Blue Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body>
-  <div class="container">
-    <h2>🧰 Orden de Trabajo</h2>
-    <div id="mensaje"></div>
+<body class="bg-light">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="text-primary fw-bold">🧾 Orden de Trabajo</h4>
+      <button id="btnVolverDashboard" class="btn btn-secondary">← Volver al Dashboard</button>
+    </div>
 
-    <div id="orden-info"></div>
+    <div id="ordenInfo" class="mb-4 p-3 bg-white rounded shadow-sm">
+      <p><b>Código:</b> <span id="ordenCodigo"></span></p>
+      <p><b>Arrendatario:</b> <span id="ordenArrendatario"></span></p>
+      <p><b>Técnico:</b> <span id="ordenTecnico"></span></p>
+      <p><b>Estado:</b> <span id="ordenEstado" class="badge bg-info"></span></p>
+      <p><b>Descripción:</b> <span id="ordenDescripcion"></span></p>
+    </div>
 
-    <div class="section">
-      <h3>📸 Evidencias del trabajo</h3>
+    <h5>📸 Evidencias del trabajo</h5>
+    <div class="mb-3">
       <label>Foto Antes:</label>
-      <input type="file" id="fotoAntes" accept="image/*" />
-      <img id="previewAntes" class="photo-preview" />
-
-      <label>Foto Después:</label>
-      <input type="file" id="fotoDespues" accept="image/*" />
-      <img id="previewDespues" class="photo-preview" />
+      <input type="file" id="fotoAntes" class="form-control" accept="image/*" />
+      <label class="mt-3">Foto Después:</label>
+      <input type="file" id="fotoDespues" class="form-control" accept="image/*" />
+      <button class="btn btn-outline-primary mt-3" onclick="subirFotos()">📤 Subir Fotos</button>
     </div>
 
-    <div class="section">
-      <h3>🧱 Materiales y Trabajo Realizado</h3>
-      <label>Materiales Usados</label>
-      <textarea id="materiales" placeholder="Ejemplo: pintura blanca, silicona, tornillos..."></textarea>
+    <h5>🔧 Materiales y Trabajo Realizado</h5>
+    <textarea id="materiales" class="form-control mb-2" placeholder="Ejemplo: pintura blanca, silicona..."></textarea>
+    <textarea id="descripcionTrabajo" class="form-control mb-3" placeholder="Ejemplo: se instaló letrero, se sellaron juntas..."></textarea>
+    <button class="btn btn-outline-success" onclick="guardarFeedback()">💾 Guardar Retroalimentación</button>
 
-      <label>Descripción del Trabajo</label>
-      <textarea id="trabajo" placeholder="Ejemplo: se instaló el letrero, se sellaron juntas..."></textarea>
+    <h5 class="mt-4">✍️ Firma del Inquilino</h5>
+    <canvas id="firmaCanvas" width="400" height="150" class="border border-secondary bg-white rounded mb-2"></canvas><br>
+    <button class="btn btn-sm btn-danger" onclick="limpiarFirma()">Limpiar</button>
+    <button class="btn btn-sm btn-primary" onclick="guardarFirma()">Guardar Firma</button>
 
-      <button id="btnGuardarFeedback">💾 Guardar Retroalimentación</button>
-    </div>
-
-    <div class="section">
-      <h3>✍️ Firma del Inquilino</h3>
-      <canvas id="firmaCanvas"></canvas><br />
-      <button id="btnLimpiarFirma">🧹 Limpiar</button>
-      <button id="btnGuardarFirma">💾 Guardar Firma</button>
-    </div>
-
-    <div class="section" style="text-align:center;">
-      <button id="btnFinalizar" style="background:#16a34a;">✅ Marcar como Finalizada</button>
+    <div class="text-center mt-4">
+      <button class="btn btn-success btn-lg" onclick="finalizarOrden()">✅ Finalizar Orden</button>
     </div>
   </div>
 
   <script>
-    const API_BASE = "/api/orders";
-    const urlParams = new URLSearchParams(window.location.search);
-    const codigo = urlParams.get("codigo");
-    const mensaje = document.getElementById("mensaje");
-    const infoDiv = document.getElementById("orden-info");
+    const codigo = localStorage.getItem("ordenActual");
 
-    if (!codigo) {
-      mensaje.innerHTML = '<div class="error">⚠️ No se proporcionó el código de la orden.</div>';
-    } else {
-      cargarOrden();
-    }
-
-    async function cargarOrden() {
-      try {
-        const res = await fetch(`${API_BASE}`);
-        const data = await res.json();
-        const orden = data.find(o => o.Código === codigo || o.codigo === codigo);
-        if (!orden) {
-          infoDiv.innerHTML = "<div class='error'>Orden no encontrada</div>";
-          return;
-        }
-
-        infoDiv.innerHTML = `
-          <p><b>Código:</b> ${orden.Código || orden.codigo}</p>
-          <p><b>Arrendatario:</b> ${orden.Arrendatario || orden.arrendatario}</p>
-          <p><b>Técnico:</b> ${orden.Técnico || orden.tecnico}</p>
-          <p><b>Estado:</b> ${orden.Estado || orden.estado}</p>
-          <p><b>Descripción:</b> ${orden.Descripción || orden.descripcion}</p>
-        `;
-      } catch (err) {
-        infoDiv.innerHTML = "<div class='error'>Error al cargar orden.</div>";
-      }
-    }
-
-    // FOTO ANTES
-    document.getElementById("fotoAntes").addEventListener("change", async (e) => {
-      await subirFoto(e.target.files[0], "antes", "previewAntes");
+    document.getElementById("btnVolverDashboard").addEventListener("click", () => {
+      window.location.href = "dashboard.html";
     });
 
-    // FOTO DESPUÉS
-    document.getElementById("fotoDespues").addEventListener("change", async (e) => {
-      await subirFoto(e.target.files[0], "despues", "previewDespues");
-    });
+    async function subirFotos() {
+      const antes = document.getElementById("fotoAntes").files[0];
+      const despues = document.getElementById("fotoDespues").files[0];
+      if (!antes && !despues) return alert("Selecciona al menos una foto.");
 
-    async function subirFoto(file, tipo, previewId) {
-      if (!file) return;
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tipo", tipo);
+      if (antes) formData.append("file", antes);
+      if (antes) formData.append("tipo", "antes");
+      await fetch(`/api/orders/${codigo}/upload-photo`, { method: "POST", body: formData });
 
-      try {
-        const res = await fetch(`${API_BASE}/${codigo}/upload-photo`, {
-          method: "POST",
-          body: formData
-        });
-        const data = await res.json();
-        if (data.ok) {
-          document.getElementById(previewId).src = data.url;
-          mostrarMensaje("✅ Foto subida correctamente", "success");
-        } else {
-          mostrarMensaje("❌ Error al subir foto", "error");
-        }
-      } catch (err) {
-        mostrarMensaje("❌ Error al subir foto", "error");
-      }
+      const formData2 = new FormData();
+      if (despues) formData2.append("file", despues);
+      if (despues) formData2.append("tipo", "despues");
+      await fetch(`/api/orders/${codigo}/upload-photo`, { method: "POST", body: formData2 });
+
+      alert("📸 Fotos subidas correctamente");
     }
 
-    // GUARDAR FEEDBACK
-    document.getElementById("btnGuardarFeedback").addEventListener("click", async () => {
+    async function guardarFeedback() {
       const materiales = document.getElementById("materiales").value;
-      const trabajo = document.getElementById("trabajo").value;
-
-      const res = await fetch(`${API_BASE}/${codigo}/feedback`, {
+      const trabajo = document.getElementById("descripcionTrabajo").value;
+      await fetch(`/api/orders/${codigo}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ materiales, trabajo })
       });
-      const data = await res.json();
-      if (data.ok) mostrarMensaje("✅ Retroalimentación guardada", "success");
-      else mostrarMensaje("❌ Error al guardar retroalimentación", "error");
-    });
-
-    // FIRMA
-    const canvas = document.getElementById("firmaCanvas");
-    const ctx = canvas.getContext("2d");
-    let dibujando = false;
-
-    canvas.addEventListener("mousedown", e => { dibujando = true; ctx.beginPath(); });
-    canvas.addEventListener("mouseup", e => dibujando = false);
-    canvas.addEventListener("mousemove", dibujar);
-
-    function dibujar(e) {
-      if (!dibujando) return;
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#1d4ed8";
-      const rect = canvas.getBoundingClientRect();
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      ctx.stroke();
+      alert("✅ Información guardada");
     }
 
-    document.getElementById("btnLimpiarFirma").addEventListener("click", () => {
+    function limpiarFirma() {
+      const canvas = document.getElementById("firmaCanvas");
+      const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
+    }
 
-    document.getElementById("btnGuardarFirma").addEventListener("click", async () => {
-      const dataUrl = canvas.toDataURL("image/png");
-      const res = await fetch(`${API_BASE}/${codigo}/sign`, {
+    async function guardarFirma() {
+      const canvas = document.getElementById("firmaCanvas");
+      const firma = canvas.toDataURL("image/png");
+      await fetch(`/api/orders/${codigo}/sign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firmaInquilino: dataUrl })
+        body: JSON.stringify({ firmaInquilino: firma })
       });
-      const data = await res.json();
-      if (data.ok) mostrarMensaje("✅ Firma guardada correctamente", "success");
-      else mostrarMensaje("❌ Error al guardar firma", "error");
-    });
+      alert("✍️ Firma guardada correctamente");
+    }
 
-    // FINALIZAR ORDEN
-    document.getElementById("btnFinalizar").addEventListener("click", async () => {
-      const res = await fetch(`${API_BASE}/${codigo}/finish`, { method: "POST" });
+    async function finalizarOrden() {
+      if (!confirm("¿Seguro que deseas finalizar esta orden?")) return;
+      const res = await fetch(`/api/orders/${codigo}/finish`, { method: "POST" });
       const data = await res.json();
-      if (data.ok) mostrarMensaje("✅ Orden marcada como finalizada", "success");
-      else mostrarMensaje("❌ Error al finalizar orden", "error");
-    });
 
-    function mostrarMensaje(texto, tipo) {
-      mensaje.innerHTML = `<div class='${tipo}'>${texto}</div>`;
-      setTimeout(() => (mensaje.innerHTML = ""), 3500);
+      if (data.ok) {
+        alert("✅ Orden finalizada con éxito.");
+        window.location.href = "dashboard.html"; // 🔁 Regresa al dashboard
+      } else {
+        alert("❌ Error al finalizar la orden");
+      }
     }
   </script>
 </body>
