@@ -87,5 +87,33 @@
       window.location.href = "dashboard.html";
     });
   </script>
+<script>
+  // 🕒 Expiración automática de sesión (10 min)
+  let tiempoInactividad;
+  const TIEMPO_LIMITE = 10 * 60 * 1000; // 10 minutos
+
+  function reiniciarTemporizador() {
+    clearTimeout(tiempoInactividad);
+    tiempoInactividad = setTimeout(() => {
+      alert(⚠️ Tu sesión ha expirado por inactividad.");
+      localStorage.clear();
+      window.location.href = "login.html";
+    }, TIEMPO_LIMITE);
+  }
+
+  // Detectar actividad del usuario
+  ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach(evt =>
+    document.addEventListener(evt, reiniciarTemporizador)
+  );
+
+  // Si no hay usuario activo → redirigir al login
+  const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+  if (!usuario.nombre) {
+    window.location.href = "login.html";
+  }
+
+  reiniciarTemporizador();
+</script>
+
 </body>
 </html>

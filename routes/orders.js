@@ -237,5 +237,7 @@ router.post("/:codigo/finish", async (req, res) => {
     res.status(500).json({ error: "finish failed" });
   }
 });
+import { verificarSesion } from "../middleware/auth.js";
+router.use(verificarSesion);
 
 export default router;
