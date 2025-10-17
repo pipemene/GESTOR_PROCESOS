@@ -9,12 +9,14 @@ import {
   uploadPDFToDrive
 } from "../services/driveService.js";
 import { generateOrderPDF } from "../services/pdfService.js";
+// Si el correo está temporalmente apagado, puedes comentar esta línea
+import { sendEmail } from "../services/mailService.js";
 
 export const router = express.Router();
-const upload = multer(); // para manejar archivos binarios (fotos)
+const upload = multer();
 
 // ======================================================
-// 🔹 GET /api/orders → Listar órdenes desde Google Sheets
+// GET /api/orders
 // ======================================================
 router.get("/", async (req, res) => {
   try {
@@ -37,7 +39,7 @@ router.get("/", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders → Crear nueva orden
+// POST /api/orders
 // ======================================================
 router.post("/", async (req, res) => {
   try {
@@ -60,6 +62,7 @@ router.post("/", async (req, res) => {
 
     await appendRow("Órdenes", nuevaFila);
     console.log(`✅ Nueva orden creada correctamente (${codigo})`);
+
     res.json({ ok: true });
   } catch (e) {
     console.error("❌ Error al crear orden:", e);
@@ -67,9 +70,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
-// 🔹 Utilidad → Buscar fila por código
-// ======================================================
+// Utilidad para ubicar la fila por código
 async function findRowByCode(codigo) {
   const rows = await getSheetData("Órdenes");
   const headers = rows[0] || [];
@@ -85,7 +86,7 @@ async function findRowByCode(codigo) {
 }
 
 // ======================================================
-// 🔹 PATCH /api/orders/:codigo/assign → Asignar técnico
+// PATCH /api/orders/:codigo/assign
 // ======================================================
 router.patch("/:codigo/assign", async (req, res) => {
   try {
@@ -106,7 +107,7 @@ router.patch("/:codigo/assign", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/upload-photo → Foto antes/después
+// POST /api/orders/:codigo/upload-photo
 // ======================================================
 router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => {
   try {
@@ -115,20 +116,20 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
     if (!req.file) return res.status(400).json({ error: "Archivo requerido" });
     if (!["antes", "despues"].includes(tipo)) return res.status(400).json({ error: "Tipo inválido" });
 
-    const url = await uploadFileBufferToDrive(req.file, `${tipo}_${Date.now()}.jpg`, codigo);
+    const { viewLink } = await uploadFileBufferToDrive(req.file, `${tipo}_${Date.now()}.jpg`, codigo);
 
+    // Guardar SOLO la URL (texto) en Sheets
     const found = await findRowByCode(codigo);
     if (found) {
       const colName = tipo === "antes" ? /foto.?antes/i : /foto.?despues/i;
       const colIdx = found.headers.findIndex(h => colName.test(h));
       if (colIdx >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + colIdx);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink);
       }
     }
 
-    console.log(`✅ Imagen subida: ${url}`);
-    res.json({ ok: true, url });
+    res.json({ ok: true, url: viewLink });
   } catch (e) {
     console.error("❌ Error al subir foto:", e);
     res.status(500).json({ error: "upload-photo failed" });
@@ -136,7 +137,7 @@ router.post("/:codigo/upload-photo", upload.single("file"), async (req, res) => 
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/feedback → Materiales y trabajo
+// POST /api/orders/:codigo/feedback
 // ======================================================
 router.post("/:codigo/feedback", async (req, res) => {
   try {
@@ -165,7 +166,7 @@ router.post("/:codigo/feedback", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/sign → Firma del inquilino
+// POST /api/orders/:codigo/sign
 // ======================================================
 router.post("/:codigo/sign", async (req, res) => {
   try {
@@ -173,18 +174,22 @@ router.post("/:codigo/sign", async (req, res) => {
     const { firmaInquilino } = req.body;
     if (!firmaInquilino) return res.status(400).json({ error: "Firma requerida" });
 
-    const url = await uploadBase64ImageToDrive(firmaInquilino, `firma_inquilino_${Date.now()}`, codigo);
+    const { viewLink } = await uploadBase64ImageToDrive(
+      firmaInquilino,
+      `firma_inquilino_${Date.now()}`,
+      codigo
+    );
 
     const found = await findRowByCode(codigo);
     if (found) {
       const idxFirma = found.headers.findIndex(h => /firma$/i.test(h));
       if (idxFirma >= 0) {
         const letter = String.fromCharCode("A".charCodeAt(0) + idxFirma);
-        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, url);
+        await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, viewLink); // <-- solo TEXTO
       }
     }
 
-    res.json({ ok: true, url });
+    res.json({ ok: true, url: viewLink });
   } catch (e) {
     console.error("❌ Error al subir firma:", e);
     res.status(500).json({ error: "sign failed" });
@@ -192,7 +197,7 @@ router.post("/:codigo/sign", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST /api/orders/:codigo/finish → Finalizar (sin correo)
+// POST /api/orders/:codigo/finish
 // ======================================================
 router.post("/:codigo/finish", async (req, res) => {
   try {
@@ -200,44 +205,36 @@ router.post("/:codigo/finish", async (req, res) => {
     console.log(`🚀 Finalizando orden ${codigo}...`);
 
     const found = await findRowByCode(codigo);
-    if (!found) {
-      console.warn(`⚠️ Orden ${codigo} no encontrada`);
-      return res.status(404).json({ error: "Orden no encontrada" });
-    }
+    if (!found) return res.status(404).json({ error: "Orden no encontrada" });
 
-    // 1️⃣ Cambiar estado a "Revisión Dayan"
-    const headers = found.headers;
-    const idxEstado = headers.findIndex(h => /estado/i.test(h));
+    // Estado = Finalizada
+    const idxEstado = found.headers.findIndex(h => /estado/i.test(h));
     if (idxEstado >= 0) {
-      const colLetter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
-      await updateCell("Órdenes", `Órdenes!${colLetter}${found.rowIndex}`, "Revisión Dayan");
+      const letter = String.fromCharCode("A".charCodeAt(0) + idxEstado);
+      await updateCell("Órdenes", `Órdenes!${letter}${found.rowIndex}`, "Finalizada");
     }
 
-    // 2️⃣ Generar PDF técnico
+    // Generar PDF y subir
     console.log("🧾 Generando PDF técnico...");
-    const pdfPath = await generateOrderPDF(codigo, { modo: "tecnico" });
+    const pdfPath = await generateOrderPDF(codigo);
+    const { viewLink, downloadLink } = await uploadPDFToDrive(pdfPath, codigo);
+    console.log("✅ PDF subido correctamente:", viewLink);
 
-    // 3️⃣ Subir PDF a Google Drive
-    const { webViewLink } = await uploadPDFToDrive(pdfPath, codigo);
-    console.log("✅ PDF subido correctamente:", webViewLink);
+    // (Opcional) correo — si está activo
+    // await sendEmail({ ... });
 
-    // 4️⃣ (Correo desactivado temporalmente)
-    console.log("📭 Envío de correo desactivado temporalmente.");
-
-    // 5️⃣ Eliminar archivo temporal
     try { fs.unlinkSync(pdfPath); } catch {}
 
-    // 6️⃣ Responder al frontend
-    const download = webViewLink.replace("/view?usp=drivesdk", "/uc?export=download&id=");
-    res.json({
+    // Responder usando claves ya calculadas (sin replace)
+    return res.json({
       ok: true,
-      message: "Orden finalizada y enviada a revisión de Dayan.",
-      pdfLink: webViewLink,
-      download
+      message: "Orden finalizada con éxito.",
+      pdfView: viewLink,
+      pdfDownload: downloadLink
     });
   } catch (e) {
     console.error("❌ Error al finalizar orden:", e);
-    res.status(500).json({ error: e.message || "finish failed" });
+    res.status(500).json({ error: "finish failed" });
   }
 });
 
