@@ -3,130 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Principal | Blue Home</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <title>Panel Principal | Blue Home Gestor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background: linear-gradient(135deg, #003366, #006bb3);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      padding-top: 80px;
-      color: #fff;
+      background: #f0f4f9;
+      font-family: "Segoe UI", sans-serif;
+      color: #333;
     }
-    .container-dashboard {
-      width: 90%;
-      max-width: 900px;
+    .navbar {
+      background-color: #003366;
+    }
+    .navbar-brand, .nav-link, .navbar-text {
+      color: white !important;
     }
     .card {
       border: none;
       border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      transition: all 0.2s ease-in-out;
+      transition: all 0.2s ease;
     }
     .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
-    .card h5 {
-      font-weight: bold;
-      color: #003366;
-    }
-    .logout-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-    }
-    .logo {
-      width: 120px;
-      margin-bottom: 20px;
+    .card i {
+      font-size: 2rem;
+      color: #006bb3;
     }
   </style>
 </head>
-<body>
-  <button id="logoutBtn" class="btn btn-danger logout-btn">Cerrar Sesión</button>
-  <div class="text-center mb-4">
-    <img src="https://i.imgur.com/FEBvZ6N.png" alt="Logo Blue Home" class="logo" />
-    <h2 class="fw-bold">Gestor Blue Home</h2>
-    <p id="saludo" class="text-light"></p>
-  </div>
 
-  <div class="container-dashboard">
-    <div class="row g-4" id="modulosContainer">
-      <!-- Los módulos se cargan dinámicamente -->
+<body>
+  <!-- 🔹 Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold">🏠 Blue Home Gestor</a>
+      <div class="d-flex">
+        <button id="btnLogout" class="btn btn-danger btn-sm">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 🔹 Contenido -->
+  <div class="container mt-4 text-center">
+    <h3 id="saludo" class="fw-bold mb-4 text-primary">Bienvenido</h3>
+    <div class="row g-3 justify-content-center" id="menuPrincipal">
+      <!-- Menú dinámico generado por rol -->
     </div>
   </div>
 
+  <script src="https://kit.fontawesome.com/8f5f9b36b6.js" crossorigin="anonymous"></script>
   <script>
-    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    const modulos = document.getElementById("modulosContainer");
+    const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    const menu = document.getElementById("menuPrincipal");
     const saludo = document.getElementById("saludo");
 
-    if (!usuario || !usuario.nombre || !usuario.rol) {
+    if (!user || !user.rol) {
       window.location.href = "index.html";
     }
 
-    saludo.textContent = `Hola, ${usuario.nombre} (${usuario.rol})`;
+    saludo.innerHTML = `👋 Hola, <span class="text-dark">${user.nombre}</span>`;
 
-    const opciones = [
-      {
-        rol: ["admin", "arrendamiento"],
-        titulo: "📋 Arrendamiento",
-        desc: "Gestión de contratos y entregas.",
-        link: "arrendamiento.html",
-        color: "primary"
-      },
-      {
-        rol: ["admin", "reparaciones"],
-        titulo: "🛠️ Reparaciones",
-        desc: "Control de órdenes de mantenimiento.",
-        link: "reparaciones.html",
-        color: "warning"
-      },
-      {
-        rol: ["admin", "contabilidad"],
-        titulo: "💰 Facturación",
-        desc: "Facturas, pagos y reportes contables.",
-        link: "facturacion.html",
-        color: "success"
-      },
-      {
-        rol: ["admin"],
-        titulo: "👥 Administración de Usuarios",
-        desc: "Crea, edita o elimina usuarios del sistema.",
-        link: "admin.html",
-        color: "info"
-      },
-      {
-        rol: ["admin", "contabilidad", "reparaciones", "arrendamiento"],
-        titulo: "📈 Reportes",
-        desc: "Informe general del sistema.",
-        link: "reportes.html",
-        color: "dark"
-      }
-    ];
+    // Menús dinámicos según rol
+    const MENUS = {
+      superadmin: [
+        { titulo: "Usuarios", icon: "fa-users-cog", link: "admin.html", color: "primary" },
+        { titulo: "Órdenes", icon: "fa-tasks", link: "ordenes.html", color: "success" },
+        { titulo: "Reportes", icon: "fa-chart-bar", link: "reportes.html", color: "warning" },
+      ],
+      reparaciones: [
+        { titulo: "Órdenes de Reparación", icon: "fa-screwdriver-wrench", link: "reparaciones.html", color: "info" },
+      ],
+      facturacion: [
+        { titulo: "Facturación", icon: "fa-file-invoice-dollar", link: "facturacion.html", color: "success" },
+      ],
+      arrendamiento: [
+        { titulo: "Gestión de Órdenes", icon: "fa-clipboard-list", link: "arrendamiento.html", color: "primary" },
+      ],
+      tecnico: [
+        { titulo: "Órdenes Asignadas", icon: "fa-wrench", link: "ordenes.html", color: "secondary" },
+      ]
+    };
 
-    opciones.forEach(op => {
-      if (op.rol.includes(usuario.rol.toLowerCase())) {
-        const div = document.createElement("div");
-        div.className = "col-md-6";
-        div.innerHTML = `
-          <div class="card p-4 text-center bg-light">
+    // Generar menú según rol
+    const opciones = MENUS[user.rol?.toLowerCase()] || [];
+    if (!opciones.length) {
+      menu.innerHTML = "<p class='text-danger fw-bold'>No tienes permisos asignados.</p>";
+    } else {
+      menu.innerHTML = opciones.map(op => `
+        <div class="col-10 col-md-4 col-lg-3">
+          <div class="card p-4">
+            <i class="fa-solid ${op.icon} mb-3 text-${op.color}"></i>
             <h5>${op.titulo}</h5>
-            <p>${op.desc}</p>
-            <a href="${op.link}" class="btn btn-${op.color} w-100 fw-semibold">Entrar</a>
+            <button class="btn btn-${op.color} mt-2 w-100 fw-semibold" onclick="location.href='${op.link}'">
+              Ingresar
+            </button>
           </div>
-        `;
-        modulos.appendChild(div);
-      }
-    });
+        </div>
+      `).join("");
+    }
 
-    document.getElementById("logoutBtn").onclick = () => {
+    // 🔹 Logout
+    document.getElementById("btnLogout").addEventListener("click", () => {
       localStorage.clear();
       window.location.href = "index.html";
-    };
+    });
+
+    // 🔹 Redirección automática según rol (si se requiere acceso directo)
+    if (user.rol === "superadmin") {
+      // Pipe ve todo
+    } else if (user.rol === "reparaciones") {
+      setTimeout(() => (window.location.href = "reparaciones.html"), 1000);
+    } else if (user.rol === "facturacion") {
+      setTimeout(() => (window.location.href = "facturacion.html"), 1000);
+    } else if (user.rol === "arrendamiento") {
+      setTimeout(() => (window.location.href = "arrendamiento.html"), 1000);
+    } else if (user.rol === "tecnico") {
+      setTimeout(() => (window.location.href = "ordenes.html"), 1000);
+    }
   </script>
 </body>
 </html>
