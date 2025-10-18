@@ -68,7 +68,6 @@
       const usuario = document.getElementById("usuario").value.trim().toLowerCase();
       const contrasena = document.getElementById("contrasena").value.trim();
       const msg = document.getElementById("msgError");
-
       msg.textContent = "Validando credenciales...";
 
       try {
@@ -84,7 +83,7 @@
           return;
         }
 
-        // Guardar usuario activo en localStorage
+        // Guardar usuario activo
         localStorage.setItem("usuarioActivo", JSON.stringify({
           nombre: encontrado.nombre,
           rol: encontrado.rol.toLowerCase()
@@ -98,20 +97,20 @@
       }
     });
 
-    // 🔹 Redirección automática según rol
     function redirigirPorRol(rol) {
       switch (rol) {
+        case "admin":
         case "superadmin":
           window.location.href = "admin.html";
+          break;
+        case "arrendamiento":
+          window.location.href = "arrendamiento.html";
           break;
         case "reparaciones":
           window.location.href = "reparaciones.html";
           break;
         case "facturacion":
           window.location.href = "facturacion.html";
-          break;
-        case "arrendamiento":
-          window.location.href = "arrendamiento.html";
           break;
         case "tecnico":
           window.location.href = "ordenes.html";
@@ -122,7 +121,7 @@
       }
     }
 
-    // 🕒 Expiración automática (10 min inactividad)
+    // Cierre por inactividad
     let inactividad;
     const LIMITE = 10 * 60 * 1000;
     function reiniciarTiempo() {

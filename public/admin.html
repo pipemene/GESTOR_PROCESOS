@@ -1,113 +1,122 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administración | Blue Home Gestor</title>
+  <title>Panel de Administración | Blue Home</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     body {
-      background: #f4f6f9;
-      color: #333;
-      font-family: 'Segoe UI', sans-serif;
+      background: #eef3f7;
+      font-family: "Segoe UI", sans-serif;
     }
-    .navbar {
-      background-color: #003366;
+    header {
+      background: #003366;
+      color: white;
+      padding: 10px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .navbar-brand, .nav-link, .navbar-text {
-      color: white !important;
+    h4 {
+      color: #003366;
+      font-weight: bold;
     }
-    .table thead {
-      background-color: #003366;
-      color: #fff;
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
-    .btn-primary {
-      background-color: #006bb3;
-      border: none;
-    }
-    .btn-danger {
-      background-color: #b30000;
-      border: none;
+    footer {
+      text-align: center;
+      font-size: 13px;
+      padding: 15px;
+      background: #003366;
+      color: white;
+      margin-top: 40px;
     }
   </style>
 </head>
 
 <body>
-  <!-- 🔹 Navbar -->
-  <nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold">⚙️ Blue Home | Admin</a>
-      <div class="d-flex">
-        <button id="btnDashboard" class="btn btn-light btn-sm me-2">🏠 Dashboard</button>
-        <button id="btnLogout" class="btn btn-danger btn-sm">Cerrar sesión</button>
+  <header>
+    <h5><i class="bi bi-gear-fill"></i> Panel de Administración — Blue Home</h5>
+    <div>
+      <button class="btn btn-sm btn-light me-2" onclick="window.location.href='dashboard.html'">
+        <i class="bi bi-grid-fill"></i> Dashboard
+      </button>
+      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">
+        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+      </button>
+    </div>
+  </header>
+
+  <main class="container mt-4">
+    <div class="card p-4">
+      <h4 class="mb-4 text-center"><i class="bi bi-people-fill"></i> Gestión de Usuarios del Sistema</h4>
+
+      <div class="mb-3 text-end">
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+          <i class="bi bi-person-plus-fill"></i> Crear nuevo usuario
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead class="table-primary">
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaUsuarios"></tbody>
+        </table>
       </div>
     </div>
-  </nav>
+  </main>
 
-  <div class="container mt-4">
-    <h3 class="mb-3 fw-bold text-center text-primary">Gestión de Usuarios</h3>
+  <footer>Blue Home Inmobiliaria © 2025 — Panel de Administración</footer>
 
-    <div class="text-end mb-3">
-      <button class="btn btn-success" id="btnNuevo">➕ Nuevo Usuario</button>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-bordered align-middle text-center">
-        <thead>
-          <tr>
-            <th>Fila</th>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Contraseña</th>
-            <th>Rol</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaUsuarios"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- 🔹 Modal -->
-  <div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+  <!-- Modal Crear/Editar -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <form id="formUsuario">
-          <div class="modal-header">
-            <h5 class="modal-title">Nuevo Usuario</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="fila" />
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Nuevo Usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formUsuario">
+            <input type="hidden" id="filaUsuario">
             <div class="mb-3">
               <label class="form-label">Nombre</label>
-              <input type="text" id="nombre" class="form-control" required />
+              <input type="text" id="nombre" class="form-control" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Usuario</label>
-              <input type="text" id="usuario" class="form-control" required />
+              <input type="text" id="usuario" class="form-control" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Contraseña</label>
-              <input type="text" id="contrasena" class="form-control" required />
+              <input type="text" id="contrasena" class="form-control" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Rol</label>
               <select id="rol" class="form-select" required>
+                <option value="">Seleccionar...</option>
+                <option value="superadmin">Superadmin</option>
+                <option value="arrendamiento">Arrendamiento</option>
+                <option value="reparaciones">Reparaciones</option>
+                <option value="facturacion">Facturación</option>
                 <option value="tecnico">Técnico</option>
-                <option value="reparaciones">Reparaciones (Dayan)</option>
-                <option value="facturacion">Facturación (Aitana)</option>
-                <option value="arrendamiento">Arrendamiento (Daniela)</option>
-                <option value="superadmin">Super Usuario (Pipe)</option>
               </select>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">💾 Guardar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          </div>
-        </form>
+            <button type="submit" class="btn btn-primary w-100">Guardar</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -116,116 +125,88 @@
   <script>
     const tabla = document.getElementById("tablaUsuarios");
     const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
-    const form = document.getElementById("formUsuario");
-
-    let editando = false;
 
     async function cargarUsuarios() {
-      tabla.innerHTML = "<tr><td colspan='6'>Cargando...</td></tr>";
-      try {
-        const res = await fetch("/api/users");
-        const data = await res.json();
-        tabla.innerHTML = "";
-        data.forEach(u => {
-          tabla.innerHTML += `
-            <tr>
-              <td>${u.fila}</td>
-              <td>${u.nombre}</td>
-              <td>${u.usuario}</td>
-              <td>${u.contrasena}</td>
-              <td>${u.rol}</td>
-              <td>
-                <button class='btn btn-warning btn-sm' onclick='editar(${u.fila},"${u.nombre}","${u.usuario}","${u.contrasena}","${u.rol}")'>✏️ Editar</button>
-                <button class='btn btn-danger btn-sm' onclick='eliminar(${u.fila})'>🗑️ Eliminar</button>
-              </td>
-            </tr>`;
-        });
-      } catch (err) {
-        tabla.innerHTML = "<tr><td colspan='6' class='text-danger'>Error al cargar usuarios</td></tr>";
-        console.error(err);
-      }
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      tabla.innerHTML = data.map((u, i) => `
+        <tr>
+          <td>${u.fila}</td>
+          <td>${u.nombre}</td>
+          <td>${u.usuario}</td>
+          <td>${u.rol}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" onclick="editarUsuario(${u.fila}, '${u.nombre}', '${u.usuario}', '${u.contrasena}', '${u.rol}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${u.fila})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join("");
     }
 
-    async function eliminar(fila) {
-      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
-      try {
-        const res = await fetch(`/api/users/delete/${fila}`, { method: "DELETE" });
-        const r = await res.json();
-        if (r.ok) {
-          alert("🗑️ Usuario eliminado correctamente");
-          cargarUsuarios();
-        } else {
-          alert("❌ " + (r.error || "Error al eliminar"));
-        }
-      } catch (e) {
-        alert("⚠️ Error al eliminar usuario");
-      }
-    }
+    document.getElementById("formUsuario").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fila = document.getElementById("filaUsuario").value;
+      const datos = {
+        fila: fila || undefined,
+        nombre: document.getElementById("nombre").value,
+        usuario: document.getElementById("usuario").value,
+        contrasena: document.getElementById("contrasena").value,
+        rol: document.getElementById("rol").value
+      };
 
-    function editar(fila, nombre, usuario, contrasena, rol) {
-      document.getElementById("fila").value = fila;
+      const url = fila ? "/api/users/update" : "/api/users";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
+      });
+
+      if (res.ok) {
+        alert("✅ Usuario guardado correctamente.");
+        modal.hide();
+        cargarUsuarios();
+      } else {
+        alert("❌ Error al guardar usuario.");
+      }
+    });
+
+    function editarUsuario(fila, nombre, usuario, contrasena, rol) {
+      document.getElementById("filaUsuario").value = fila;
       document.getElementById("nombre").value = nombre;
       document.getElementById("usuario").value = usuario;
       document.getElementById("contrasena").value = contrasena;
       document.getElementById("rol").value = rol;
-      editando = true;
       modal.show();
     }
 
-    document.getElementById("btnNuevo").addEventListener("click", () => {
-      form.reset();
-      editando = false;
-      modal.show();
-    });
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fila = document.getElementById("fila").value;
-      const nombre = document.getElementById("nombre").value;
-      const usuario = document.getElementById("usuario").value;
-      const contrasena = document.getElementById("contrasena").value;
-      const rol = document.getElementById("rol").value;
-
-      try {
-        const url = editando ? "/api/users/update" : "/api/users";
-        const method = "POST";
-        const body = editando
-          ? JSON.stringify({ fila, nombre, usuario, contrasena, rol })
-          : JSON.stringify({ nombre, usuario, contrasena, rol });
-
-        const res = await fetch(url, {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body,
-        });
-
-        const text = await res.text();
-        const r = JSON.parse(text);
-
-        if (r.ok) {
-          modal.hide();
-          cargarUsuarios();
-        } else {
-          alert("⚠️ " + (r.error || "Error al guardar"));
-        }
-      } catch (err) {
-        alert("❌ Error al guardar usuario");
-        console.error(err);
+    async function eliminarUsuario(fila) {
+      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+      const res = await fetch(`/api/users/delete/${fila}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("🗑️ Usuario eliminado correctamente.");
+        cargarUsuarios();
+      } else {
+        alert("❌ Error al eliminar usuario.");
       }
-    });
+    }
 
-    // 🔹 Botón dashboard
-    document.getElementById("btnDashboard").addEventListener("click", () => {
-      window.location.href = "dashboard.html";
-    });
-
-    // 🔹 Botón logout
-    document.getElementById("btnLogout").addEventListener("click", () => {
+    function cerrarSesion() {
       localStorage.clear();
       window.location.href = "index.html";
-    });
+    }
 
-    cargarUsuarios();
+    // 🔐 Protección: solo Superadmin (Pipe)
+    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    if (!usuario.nombre || usuario.rol.toLowerCase() !== "superadmin") {
+      alert("⚠️ Acceso restringido solo para administración.");
+      window.location.href = "index.html";
+    } else {
+      cargarUsuarios();
+    }
   </script>
 </body>
 </html>
