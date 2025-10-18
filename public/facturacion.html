@@ -3,97 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Facturación | Blue Home Contabilidad</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Área de Contabilidad | Blue Home Gestor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #eef3f8; font-family: 'Segoe UI', sans-serif; }
+    header { background-color: #003366; color: white; padding: 10px 20px;
+             display: flex; justify-content: space-between; align-items: center; }
+  </style>
 </head>
 
-<body class="bg-light">
-  <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h4 class="text-primary fw-bold">💼 Facturación de Orden (Aitana)</h4>
-      <button id="btnVolverDashboard" class="btn btn-secondary">← Volver al Dashboard</button>
+<body>
+  <header>
+    <h5>💰 Área de Contabilidad — Blue Home</h5>
+    <div>
+      <button class="btn btn-sm btn-light me-2" onclick="volver()">🏠 Dashboard</button>
+      <span id="usuarioInfo" class="fw-semibold me-2"></span>
+      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
+  </header>
 
-    <div id="ordenInfo" class="mb-4 p-3 bg-white rounded shadow-sm">
-      <p><b>Código:</b> <span id="ordenCodigo"></span></p>
-      <p><b>Arrendatario:</b> <span id="ordenArrendatario"></span></p>
-      <p><b>Técnico:</b> <span id="ordenTecnico"></span></p>
-      <p><b>Estado:</b> <span id="ordenEstado" class="badge bg-warning text-dark"></span></p>
-      <p><b>Descripción:</b> <span id="ordenDescripcion"></span></p>
-    </div>
-
-    <h5>📑 Cargar Factura</h5>
-    <p class="text-muted">Sube la factura correspondiente a esta orden (en formato PDF o imagen).</p>
-    <input type="file" id="archivoFactura" class="form-control" accept=".pdf, image/*" />
-    <button class="btn btn-outline-primary mt-3" onclick="subirFactura()">📤 Subir Factura</button>
-
-    <div class="mt-4">
-      <label>💬 Observaciones Contables:</label>
-      <textarea id="observacionesFactura" class="form-control mb-3" rows="3" placeholder="Ejemplo: Se aplicó IVA, ajuste contable, etc."></textarea>
-      <button class="btn btn-success btn-lg" onclick="finalizarFacturacion()">✅ Enviar a Administración</button>
-    </div>
-  </div>
+  <main class="container mt-4">
+    <h4 class="text-primary mb-3">Facturación y Cierre de Órdenes</h4>
+    <p>Aquí Aitana podrá cargar facturas finales, vincularlas a las órdenes y cerrar los procesos.</p>
+  </main>
 
   <script>
-    const codigo = localStorage.getItem("ordenActual");
-
-    document.getElementById("btnVolverDashboard").addEventListener("click", () => {
-      window.location.href = "dashboard.html";
-    });
-
-    // 🔹 Subir factura a Google Drive
-    async function subirFactura() {
-      const archivo = document.getElementById("archivoFactura").files[0];
-      if (!archivo) return alert("Selecciona un archivo de factura para subir.");
-
-      const formData = new FormData();
-      formData.append("file", archivo);
-      formData.append("tipo", "factura");
-
-      const res = await fetch(`/api/orders/${codigo}/upload-photo`, { method: "POST", body: formData });
-      const data = await res.json();
-
-      if (data.ok) {
-        localStorage.setItem(`factura_${codigo}`, data.url);
-        alert("✅ Factura subida correctamente.");
-      } else {
-        alert("❌ Error al subir la factura.");
-      }
+    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    if (!usuario.nombre || !["contabilidad", "admin"].includes(usuario.rol.toLowerCase())) {
+      alert("⚠️ Acceso restringido al área contable.");
+      window.location.href = "index.html";
     }
+    document.getElementById("usuarioInfo").textContent =
+      `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
 
-    // 🔹 Enviar a Administración
-    async function finalizarFacturacion() {
-      if (!confirm("¿Confirmas enviar esta orden al área de Administración?")) return;
-
-      const observacion = document.getElementById("observacionesFactura").value || "Sin observaciones";
-      const facturaUrl = localStorage.getItem(`factura_${codigo}`) || "";
-
-      // Guardamos observaciones en el feedback
-      await fetch(`/api/orders/${codigo}/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ materiales: "Factura", trabajo: `Observación contable: ${observacion}` })
-      });
-
-      // Guardamos el enlace de la factura en la hoja
-      if (facturaUrl) {
-        await fetch(`/api/orders/${codigo}/sign`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firmaInquilino: facturaUrl }) // reuso campo temporalmente
-        });
-      }
-
-      // Actualizamos estado a Facturada (Contabilidad)
-      await fetch(`/api/orders/${codigo}/finish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuevoEstado: "Facturada (Contabilidad)" })
-      });
-
-      alert("✅ Orden enviada a Administración correctamente.");
-      window.location.href = "dashboard.html";
-    }
+    function volver() { window.location.href = "dashboard.html"; }
+    function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
   </script>
 </body>
 </html>
