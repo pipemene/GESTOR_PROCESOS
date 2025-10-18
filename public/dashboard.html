@@ -3,208 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Administración | Blue Home Gestor</title>
+  <title>Dashboard | Blue Home Gestor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #f5f7fa;
+      background: #f4f7fa;
+      font-family: "Poppins", sans-serif;
     }
     header {
       background: linear-gradient(90deg, #003366, #006bb3);
-      color: white;
-      padding: 15px;
-    }
-    .table thead {
-      background: #003366;
-      color: white;
-    }
-    .btn-primary {
-      background: #006bb3;
-      border: none;
-    }
-    .btn-primary:hover {
-      background: #004d80;
+      color: #fff;
+      padding: 15px 25px;
     }
     .card {
-      border-radius: 12px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+    }
+    .menu-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    .btn-logout {
+      background-color: #c82333;
+      color: white;
+      border: none;
+    }
+    .btn-logout:hover {
+      background-color: #a71d2a;
     }
   </style>
 </head>
+
 <body>
-  <!-- Header -->
-  <header class="d-flex justify-content-between align-items-center px-4">
-    <h4 class="fw-bold">👑 Administración Blue Home</h4>
+  <!-- 🔹 HEADER -->
+  <header class="d-flex justify-content-between align-items-center">
+    <h4 class="fw-bold">🏠 Blue Home Gestor</h4>
     <div>
-      <span id="nombreUsuario" class="me-3 fw-semibold"></span>
-      <button id="btnDashboard" class="btn btn-light btn-sm me-2">🏠 Ir al Dashboard</button>
-      <button id="btnLogout" class="btn btn-danger btn-sm">🚪 Cerrar sesión</button>
+      <span id="usuarioNombre" class="fw-semibold me-3"></span>
+      <button id="btnLogout" class="btn btn-logout btn-sm">🚪 Cerrar sesión</button>
     </div>
   </header>
 
-  <!-- Contenido principal -->
-  <div class="container my-4">
-    <div class="card p-4">
-      <h5 class="fw-bold mb-3">👥 Gestión de Usuarios</h5>
-
-      <form id="formUsuario" class="row g-3">
-        <div class="col-md-3">
-          <input type="text" id="nombre" class="form-control" placeholder="Nombre completo" required>
-        </div>
-        <div class="col-md-3">
-          <input type="text" id="usuario" class="form-control" placeholder="Usuario" required>
-        </div>
-        <div class="col-md-3">
-          <input type="password" id="contrasena" class="form-control" placeholder="Contraseña" required>
-        </div>
-        <div class="col-md-2">
-          <select id="rol" class="form-select" required>
-            <option value="">Rol...</option>
-            <option value="superadmin">Superadmin</option>
-            <option value="reparaciones">Reparaciones</option>
-            <option value="arrendamiento">Arrendamiento</option>
-            <option value="facturacion">Facturación</option>
-          </select>
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-primary w-100">➕</button>
-        </div>
-      </form>
-
-      <hr>
-
-      <table class="table table-striped align-middle text-center" id="tablaUsuarios">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Contraseña</th>
-            <th>Rol</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyUsuarios"></tbody>
-      </table>
-
-      <div id="msg" class="fw-semibold text-center mt-2"></div>
-    </div>
+  <!-- 🔹 CONTENIDO -->
+  <div class="container my-5">
+    <h5 class="fw-bold mb-4 text-center">📋 Menú principal</h5>
+    <div class="row g-4 justify-content-center" id="menuOpciones"></div>
   </div>
 
   <script>
-  // =============================
-  // 🔐 Protección de acceso
-  // =============================
-  const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-  if (!user.nombre) {
-    window.location.href = "index.html";
-  } else if (user.rol.toLowerCase() !== "superadmin") {
-    alert("⚠️ No tienes permiso para acceder a esta sección.");
-    window.location.href = "dashboard.html";
-  }
-  document.getElementById("nombreUsuario").textContent = user.nombre;
+  // =====================================================
+  // 🧠 Cargar usuario desde localStorage
+  // =====================================================
+  const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+  const contenedorMenu = document.getElementById("menuOpciones");
+  const nombre = usuario.nombre || "Invitado";
+  const rol = (usuario.rol || "").toLowerCase();
 
-  // =============================
-  // 🚪 Botones globales
-  // =============================
+  // ✅ Si no hay sesión activa → volver al login
+  if (!usuario.nombre) {
+    window.location.href = "index.html";
+  }
+
+  // Mostrar nombre y rol
+  document.getElementById("usuarioNombre").textContent = `${nombre} (${rol})`;
+
+  // =====================================================
+  // 🚪 Cerrar sesión limpia
+  // =====================================================
   document.getElementById("btnLogout").addEventListener("click", () => {
     localStorage.clear();
     window.location.href = "index.html";
   });
-  document.getElementById("btnDashboard").addEventListener("click", () => {
-    window.location.href = "dashboard.html";
-  });
 
-  // =============================
-  // 📋 Cargar usuarios
-  // =============================
-  async function cargarUsuarios() {
-    const res = await fetch("/api/users");
-    const data = await res.json();
+  // =====================================================
+  // 🎨 Plantilla de tarjetas del menú
+  // =====================================================
+  const crearCard = (titulo, icono, destino) => `
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-center p-4">
+        <div class="menu-icon">${icono}</div>
+        <h6 class="fw-bold">${titulo}</h6>
+        <button class="btn btn-primary mt-2 w-100" onclick="location.href='${destino}'">Abrir</button>
+      </div>
+    </div>
+  `;
 
-    const tbody = document.getElementById("tbodyUsuarios");
-    tbody.innerHTML = "";
-    data.forEach(u => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input type="text" value="${u.Nombre || ""}" class="form-control form-control-sm nombre"></td>
-        <td><input type="text" value="${u.Usuario || ""}" class="form-control form-control-sm usuario" disabled></td>
-        <td><input type="text" value="${u.Contraseña || ""}" class="form-control form-control-sm contrasena"></td>
-        <td>
-          <select class="form-select form-select-sm rol">
-            <option value="superadmin" ${u.Rol === "superadmin" ? "selected" : ""}>Superadmin</option>
-            <option value="reparaciones" ${u.Rol === "reparaciones" ? "selected" : ""}>Reparaciones</option>
-            <option value="arrendamiento" ${u.Rol === "arrendamiento" ? "selected" : ""}>Arrendamiento</option>
-            <option value="facturacion" ${u.Rol === "facturacion" ? "selected" : ""}>Facturación</option>
-          </select>
-        </td>
-        <td>
-          <button class="btn btn-success btn-sm me-1" onclick="guardarUsuario('${u.Usuario}')">💾</button>
-          <button class="btn btn-danger btn-sm" onclick="eliminarUsuario('${u.Usuario}')">🗑️</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+  // =====================================================
+  // 🔐 Menú según el rol
+  // =====================================================
+  let opciones = [];
+
+  switch (rol) {
+    case "superadmin":
+      opciones = [
+        crearCard("👥 Administración de Usuarios", "👑", "admin.html"),
+        crearCard("🛠️ Órdenes de Reparación", "🧰", "reparaciones.html"),
+        crearCard("💼 Facturación", "💵", "facturacion.html"),
+        crearCard("🏡 Arrendamientos", "🏠", "arrendamiento.html"),
+        crearCard("📊 Reportes", "📈", "reportes.html")
+      ];
+      break;
+
+    case "reparaciones":
+      opciones = [
+        crearCard("🧾 Órdenes Asignadas", "🛠️", "reparaciones.html")
+      ];
+      break;
+
+    case "arrendamiento":
+      opciones = [
+        crearCard("📋 Gestionar Órdenes", "📄", "arrendamiento.html")
+      ];
+      break;
+
+    case "facturacion":
+      opciones = [
+        crearCard("💼 Facturación de Órdenes", "📑", "facturacion.html")
+      ];
+      break;
+
+    default:
+      opciones = [`
+        <div class="col-12 text-center text-muted">
+          <p>⚠️ No tienes permisos asignados en el sistema.</p>
+        </div>
+      `];
   }
 
-  // =============================
-  // ➕ Crear usuario
-  // =============================
-  document.getElementById("formUsuario").addEventListener("submit", async e => {
-    e.preventDefault();
-    const nombre = document.getElementById("nombre").value.trim();
-    const usuario = document.getElementById("usuario").value.trim();
-    const contrasena = document.getElementById("contrasena").value.trim();
-    const rol = document.getElementById("rol").value;
-
-    if (!nombre || !usuario || !contrasena || !rol) return;
-
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, usuario, contrasena, rol })
-    });
-
-    const data = await res.json();
-    document.getElementById("msg").textContent = data.ok ? "✅ Usuario creado correctamente" : "❌ Error al crear usuario";
-    cargarUsuarios();
-    e.target.reset();
-  });
-
-  // =============================
-  // 💾 Guardar cambios
-  // =============================
-  async function guardarUsuario(usuario) {
-    const fila = [...document.querySelectorAll("#tbodyUsuarios tr")].find(
-      tr => tr.querySelector(".usuario").value === usuario
-    );
-
-    const nombre = fila.querySelector(".nombre").value;
-    const contrasena = fila.querySelector(".contrasena").value;
-    const rol = fila.querySelector(".rol").value;
-
-    const res = await fetch(`/api/users/${usuario}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, contrasena, rol })
-    });
-
-    const data = await res.json();
-    document.getElementById("msg").textContent = data.ok ? "✅ Usuario actualizado" : "❌ Error al actualizar";
-  }
-
-  // =============================
-  // 🗑️ Eliminar usuario
-  // =============================
-  async function eliminarUsuario(usuario) {
-    if (!confirm(`¿Eliminar usuario ${usuario}?`)) return;
-    const res = await fetch(`/api/users/${usuario}`, { method: "DELETE" });
-    const data = await res.json();
-    document.getElementById("msg").textContent = data.ok ? "🗑️ Usuario eliminado" : "❌ Error al eliminar";
-    cargarUsuarios();
-  }
-
-  // Inicializar
-  cargarUsuarios();
+  contenedorMenu.innerHTML = opciones.join("");
   </script>
 </body>
 </html>
