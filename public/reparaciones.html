@@ -9,8 +9,7 @@
     body { background-color: #eef3f8; font-family: 'Segoe UI', sans-serif; }
     header { background-color: #003366; color: white; padding: 10px 20px;
              display: flex; justify-content: space-between; align-items: center; }
-    .btn-primary { background-color: #006bb3; border: none; }
-    .btn-primary:hover { background-color: #004c80; }
+    .card { border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
   </style>
 </head>
 
@@ -25,8 +24,23 @@
   </header>
 
   <main class="container mt-4">
-    <h4 class="text-primary mb-3">Órdenes en Revisión</h4>
-    <p>Aquí Dayan podrá revisar las órdenes finalizadas por técnicos, asignar valores y aprobar para facturación.</p>
+    <h4 class="text-primary mb-3">Revisión y Aprobación de Órdenes</h4>
+
+    <div class="card p-4">
+      <h5 class="text-primary">📋 Órdenes Finalizadas por Técnicos</h5>
+      <table class="table table-bordered text-center mt-3">
+        <thead class="table-secondary">
+          <tr>
+            <th>Código</th>
+            <th>Arrendatario</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaOrdenes"></tbody>
+      </table>
+    </div>
   </main>
 
   <script>
@@ -40,6 +54,48 @@
 
     function volver() { window.location.href = "dashboard.html"; }
     function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
+
+    async function cargarOrdenes() {
+      const res = await fetch("/api/orders");
+      const data = await res.json();
+      const tbody = document.getElementById("tablaOrdenes");
+      tbody.innerHTML = "";
+      data
+        .filter(o => o.Estado?.toLowerCase() === "finalizada" || o.estado?.toLowerCase() === "finalizada")
+        .forEach(o => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${o.Código || o.codigo}</td>
+            <td>${o.Arrendatario || o.arrendatario}</td>
+            <td>${o.Descripción || o.descripcion}</td>
+            <td>${o.Estado || o.estado}</td>
+            <td>
+              <button class="btn btn-success btn-sm" onclick="aprobar('${o.Código || o.codigo}')">✔ Aprobar</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+    }
+
+    async function aprobar(codigo) {
+      const confirmacion = confirm(`¿Deseas aprobar la orden ${codigo} y pasarla a Contabilidad?`);
+      if (!confirmacion) return;
+
+      try {
+        const res = await fetch(`/api/orders/${codigo}/finish`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+          alert("✅ Orden aprobada y enviada a Contabilidad.");
+          cargarOrdenes();
+        } else {
+          alert("⚠️ No se pudo aprobar la orden.");
+        }
+      } catch (err) {
+        alert("❌ Error conectando con el servidor.");
+      }
+    }
+
+    cargarOrdenes();
   </script>
 </body>
 </html>
