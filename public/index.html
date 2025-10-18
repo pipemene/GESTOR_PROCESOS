@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Iniciar Sesión | Blue Home Gestor</title>
+  <title>Blue Home Gestor | Iniciar Sesión</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -12,7 +12,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: "Segoe UI", sans-serif;
     }
     .login-card {
       background: #fff;
@@ -20,7 +20,7 @@
       padding: 40px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
     .login-card h3 {
       color: #003366;
@@ -32,10 +32,12 @@
       display: block;
       margin: 0 auto 20px;
     }
-    #msgBienvenida {
-      font-weight: 600;
-      color: #006bb3;
-      margin-top: 15px;
+    .btn-primary {
+      background-color: #006bb3;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #004f80;
     }
   </style>
 </head>
@@ -58,94 +60,83 @@
     </form>
 
     <div id="msgError" class="text-danger mt-3 fw-semibold"></div>
-    <div id="msgBienvenida"></div>
   </div>
 
   <script>
-  document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const contrasena = document.getElementById("contrasena").value.trim();
+      const msg = document.getElementById("msgError");
 
-    const user = document.getElementById("usuario").value.trim().toLowerCase();
-    const pass = document.getElementById("contrasena").value.trim();
-    const msg = document.getElementById("msgError");
-    const msgBienvenida = document.getElementById("msgBienvenida");
-    msg.textContent = "";
-    msgBienvenida.textContent = "";
+      msg.textContent = "Validando credenciales...";
 
-    try {
-      const res = await fetch("/api/users");
-      const users = await res.json();
+      try {
+        const res = await fetch("/api/users");
+        const users = await res.json();
 
-      const encontrado = users.find(
-        u => u.usuario.toLowerCase() === user && u.contrasena === pass
-      );
+        const encontrado = users.find(u =>
+          u.usuario?.toLowerCase() === usuario && u.contrasena === contrasena
+        );
 
-      if (!encontrado) {
-        msg.textContent = "❌ Usuario o contraseña incorrectos.";
-        return;
-      }
-
-      // Guardar sesión
-      localStorage.setItem("usuarioActivo", JSON.stringify({
-        nombre: encontrado.nombre,
-        rol: encontrado.rol
-      }));
-
-      // Mostrar mensaje de bienvenida
-      msgBienvenida.textContent = `👋 Bienvenido(a) ${encontrado.nombre}, cargando tu panel...`;
-
-      // Redirección según rol
-      const rol = encontrado.rol.toLowerCase();
-      setTimeout(() => {
-        switch (rol) {
-          case "admin":
-            window.location.href = "admin.html";
-            break;
-          case "arrendamiento":
-            window.location.href = "arrendamiento.html"; // Daniela puede crear órdenes
-            break;
-          case "reparaciones":
-            window.location.href = "reparaciones.html"; // Dayan también puede crear órdenes
-            break;
-          case "contabilidad":
-            window.location.href = "facturacion.html";
-            break;
-          case "tecnico":
-            window.location.href = "ordenes.html";
-            break;
-          default:
-            window.location.href = "dashboard.html";
-            break;
+        if (!encontrado) {
+          msg.textContent = "❌ Usuario o contraseña incorrectos.";
+          return;
         }
-      }, 1500); // pequeño delay elegante
 
-    } catch (err) {
-      msg.textContent = "⚠️ Error conectando con el servidor.";
-      console.error(err);
+        // Guardar usuario activo en localStorage
+        localStorage.setItem("usuarioActivo", JSON.stringify({
+          nombre: encontrado.nombre,
+          rol: encontrado.rol.toLowerCase()
+        }));
+
+        msg.textContent = "✅ Iniciando sesión...";
+        redirigirPorRol(encontrado.rol.toLowerCase());
+      } catch (err) {
+        msg.textContent = "⚠️ Error conectando con el servidor.";
+        console.error(err);
+      }
+    });
+
+    // 🔹 Redirección automática según rol
+    function redirigirPorRol(rol) {
+      switch (rol) {
+        case "superadmin":
+          window.location.href = "admin.html";
+          break;
+        case "reparaciones":
+          window.location.href = "reparaciones.html";
+          break;
+        case "facturacion":
+          window.location.href = "facturacion.html";
+          break;
+        case "arrendamiento":
+          window.location.href = "arrendamiento.html";
+          break;
+        case "tecnico":
+          window.location.href = "ordenes.html";
+          break;
+        default:
+          window.location.href = "dashboard.html";
+          break;
+      }
     }
-  });
+
+    // 🕒 Expiración automática (10 min inactividad)
+    let inactividad;
+    const LIMITE = 10 * 60 * 1000;
+    function reiniciarTiempo() {
+      clearTimeout(inactividad);
+      inactividad = setTimeout(() => {
+        alert("⚠️ Tu sesión ha expirado por inactividad.");
+        localStorage.clear();
+        window.location.href = "index.html";
+      }, LIMITE);
+    }
+    ["click","mousemove","keypress","scroll","touchstart"].forEach(ev =>
+      document.addEventListener(ev, reiniciarTiempo)
+    );
+    reiniciarTiempo();
   </script>
-
-  <script>
-  // 🔒 Control de sesión / inactividad
-  let tiempoInactividad;
-  const TIEMPO_LIMITE = 10 * 60 * 1000; // 10 minutos
-
-  function reiniciarTemporizador() {
-    clearTimeout(tiempoInactividad);
-    tiempoInactividad = setTimeout(() => {
-      alert("⚠️ Tu sesión ha expirado por inactividad.");
-      localStorage.clear();
-      window.location.href = "login.html";
-    }, TIEMPO_LIMITE);
-  }
-
-  ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach(evt =>
-    document.addEventListener(evt, reiniciarTemporizador)
-  );
-
-  reiniciarTemporizador();
-  </script>
-
 </body>
 </html>
