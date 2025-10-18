@@ -1,7 +1,9 @@
 import { google } from "googleapis";
 
 /**
- * Inicializa la conexión con Google Sheets API usando la cuenta de servicio
+ * =====================================================
+ * 🔹 Inicializa el cliente de Google Sheets
+ * =====================================================
  */
 function getSheetsClient() {
   const auth = new google.auth.GoogleAuth({
@@ -16,13 +18,13 @@ function getSheetsClient() {
 }
 
 /**
- * Obtiene todas las filas de una hoja
- * @param {string} sheetName - Nombre de la hoja (pestaña)
+ * =====================================================
+ * 🔹 Obtiene todas las filas de una hoja
+ * =====================================================
  */
 export async function getSheetData(sheetName) {
   const sheets = getSheetsClient();
-  const spreadsheetId =
-    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -33,14 +35,13 @@ export async function getSheetData(sheetName) {
 }
 
 /**
- * Agrega una nueva fila al final de la hoja
- * @param {string} sheetName - Nombre de la hoja
- * @param {Array} rowData - Arreglo con los datos a insertar
+ * =====================================================
+ * 🔹 Agrega una nueva fila
+ * =====================================================
  */
 export async function appendRow(sheetName, rowData) {
   const sheets = getSheetsClient();
-  const spreadsheetId =
-    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
@@ -51,15 +52,16 @@ export async function appendRow(sheetName, rowData) {
 }
 
 /**
- * Actualiza una celda específica en la hoja
- * @param {string} sheetName
- * @param {string} range - Ejemplo: 'Ordenes!F5'
- * @param {string|number} value - Valor nuevo
+ * =====================================================
+ * 🔹 Actualiza una celda específica
+ * =====================================================
+ * @param {string} sheetName - Nombre de la hoja
+ * @param {string} range - Ejemplo: 'Usuarios!D5'
+ * @param {string|number} value - Nuevo valor
  */
 export async function updateCell(sheetName, range, value) {
   const sheets = getSheetsClient();
-  const spreadsheetId =
-    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
   await sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -70,24 +72,51 @@ export async function updateCell(sheetName, range, value) {
 }
 
 /**
- * Elimina una fila (no muy usado porque Google Sheets no tiene método directo para borrar filas)
- * Aquí simplemente se puede sobrescribir el contenido con vacío si lo necesitás.
+ * =====================================================
+ * 🔹 Elimina una fila completa de la hoja
+ * =====================================================
+ * ⚠️ Importante: este método usa batchUpdate para eliminar
+ * la fila físicamente (no solo limpiar las celdas).
  */
 export async function deleteRow(sheetName, rowIndex) {
   const sheets = getSheetsClient();
-  const spreadsheetId =
-    process.env.SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-  const range = `${sheetName}!A${rowIndex}:Z${rowIndex}`;
-  await sheets.spreadsheets.values.clear({
+  // Google Sheets usa índices base 0 (por eso restamos 1)
+  const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = sheetMeta.data.sheets.find(
+    (s) => s.properties.title === sheetName
+  );
+
+  if (!sheet) throw new Error(`No se encontró la hoja ${sheetName}`);
+
+  const sheetId = sheet.properties.sheetId;
+
+  await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
-    range,
+    resource: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowIndex - 1, // base 0
+              endIndex: rowIndex,
+            },
+          },
+        },
+      ],
+    },
   });
+
+  console.log(`🗑️ Fila ${rowIndex} eliminada de ${sheetName}`);
 }
 
 /**
- * Devuelve todas las filas formateadas de la hoja "Órdenes"
- * para uso directo en /routes/orders.js
+ * =====================================================
+ * 🔹 Devuelve las órdenes formateadas (para módulo técnico)
+ * =====================================================
  */
 export async function getSheet() {
   const data = await getSheetData("Órdenes");
@@ -102,3 +131,4 @@ export async function getSheet() {
 
   return { headers, rows };
 }
+
