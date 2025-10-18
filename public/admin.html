@@ -3,210 +3,208 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Administración | Blue Home</title>
+  <title>Panel de Administración | Blue Home Gestor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     body {
-      background: #eef3f7;
-      font-family: "Segoe UI", sans-serif;
+      background-color: #f5f7fa;
     }
     header {
+      background: linear-gradient(90deg, #003366, #006bb3);
+      color: white;
+      padding: 15px;
+    }
+    .table thead {
       background: #003366;
       color: white;
-      padding: 10px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
-    h4 {
-      color: #003366;
-      font-weight: bold;
+    .btn-primary {
+      background: #006bb3;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #004d80;
     }
     .card {
       border-radius: 12px;
       box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
-    footer {
-      text-align: center;
-      font-size: 13px;
-      padding: 15px;
-      background: #003366;
-      color: white;
-      margin-top: 40px;
-    }
   </style>
 </head>
-
 <body>
-  <header>
-    <h5><i class="bi bi-gear-fill"></i> Panel de Administración — Blue Home</h5>
+  <!-- Header -->
+  <header class="d-flex justify-content-between align-items-center px-4">
+    <h4 class="fw-bold">👑 Administración Blue Home</h4>
     <div>
-      <button class="btn btn-sm btn-light me-2" onclick="window.location.href='dashboard.html'">
-        <i class="bi bi-grid-fill"></i> Dashboard
-      </button>
-      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">
-        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
-      </button>
+      <span id="nombreUsuario" class="me-3 fw-semibold"></span>
+      <button id="btnDashboard" class="btn btn-light btn-sm me-2">🏠 Ir al Dashboard</button>
+      <button id="btnLogout" class="btn btn-danger btn-sm">🚪 Cerrar sesión</button>
     </div>
   </header>
 
-  <main class="container mt-4">
+  <!-- Contenido principal -->
+  <div class="container my-4">
     <div class="card p-4">
-      <h4 class="mb-4 text-center"><i class="bi bi-people-fill"></i> Gestión de Usuarios del Sistema</h4>
+      <h5 class="fw-bold mb-3">👥 Gestión de Usuarios</h5>
 
-      <div class="mb-3 text-end">
-        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario">
-          <i class="bi bi-person-plus-fill"></i> Crear nuevo usuario
-        </button>
-      </div>
-
-      <div class="table-responsive">
-        <table class="table table-striped align-middle">
-          <thead class="table-primary">
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaUsuarios"></tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <footer>Blue Home Inmobiliaria © 2025 — Panel de Administración</footer>
-
-  <!-- Modal Crear/Editar -->
-  <div class="modal fade" id="modalUsuario" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">Nuevo Usuario</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <form id="formUsuario" class="row g-3">
+        <div class="col-md-3">
+          <input type="text" id="nombre" class="form-control" placeholder="Nombre completo" required>
         </div>
-        <div class="modal-body">
-          <form id="formUsuario">
-            <input type="hidden" id="filaUsuario">
-            <div class="mb-3">
-              <label class="form-label">Nombre</label>
-              <input type="text" id="nombre" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Usuario</label>
-              <input type="text" id="usuario" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Contraseña</label>
-              <input type="text" id="contrasena" class="form-control" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Rol</label>
-              <select id="rol" class="form-select" required>
-                <option value="">Seleccionar...</option>
-                <option value="superadmin">Superadmin</option>
-                <option value="arrendamiento">Arrendamiento</option>
-                <option value="reparaciones">Reparaciones</option>
-                <option value="facturacion">Facturación</option>
-                <option value="tecnico">Técnico</option>
-              </select>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Guardar</button>
-          </form>
+        <div class="col-md-3">
+          <input type="text" id="usuario" class="form-control" placeholder="Usuario" required>
         </div>
-      </div>
+        <div class="col-md-3">
+          <input type="password" id="contrasena" class="form-control" placeholder="Contraseña" required>
+        </div>
+        <div class="col-md-2">
+          <select id="rol" class="form-select" required>
+            <option value="">Rol...</option>
+            <option value="superadmin">Superadmin</option>
+            <option value="reparaciones">Reparaciones</option>
+            <option value="arrendamiento">Arrendamiento</option>
+            <option value="facturacion">Facturación</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-primary w-100">➕</button>
+        </div>
+      </form>
+
+      <hr>
+
+      <table class="table table-striped align-middle text-center" id="tablaUsuarios">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Contraseña</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyUsuarios"></tbody>
+      </table>
+
+      <div id="msg" class="fw-semibold text-center mt-2"></div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const tabla = document.getElementById("tablaUsuarios");
-    const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
+  // =============================
+  // 🔐 Protección de acceso
+  // =============================
+  const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+  if (!user.nombre) {
+    window.location.href = "index.html";
+  } else if (user.rol.toLowerCase() !== "superadmin") {
+    alert("⚠️ No tienes permiso para acceder a esta sección.");
+    window.location.href = "dashboard.html";
+  }
+  document.getElementById("nombreUsuario").textContent = user.nombre;
 
-    async function cargarUsuarios() {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      tabla.innerHTML = data.map((u, i) => `
-        <tr>
-          <td>${u.fila}</td>
-          <td>${u.nombre}</td>
-          <td>${u.usuario}</td>
-          <td>${u.rol}</td>
-          <td>
-            <button class="btn btn-warning btn-sm" onclick="editarUsuario(${u.fila}, '${u.nombre}', '${u.usuario}', '${u.contrasena}', '${u.rol}')">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${u.fila})">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `).join("");
-    }
+  // =============================
+  // 🚪 Botones globales
+  // =============================
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "index.html";
+  });
+  document.getElementById("btnDashboard").addEventListener("click", () => {
+    window.location.href = "dashboard.html";
+  });
 
-    document.getElementById("formUsuario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fila = document.getElementById("filaUsuario").value;
-      const datos = {
-        fila: fila || undefined,
-        nombre: document.getElementById("nombre").value,
-        usuario: document.getElementById("usuario").value,
-        contrasena: document.getElementById("contrasena").value,
-        rol: document.getElementById("rol").value
-      };
+  // =============================
+  // 📋 Cargar usuarios
+  // =============================
+  async function cargarUsuarios() {
+    const res = await fetch("/api/users");
+    const data = await res.json();
 
-      const url = fila ? "/api/users/update" : "/api/users";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos)
-      });
+    const tbody = document.getElementById("tbodyUsuarios");
+    tbody.innerHTML = "";
+    data.forEach(u => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" value="${u.Nombre || ""}" class="form-control form-control-sm nombre"></td>
+        <td><input type="text" value="${u.Usuario || ""}" class="form-control form-control-sm usuario" disabled></td>
+        <td><input type="text" value="${u.Contraseña || ""}" class="form-control form-control-sm contrasena"></td>
+        <td>
+          <select class="form-select form-select-sm rol">
+            <option value="superadmin" ${u.Rol === "superadmin" ? "selected" : ""}>Superadmin</option>
+            <option value="reparaciones" ${u.Rol === "reparaciones" ? "selected" : ""}>Reparaciones</option>
+            <option value="arrendamiento" ${u.Rol === "arrendamiento" ? "selected" : ""}>Arrendamiento</option>
+            <option value="facturacion" ${u.Rol === "facturacion" ? "selected" : ""}>Facturación</option>
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-success btn-sm me-1" onclick="guardarUsuario('${u.Usuario}')">💾</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarUsuario('${u.Usuario}')">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-      if (res.ok) {
-        alert("✅ Usuario guardado correctamente.");
-        modal.hide();
-        cargarUsuarios();
-      } else {
-        alert("❌ Error al guardar usuario.");
-      }
+  // =============================
+  // ➕ Crear usuario
+  // =============================
+  document.getElementById("formUsuario").addEventListener("submit", async e => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombre").value.trim();
+    const usuario = document.getElementById("usuario").value.trim();
+    const contrasena = document.getElementById("contrasena").value.trim();
+    const rol = document.getElementById("rol").value;
+
+    if (!nombre || !usuario || !contrasena || !rol) return;
+
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, usuario, contrasena, rol })
     });
 
-    function editarUsuario(fila, nombre, usuario, contrasena, rol) {
-      document.getElementById("filaUsuario").value = fila;
-      document.getElementById("nombre").value = nombre;
-      document.getElementById("usuario").value = usuario;
-      document.getElementById("contrasena").value = contrasena;
-      document.getElementById("rol").value = rol;
-      modal.show();
-    }
+    const data = await res.json();
+    document.getElementById("msg").textContent = data.ok ? "✅ Usuario creado correctamente" : "❌ Error al crear usuario";
+    cargarUsuarios();
+    e.target.reset();
+  });
 
-    async function eliminarUsuario(fila) {
-      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
-      const res = await fetch(`/api/users/delete/${fila}`, { method: "DELETE" });
-      if (res.ok) {
-        alert("🗑️ Usuario eliminado correctamente.");
-        cargarUsuarios();
-      } else {
-        alert("❌ Error al eliminar usuario.");
-      }
-    }
+  // =============================
+  // 💾 Guardar cambios
+  // =============================
+  async function guardarUsuario(usuario) {
+    const fila = [...document.querySelectorAll("#tbodyUsuarios tr")].find(
+      tr => tr.querySelector(".usuario").value === usuario
+    );
 
-    function cerrarSesion() {
-      localStorage.clear();
-      window.location.href = "index.html";
-    }
+    const nombre = fila.querySelector(".nombre").value;
+    const contrasena = fila.querySelector(".contrasena").value;
+    const rol = fila.querySelector(".rol").value;
 
-    // 🔐 Protección: solo Superadmin (Pipe)
-    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!usuario.nombre || usuario.rol.toLowerCase() !== "superadmin") {
-      alert("⚠️ Acceso restringido solo para administración.");
-      window.location.href = "index.html";
-    } else {
-      cargarUsuarios();
-    }
+    const res = await fetch(`/api/users/${usuario}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, contrasena, rol })
+    });
+
+    const data = await res.json();
+    document.getElementById("msg").textContent = data.ok ? "✅ Usuario actualizado" : "❌ Error al actualizar";
+  }
+
+  // =============================
+  // 🗑️ Eliminar usuario
+  // =============================
+  async function eliminarUsuario(usuario) {
+    if (!confirm(`¿Eliminar usuario ${usuario}?`)) return;
+    const res = await fetch(`/api/users/${usuario}`, { method: "DELETE" });
+    const data = await res.json();
+    document.getElementById("msg").textContent = data.ok ? "🗑️ Usuario eliminado" : "❌ Error al eliminar";
+    cargarUsuarios();
+  }
+
+  // Inicializar
+  cargarUsuarios();
   </script>
 </body>
 </html>
