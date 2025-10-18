@@ -8,14 +8,18 @@ export function protegerRutas(rolesPermitidos = []) {
       }
 
       const user = JSON.parse(Buffer.from(token, "base64").toString("utf8"));
-      if (!rolesPermitidos.includes(user.rol.toLowerCase())) {
+      const rolUsuario = user.rol?.toLowerCase();
+
+      if (!rolesPermitidos.includes(rolUsuario)) {
+        console.warn(`🚫 Acceso denegado para rol: ${rolUsuario}`);
         return res.status(403).json({ error: "Acceso denegado" });
       }
 
       req.user = user;
       next();
     } catch (err) {
-      res.status(401).json({ error: "Token inválido" });
+      console.error("❌ Error en protegerRutas:", err);
+      res.status(401).json({ error: "Token inválido o corrupto" });
     }
   };
 }
