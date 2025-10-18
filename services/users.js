@@ -1,15 +1,18 @@
 // routes/users.js
 import express from "express";
-import { getSheetData, appendRow, updateCell, deleteRow } from "../services/sheetsService.js";
+import {
+  getSheetData,
+  appendRow,
+  updateCell,
+  deleteRow
+} from "../services/sheetsService.js";
 
 const router = express.Router();
-
-// NOMBRE DE LA HOJA
 const SHEET_NAME = "Usuarios";
 
-// ======================================================
-// 🔹 GET: listar todos los usuarios
-// ======================================================
+/* ======================================================
+   🔹 GET: listar todos los usuarios
+====================================================== */
 router.get("/", async (req, res) => {
   try {
     const rows = await getSheetData(SHEET_NAME);
@@ -18,9 +21,10 @@ router.get("/", async (req, res) => {
     const headers = rows[0];
     const data = rows.slice(1).map((r) => {
       const obj = {};
-      headers.forEach((h, i) => (obj[h] = r[i] || ""));
+      headers.forEach((h, i) => (obj[h.trim().toLowerCase()] = r[i] || ""));
       return obj;
     });
+
     res.json(data);
   } catch (e) {
     console.error("❌ Error al obtener usuarios:", e);
@@ -28,29 +32,42 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
-// 🔹 POST: crear nuevo usuario
-// ======================================================
+/* ======================================================
+   🔹 POST: crear nuevo usuario
+====================================================== */
 router.post("/", async (req, res) => {
   try {
     const { nombre, usuario, contrasena, rol } = req.body;
+
     if (!nombre || !usuario || !contrasena || !rol) {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    const nuevaFila = [nombre, usuario, contrasena, rol];
-    await appendRow(SHEET_NAME, nuevaFila);
+    // Verificar si el usuario ya existe
+    const rows = await getSheetData(SHEET_NAME);
+    const headers = rows[0];
+    const idxUsuario = headers.findIndex((h) => /usuario/i.test(h));
+    const existe = rows.some(
+      (r, i) => i > 0 && (r[idxUsuario] || "").trim().toLowerCase() === usuario.toLowerCase()
+    );
+
+    if (existe) {
+      return res.status(409).json({ error: "El usuario ya existe" });
+    }
+
+    await appendRow(SHEET_NAME, [nombre, usuario, contrasena, rol]);
     console.log(`✅ Usuario ${usuario} creado correctamente`);
-    res.json({ ok: true });
+
+    res.json({ ok: true, message: `Usuario ${usuario} creado correctamente` });
   } catch (e) {
     console.error("❌ Error al crear usuario:", e);
     res.status(500).json({ error: "Error al crear usuario" });
   }
 });
 
-// ======================================================
-// 🔹 PATCH: editar usuario por nombre de usuario
-// ======================================================
+/* ======================================================
+   🔹 PATCH: editar usuario existente
+====================================================== */
 router.patch("/:usuario", async (req, res) => {
   try {
     const { usuario } = req.params;
@@ -68,12 +85,15 @@ router.patch("/:usuario", async (req, res) => {
         break;
       }
     }
+
     if (rowIndex < 0) return res.status(404).json({ error: "Usuario no encontrado" });
 
     const campos = { nombre, contrasena, rol };
     for (const [key, value] of Object.entries(campos)) {
       if (!value) continue;
-      const colIdx = headers.findIndex((h) => h.toLowerCase() === key.toLowerCase());
+      const colIdx = headers.findIndex(
+        (h) => h.trim().toLowerCase() === key.toLowerCase()
+      );
       if (colIdx >= 0) {
         const letra = String.fromCharCode("A".charCodeAt(0) + colIdx);
         await updateCell(SHEET_NAME, `${SHEET_NAME}!${letra}${rowIndex}`, value);
@@ -81,19 +101,20 @@ router.patch("/:usuario", async (req, res) => {
     }
 
     console.log(`✏️ Usuario ${usuario} actualizado correctamente`);
-    res.json({ ok: true });
+    res.json({ ok: true, message: `Usuario ${usuario} actualizado correctamente` });
   } catch (e) {
     console.error("❌ Error al editar usuario:", e);
     res.status(500).json({ error: "Error al editar usuario" });
   }
 });
 
-// ======================================================
-// 🔹 DELETE: eliminar usuario por nombre de usuario
-// ======================================================
+/* ======================================================
+   🔹 DELETE: eliminar usuario
+====================================================== */
 router.delete("/:usuario", async (req, res) => {
   try {
     const { usuario } = req.params;
+
     const rows = await getSheetData(SHEET_NAME);
     const headers = rows[0];
     const idxUsuario = headers.findIndex((h) => /usuario/i.test(h));
@@ -106,11 +127,13 @@ router.delete("/:usuario", async (req, res) => {
         break;
       }
     }
+
     if (rowIndex < 0) return res.status(404).json({ error: "Usuario no encontrado" });
 
     await deleteRow(SHEET_NAME, rowIndex);
     console.log(`🗑️ Usuario ${usuario} eliminado correctamente`);
-    res.json({ ok: true });
+
+    res.json({ ok: true, message: `Usuario ${usuario} eliminado correctamente` });
   } catch (e) {
     console.error("❌ Error al eliminar usuario:", e);
     res.status(500).json({ error: "Error al eliminar usuario" });

@@ -3,229 +3,221 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Administración | Blue Home Gestor</title>
+  <title>Panel de Administración | Blue Home</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body { background-color: #eef3f8; font-family: 'Segoe UI', sans-serif; }
-    header {
-      background: linear-gradient(90deg, #003366 0%, #005fa3 100%);
-      color: white;
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    body {
+      background: #f8fafc;
     }
-    .logo { width: 45px; margin-right: 10px; }
-    .card { border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
-    .table thead { background-color: #003366; color: white; }
-    footer { background-color: #003366; color: white; text-align: center; padding: 10px; font-size: 0.9em; }
+    .navbar {
+      background: #003366;
+    }
+    .navbar-brand, .nav-link, .navbar-text {
+      color: white !important;
+    }
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .btn-primary {
+      background-color: #003366;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #0055a5;
+    }
+    .table thead {
+      background-color: #003366;
+      color: #fff;
+    }
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="d-flex align-items-center">
-      <img src="https://i.imgur.com/FEBvZ6N.png" alt="Logo Blue Home" class="logo" />
-      <h4 class="mb-0">Panel de Administración — Blue Home</h4>
+  <!-- 🔹 NAVBAR -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">Blue Home | Admin</a>
+      <div class="d-flex align-items-center">
+        <button id="btnVolver" class="btn btn-outline-light btn-sm me-2">🏠 Ir al Dashboard</button>
+        <button id="logoutBtn" class="btn btn-danger btn-sm">Cerrar Sesión</button>
+      </div>
     </div>
-    <div>
-      <button class="btn btn-sm btn-light me-2" onclick="volver()">🏠 Dashboard</button>
-      <span id="usuarioInfo" class="fw-semibold me-2"></span>
-      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
-    </div>
-  </header>
+  </nav>
 
-  <main class="container mt-4">
-    <div class="text-center mb-3">
-      <h5 class="text-primary">👑 Gestión de Usuarios del Sistema</h5>
-      <p class="text-muted">Crea, edita o elimina usuarios con sus respectivos roles</p>
-    </div>
-
-    <!-- Crear nuevo usuario -->
-    <div class="card p-4 mb-4">
-      <h6 class="text-primary">➕ Crear nuevo usuario</h6>
-      <form id="formCrear" class="row g-3 mt-2">
-        <div class="col-md-3">
-          <input type="text" id="nombre" class="form-control" placeholder="Nombre completo" required />
-        </div>
-        <div class="col-md-3">
-          <input type="text" id="usuario" class="form-control" placeholder="Usuario" required />
-        </div>
-        <div class="col-md-3">
-          <input type="text" id="contrasena" class="form-control" placeholder="Contraseña" required />
-        </div>
-        <div class="col-md-2">
-          <select id="rol" class="form-select" required>
-            <option value="">Rol...</option>
-            <option value="admin">Admin</option>
-            <option value="arrendamientos">Arrendamientos</option>
-            <option value="reparaciones">Reparaciones</option>
-            <option value="tecnico">Técnico</option>
-            <option value="contabilidad">Contabilidad</option>
-          </select>
-        </div>
-        <div class="col-md-1 text-end">
-          <button class="btn btn-primary w-100" type="submit">Crear</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Tabla de usuarios -->
+  <!-- 🔹 CONTENIDO -->
+  <div class="container my-4">
     <div class="card p-4">
-      <h6 class="text-primary mb-3">👥 Usuarios Registrados</h6>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-primary">👥 Gestión de Usuarios</h4>
+        <button id="btnNuevo" class="btn btn-success btn-sm">➕ Nuevo Usuario</button>
+      </div>
+
       <div class="table-responsive">
         <table class="table table-bordered align-middle text-center">
           <thead>
             <tr>
-              <th>#</th>
               <th>Nombre</th>
               <th>Usuario</th>
-              <th>Contraseña</th>
               <th>Rol</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="tablaUsuarios"></tbody>
+          <tbody id="tablaUsuarios">
+            <tr><td colspan="4" class="text-muted">Cargando usuarios...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
-  </main>
+  </div>
 
-  <footer>
-    Blue Home Inmobiliaria © 2025 — Panel de Administración
-  </footer>
+  <!-- 🔹 MODAL USUARIO -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalTitulo">Nuevo Usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formUsuario">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="nombre" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Usuario</label>
+              <input type="text" class="form-control" id="usuario" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contraseña</label>
+              <input type="password" class="form-control" id="contrasena" placeholder="•••••••" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rol</label>
+              <select id="rol" class="form-select" required>
+                <option value="">Seleccione...</option>
+                <option value="admin">Administrador</option>
+                <option value="arrendamiento">Arrendamiento</option>
+                <option value="reparaciones">Reparaciones</option>
+                <option value="contabilidad">Contabilidad</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="btnGuardar" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!usuario.nombre) window.location.href = "index.html";
-    if (usuario.rol.toLowerCase() !== "admin") {
-      alert("⚠️ Solo el administrador puede acceder a este módulo.");
-      window.location.href = "dashboard.html";
-    }
+    const tabla = document.getElementById("tablaUsuarios");
+    const modal = new bootstrap.Modal(document.getElementById("modalUsuario"));
+    const form = document.getElementById("formUsuario");
+    let editando = null; // usuario en edición
 
-    document.getElementById("usuarioInfo").textContent =
-      `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
-
-    function volver() { window.location.href = "dashboard.html"; }
-    function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
-
-    // Crear usuario
-    document.getElementById("formCrear").addEventListener("submit", async e => {
-      e.preventDefault();
-      const body = {
-        nombre: nombre.value,
-        usuario: usuario.value,
-        contrasena: contrasena.value,
-        rol: rol.value
-      };
-
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      if (res.ok) {
-        Swal.fire("✅ Usuario creado correctamente", "", "success");
-        e.target.reset();
-        cargarUsuarios();
-      } else {
-        Swal.fire("⚠️ Error al crear usuario", "", "error");
-      }
-    });
-
-    // Cargar usuarios
     async function cargarUsuarios() {
+      tabla.innerHTML = `<tr><td colspan="4" class="text-muted">Cargando...</td></tr>`;
       const res = await fetch("/api/users");
-      const data = await res.json();
-      const tbody = document.getElementById("tablaUsuarios");
-      tbody.innerHTML = "";
+      const usuarios = await res.json();
 
-      data.forEach((u, i) => {
+      tabla.innerHTML = "";
+      usuarios.forEach(u => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${i + 1}</td>
           <td>${u.nombre}</td>
           <td>${u.usuario}</td>
-          <td>${u.contrasena}</td>
           <td>${u.rol}</td>
           <td>
-            <button class="btn btn-sm btn-warning" onclick="editarUsuario('${u.usuario}')">✏️</button>
-            <button class="btn btn-sm btn-danger ms-2" onclick="eliminarUsuario('${u.usuario}')">🗑️</button>
+            <button class="btn btn-warning btn-sm me-1" onclick="editarUsuario('${u.usuario}')">✏️ Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario('${u.usuario}')">🗑️ Eliminar</button>
           </td>
         `;
-        tbody.appendChild(tr);
+        tabla.appendChild(tr);
       });
     }
 
-    // Editar usuario
-    async function editarUsuario(usuario) {
+    window.editarUsuario = async (usuario) => {
       const res = await fetch("/api/users");
-      const data = await res.json();
-      const u = data.find(x => x.usuario === usuario);
-      if (!u) return;
+      const usuarios = await res.json();
+      const user = usuarios.find(u => u.usuario === usuario);
+      if (!user) return alert("Usuario no encontrado.");
 
-      const { value: formValues } = await Swal.fire({
-        title: "Editar Usuario",
-        html: `
-          <input id="swal-nombre" class="swal2-input" value="${u.nombre}" placeholder="Nombre">
-          <input id="swal-usuario" class="swal2-input" value="${u.usuario}" placeholder="Usuario">
-          <input id="swal-contrasena" class="swal2-input" value="${u.contrasena}" placeholder="Contraseña">
-          <select id="swal-rol" class="swal2-input">
-            <option ${u.rol==="admin"?"selected":""}>admin</option>
-            <option ${u.rol==="arrendamientos"?"selected":""}>arrendamientos</option>
-            <option ${u.rol==="reparaciones"?"selected":""}>reparaciones</option>
-            <option ${u.rol==="tecnico"?"selected":""}>tecnico</option>
-            <option ${u.rol==="contabilidad"?"selected":""}>contabilidad</option>
-          </select>
-        `,
-        focusConfirm: false,
-        confirmButtonText: "Guardar",
-        preConfirm: () => ({
-          nombre: document.getElementById("swal-nombre").value,
-          usuario: document.getElementById("swal-usuario").value,
-          contrasena: document.getElementById("swal-contrasena").value,
-          rol: document.getElementById("swal-rol").value
-        })
-      });
+      editando = usuario;
+      document.getElementById("modalTitulo").textContent = "Editar Usuario";
+      form.nombre.value = user.nombre;
+      form.usuario.value = user.usuario;
+      form.usuario.disabled = true;
+      form.contrasena.value = "";
+      form.rol.value = user.rol;
+      modal.show();
+    };
 
-      if (formValues) {
-        const update = await fetch(`/api/users/${usuario}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formValues)
-        });
+    document.getElementById("btnNuevo").onclick = () => {
+      editando = null;
+      form.reset();
+      form.usuario.disabled = false;
+      document.getElementById("modalTitulo").textContent = "Nuevo Usuario";
+      modal.show();
+    };
 
-        if (update.ok) {
-          Swal.fire("✅ Usuario actualizado correctamente", "", "success");
-          cargarUsuarios();
+    document.getElementById("btnGuardar").onclick = async () => {
+      const data = {
+        nombre: form.nombre.value.trim(),
+        usuario: form.usuario.value.trim().toLowerCase(),
+        contrasena: form.contrasena.value.trim(),
+        rol: form.rol.value.trim()
+      };
+
+      if (!data.nombre || !data.usuario || !data.contrasena || !data.rol) {
+        alert("Por favor completa todos los campos.");
+        return;
+      }
+
+      try {
+        let res;
+        if (editando) {
+          res = await fetch(`/api/users/${editando}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
         } else {
-          Swal.fire("⚠️ Error al actualizar usuario", "", "error");
+          res = await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
         }
+
+        const r = await res.json();
+        if (!r.ok) throw new Error(r.error || "Error desconocido");
+        modal.hide();
+        await cargarUsuarios();
+      } catch (err) {
+        alert("❌ Error al guardar usuario: " + err.message);
       }
-    }
+    };
 
-    // Eliminar usuario
-    async function eliminarUsuario(usuario) {
-      const confirm = await Swal.fire({
-        title: "¿Eliminar usuario?",
-        text: `Esta acción eliminará al usuario ${usuario}`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar"
-      });
-      if (!confirm.isConfirmed) return;
-
+    window.eliminarUsuario = async (usuario) => {
+      if (!confirm(`¿Eliminar usuario "${usuario}"?`)) return;
       const res = await fetch(`/api/users/${usuario}`, { method: "DELETE" });
-      if (res.ok) {
-        Swal.fire("🗑️ Usuario eliminado", "", "success");
-        cargarUsuarios();
-      } else {
-        Swal.fire("⚠️ Error al eliminar usuario", "", "error");
-      }
-    }
+      const r = await res.json();
+      if (!r.ok) return alert("❌ Error al eliminar usuario");
+      await cargarUsuarios();
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.clear();
+      window.location.href = "index.html";
+    };
+
+    document.getElementById("btnVolver").onclick = () => {
+      window.location.href = "dashboard.html";
+    };
 
     cargarUsuarios();
   </script>
