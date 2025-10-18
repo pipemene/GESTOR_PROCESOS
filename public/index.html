@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blue Home Gestor | Iniciar Sesión</title>
+  <title>Iniciar Sesión | Blue Home Gestor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -12,7 +12,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: "Segoe UI", sans-serif;
     }
     .login-card {
       background: #fff;
@@ -31,13 +30,6 @@
       width: 100px;
       display: block;
       margin: 0 auto 20px;
-    }
-    .btn-primary {
-      background-color: #006bb3;
-      border: none;
-    }
-    .btn-primary:hover {
-      background-color: #004f80;
     }
   </style>
 </head>
@@ -63,79 +55,51 @@
   </div>
 
   <script>
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
-      const contrasena = document.getElementById("contrasena").value.trim();
-      const msg = document.getElementById("msgError");
-      msg.textContent = "Validando credenciales...";
+  // ==========================================
+  // 🔹 Verificar si ya hay sesión activa
+  // ==========================================
+  const usuarioActivo = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+  if (usuarioActivo.nombre) {
+    // Ya hay sesión → ir directo al Dashboard
+    window.location.href = "dashboard.html";
+  }
 
-      try {
-        const res = await fetch("/api/users");
-        const users = await res.json();
+  // ==========================================
+  // 🔹 Manejar inicio de sesión
+  // ==========================================
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const encontrado = users.find(u =>
-          u.usuario?.toLowerCase() === usuario && u.contrasena === contrasena
-        );
+    const user = document.getElementById("usuario").value.trim().toLowerCase();
+    const pass = document.getElementById("contrasena").value.trim();
+    const msg = document.getElementById("msgError");
 
-        if (!encontrado) {
-          msg.textContent = "❌ Usuario o contraseña incorrectos.";
-          return;
-        }
+    try {
+      const res = await fetch("/api/users");
+      const users = await res.json();
 
-        // Guardar usuario activo
-        localStorage.setItem("usuarioActivo", JSON.stringify({
-          nombre: encontrado.nombre,
-          rol: encontrado.rol.toLowerCase()
-        }));
+      const encontrado = users.find(
+        u => u.Usuario.toLowerCase() === user && u.Contraseña === pass
+      );
 
-        msg.textContent = "✅ Iniciando sesión...";
-        redirigirPorRol(encontrado.rol.toLowerCase());
-      } catch (err) {
-        msg.textContent = "⚠️ Error conectando con el servidor.";
-        console.error(err);
+      if (!encontrado) {
+        msg.textContent = "❌ Usuario o contraseña incorrectos.";
+        return;
       }
-    });
 
-    function redirigirPorRol(rol) {
-      switch (rol) {
-        case "admin":
-        case "superadmin":
-          window.location.href = "admin.html";
-          break;
-        case "arrendamiento":
-          window.location.href = "arrendamiento.html";
-          break;
-        case "reparaciones":
-          window.location.href = "reparaciones.html";
-          break;
-        case "facturacion":
-          window.location.href = "facturacion.html";
-          break;
-        case "tecnico":
-          window.location.href = "ordenes.html";
-          break;
-        default:
-          window.location.href = "dashboard.html";
-          break;
-      }
-    }
+      // Guardar sesión
+      localStorage.setItem("usuarioActivo", JSON.stringify({
+        nombre: encontrado.Nombre,
+        rol: encontrado.Rol
+      }));
 
-    // Cierre por inactividad
-    let inactividad;
-    const LIMITE = 10 * 60 * 1000;
-    function reiniciarTiempo() {
-      clearTimeout(inactividad);
-      inactividad = setTimeout(() => {
-        alert("⚠️ Tu sesión ha expirado por inactividad.");
-        localStorage.clear();
-        window.location.href = "index.html";
-      }, LIMITE);
+      // Ir al Dashboard
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      msg.textContent = "⚠️ Error conectando con el servidor.";
+      console.error(err);
     }
-    ["click","mousemove","keypress","scroll","touchstart"].forEach(ev =>
-      document.addEventListener(ev, reiniciarTiempo)
-    );
-    reiniciarTiempo();
+  });
   </script>
 </body>
 </html>
