@@ -1,17 +1,119 @@
 // routes/users.js
 import express from "express";
-import { getAllUsers } from "../services/usersService.js";
+import { getSheetData, appendRow, updateCell, deleteRow } from "../services/sheetsService.js";
 
 const router = express.Router();
 
-// 🔹 Listar todos los usuarios (login y admin usan este endpoint)
+// NOMBRE DE LA HOJA
+const SHEET_NAME = "Usuarios";
+
+// ======================================================
+// 🔹 GET: listar todos los usuarios
+// ======================================================
 router.get("/", async (req, res) => {
   try {
-    const users = await getAllUsers();
-    res.json(users);
+    const rows = await getSheetData(SHEET_NAME);
+    if (!rows || rows.length < 2) return res.json([]);
+
+    const headers = rows[0];
+    const data = rows.slice(1).map((r) => {
+      const obj = {};
+      headers.forEach((h, i) => (obj[h] = r[i] || ""));
+      return obj;
+    });
+    res.json(data);
   } catch (e) {
     console.error("❌ Error al obtener usuarios:", e);
     res.status(500).json({ error: "Error al cargar usuarios" });
+  }
+});
+
+// ======================================================
+// 🔹 POST: crear nuevo usuario
+// ======================================================
+router.post("/", async (req, res) => {
+  try {
+    const { nombre, usuario, contrasena, rol } = req.body;
+    if (!nombre || !usuario || !contrasena || !rol) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    const nuevaFila = [nombre, usuario, contrasena, rol];
+    await appendRow(SHEET_NAME, nuevaFila);
+    console.log(`✅ Usuario ${usuario} creado correctamente`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al crear usuario:", e);
+    res.status(500).json({ error: "Error al crear usuario" });
+  }
+});
+
+// ======================================================
+// 🔹 PATCH: editar usuario por nombre de usuario
+// ======================================================
+router.patch("/:usuario", async (req, res) => {
+  try {
+    const { usuario } = req.params;
+    const { nombre, contrasena, rol } = req.body;
+
+    const rows = await getSheetData(SHEET_NAME);
+    const headers = rows[0];
+    const idxUsuario = headers.findIndex((h) => /usuario/i.test(h));
+    if (idxUsuario < 0) throw new Error("No existe columna usuario");
+
+    let rowIndex = -1;
+    for (let i = 1; i < rows.length; i++) {
+      if ((rows[i][idxUsuario] || "").trim().toLowerCase() === usuario.toLowerCase()) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    if (rowIndex < 0) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    const campos = { nombre, contrasena, rol };
+    for (const [key, value] of Object.entries(campos)) {
+      if (!value) continue;
+      const colIdx = headers.findIndex((h) => h.toLowerCase() === key.toLowerCase());
+      if (colIdx >= 0) {
+        const letra = String.fromCharCode("A".charCodeAt(0) + colIdx);
+        await updateCell(SHEET_NAME, `${SHEET_NAME}!${letra}${rowIndex}`, value);
+      }
+    }
+
+    console.log(`✏️ Usuario ${usuario} actualizado correctamente`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al editar usuario:", e);
+    res.status(500).json({ error: "Error al editar usuario" });
+  }
+});
+
+// ======================================================
+// 🔹 DELETE: eliminar usuario por nombre de usuario
+// ======================================================
+router.delete("/:usuario", async (req, res) => {
+  try {
+    const { usuario } = req.params;
+    const rows = await getSheetData(SHEET_NAME);
+    const headers = rows[0];
+    const idxUsuario = headers.findIndex((h) => /usuario/i.test(h));
+    if (idxUsuario < 0) throw new Error("No existe columna usuario");
+
+    let rowIndex = -1;
+    for (let i = 1; i < rows.length; i++) {
+      if ((rows[i][idxUsuario] || "").trim().toLowerCase() === usuario.toLowerCase()) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    if (rowIndex < 0) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    await deleteRow(SHEET_NAME, rowIndex);
+    console.log(`🗑️ Usuario ${usuario} eliminado correctamente`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al eliminar usuario:", e);
+    res.status(500).json({ error: "Error al eliminar usuario" });
   }
 });
 

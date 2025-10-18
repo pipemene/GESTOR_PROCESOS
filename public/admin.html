@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administrador | Blue Home Gestor</title>
+  <title>Panel de Administración | Blue Home Gestor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
@@ -42,26 +42,27 @@
       <p class="text-muted">Crea, edita o elimina usuarios con sus respectivos roles</p>
     </div>
 
+    <!-- Crear nuevo usuario -->
     <div class="card p-4 mb-4">
       <h6 class="text-primary">➕ Crear nuevo usuario</h6>
       <form id="formCrear" class="row g-3 mt-2">
         <div class="col-md-3">
-          <input type="text" class="form-control" id="nombre" placeholder="Nombre completo" required />
+          <input type="text" id="nombre" class="form-control" placeholder="Nombre completo" required />
         </div>
         <div class="col-md-3">
-          <input type="text" class="form-control" id="usuario" placeholder="Usuario" required />
+          <input type="text" id="usuario" class="form-control" placeholder="Usuario" required />
         </div>
         <div class="col-md-3">
-          <input type="password" class="form-control" id="contrasena" placeholder="Contraseña" required />
+          <input type="text" id="contrasena" class="form-control" placeholder="Contraseña" required />
         </div>
         <div class="col-md-2">
           <select id="rol" class="form-select" required>
             <option value="">Rol...</option>
+            <option value="admin">Admin</option>
             <option value="arrendamientos">Arrendamientos</option>
             <option value="reparaciones">Reparaciones</option>
-            <option value="contabilidad">Contabilidad</option>
             <option value="tecnico">Técnico</option>
-            <option value="admin">Administrador</option>
+            <option value="contabilidad">Contabilidad</option>
           </select>
         </div>
         <div class="col-md-1 text-end">
@@ -70,6 +71,7 @@
       </form>
     </div>
 
+    <!-- Tabla de usuarios -->
     <div class="card p-4">
       <h6 class="text-primary mb-3">👥 Usuarios Registrados</h6>
       <div class="table-responsive">
@@ -79,6 +81,7 @@
               <th>#</th>
               <th>Nombre</th>
               <th>Usuario</th>
+              <th>Contraseña</th>
               <th>Rol</th>
               <th>Acciones</th>
             </tr>
@@ -95,7 +98,8 @@
 
   <script>
     const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!usuario.nombre || usuario.rol.toLowerCase() !== "admin") {
+    if (!usuario.nombre) window.location.href = "index.html";
+    if (usuario.rol.toLowerCase() !== "admin") {
       alert("⚠️ Solo el administrador puede acceder a este módulo.");
       window.location.href = "dashboard.html";
     }
@@ -106,7 +110,32 @@
     function volver() { window.location.href = "dashboard.html"; }
     function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
 
-    // 🔹 Cargar usuarios
+    // Crear usuario
+    document.getElementById("formCrear").addEventListener("submit", async e => {
+      e.preventDefault();
+      const body = {
+        nombre: nombre.value,
+        usuario: usuario.value,
+        contrasena: contrasena.value,
+        rol: rol.value
+      };
+
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        Swal.fire("✅ Usuario creado correctamente", "", "success");
+        e.target.reset();
+        cargarUsuarios();
+      } else {
+        Swal.fire("⚠️ Error al crear usuario", "", "error");
+      }
+    });
+
+    // Cargar usuarios
     async function cargarUsuarios() {
       const res = await fetch("/api/users");
       const data = await res.json();
@@ -119,101 +148,86 @@
           <td>${i + 1}</td>
           <td>${u.nombre}</td>
           <td>${u.usuario}</td>
+          <td>${u.contrasena}</td>
           <td>${u.rol}</td>
           <td>
-            <button class="btn btn-sm btn-warning me-2" onclick="editarUsuario('${u.usuario}')">✏️</button>
-            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario('${u.usuario}')">🗑️</button>
+            <button class="btn btn-sm btn-warning" onclick="editarUsuario('${u.usuario}')">✏️</button>
+            <button class="btn btn-sm btn-danger ms-2" onclick="eliminarUsuario('${u.usuario}')">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    cargarUsuarios();
-
-    // 🔹 Crear usuario
-    document.getElementById("formCrear").addEventListener("submit", async e => {
-      e.preventDefault();
-
-      const nuevo = {
-        nombre: document.getElementById("nombre").value,
-        usuario: document.getElementById("usuario").value,
-        contrasena: document.getElementById("contrasena").value,
-        rol: document.getElementById("rol").value
-      };
-
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nuevo)
-      });
-
-      if (res.ok) {
-        Swal.fire("✅ Usuario creado correctamente", "", "success");
-        e.target.reset();
-        cargarUsuarios();
-      } else {
-        Swal.fire("⚠️ Error creando usuario", "", "error");
-      }
-    });
-
-    // 🔹 Editar usuario
-    async function editarUsuario(usuarioId) {
+    // Editar usuario
+    async function editarUsuario(usuario) {
       const res = await fetch("/api/users");
       const data = await res.json();
-      const u = data.find(x => x.usuario === usuarioId);
+      const u = data.find(x => x.usuario === usuario);
       if (!u) return;
 
       const { value: formValues } = await Swal.fire({
         title: "Editar Usuario",
         html: `
-          <input id="swal-nombre" class="swal2-input" placeholder="Nombre" value="${u.nombre}">
-          <input id="swal-pass" class="swal2-input" placeholder="Contraseña" value="${u.contrasena}">
-          <select id="swal-rol" class="swal2-select">
+          <input id="swal-nombre" class="swal2-input" value="${u.nombre}" placeholder="Nombre">
+          <input id="swal-usuario" class="swal2-input" value="${u.usuario}" placeholder="Usuario">
+          <input id="swal-contrasena" class="swal2-input" value="${u.contrasena}" placeholder="Contraseña">
+          <select id="swal-rol" class="swal2-input">
+            <option ${u.rol==="admin"?"selected":""}>admin</option>
             <option ${u.rol==="arrendamientos"?"selected":""}>arrendamientos</option>
             <option ${u.rol==="reparaciones"?"selected":""}>reparaciones</option>
-            <option ${u.rol==="contabilidad"?"selected":""}>contabilidad</option>
             <option ${u.rol==="tecnico"?"selected":""}>tecnico</option>
-            <option ${u.rol==="admin"?"selected":""}>admin</option>
+            <option ${u.rol==="contabilidad"?"selected":""}>contabilidad</option>
           </select>
         `,
         focusConfirm: false,
+        confirmButtonText: "Guardar",
         preConfirm: () => ({
           nombre: document.getElementById("swal-nombre").value,
-          contrasena: document.getElementById("swal-pass").value,
+          usuario: document.getElementById("swal-usuario").value,
+          contrasena: document.getElementById("swal-contrasena").value,
           rol: document.getElementById("swal-rol").value
         })
       });
 
       if (formValues) {
-        const res = await fetch(`/api/users/${usuarioId}`, {
+        const update = await fetch(`/api/users/${usuario}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formValues)
         });
 
-        if (res.ok) {
-          Swal.fire("✅ Usuario actualizado", "", "success");
+        if (update.ok) {
+          Swal.fire("✅ Usuario actualizado correctamente", "", "success");
           cargarUsuarios();
         } else {
-          Swal.fire("⚠️ Error al actualizar", "", "error");
+          Swal.fire("⚠️ Error al actualizar usuario", "", "error");
         }
       }
     }
 
-    // 🔹 Eliminar usuario
-    async function eliminarUsuario(usuarioId) {
-      const conf = confirm(`¿Eliminar usuario ${usuarioId}?`);
-      if (!conf) return;
+    // Eliminar usuario
+    async function eliminarUsuario(usuario) {
+      const confirm = await Swal.fire({
+        title: "¿Eliminar usuario?",
+        text: `Esta acción eliminará al usuario ${usuario}`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      });
+      if (!confirm.isConfirmed) return;
 
-      const res = await fetch(`/api/users/${usuarioId}`, { method: "DELETE" });
+      const res = await fetch(`/api/users/${usuario}`, { method: "DELETE" });
       if (res.ok) {
         Swal.fire("🗑️ Usuario eliminado", "", "success");
         cargarUsuarios();
       } else {
-        Swal.fire("⚠️ No se pudo eliminar", "", "error");
+        Swal.fire("⚠️ Error al eliminar usuario", "", "error");
       }
     }
+
+    cargarUsuarios();
   </script>
 </body>
 </html>
