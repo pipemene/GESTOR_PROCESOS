@@ -4,22 +4,28 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // 🔹 Rutas del sistema
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import { router as ordersRouter } from "./routes/orders.js";
 
-// 🔹 Configuración inicial
+// ======================================================
+// 🔧 Configuración base
+// ======================================================
 dotenv.config();
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ======================================================
 // 🔧 Middlewares
 // ======================================================
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public")); // 📁 Carpeta donde están los HTML (login, admin, etc.)
+app.use(express.static(path.join(__dirname, "public"))); // 📁 Public
 
 // ======================================================
 // 🚀 Rutas principales de la API
@@ -29,10 +35,17 @@ app.use("/api/users", usersRouter);
 app.use("/api/orders", ordersRouter);
 
 // ======================================================
-// 🌐 Ruta raíz (redirige al login)
+// 🌐 Ruta raíz — entrega el login (index.html)
 // ======================================================
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "./public" });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// ======================================================
+// 🛠️ Captura cualquier ruta no encontrada y redirige al login
+// ======================================================
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ======================================================
@@ -48,5 +61,5 @@ app.use((err, req, res, next) => {
 // ======================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
-  console.log(`✅ PROGESTOR ejecutándose en puerto ${PORT}`)
+  console.log(`✅ PROGESTOR ejecutándose correctamente en puerto ${PORT}`)
 );
