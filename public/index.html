@@ -64,15 +64,18 @@
       const msg = document.getElementById("msgError");
 
       try {
-        // 🚀 Obtiene todos los usuarios desde la API
         const res = await fetch(window.location.origin + "/api/users", {
           headers: { "Cache-Control": "no-cache" }
         });
+
         if (!res.ok) throw new Error("Error en la API");
+
         const users = await res.json();
 
         const encontrado = users.find(
-          (u) => u.usuario.toLowerCase() === user && u.contrasena === pass
+          (u) =>
+            u.usuario.toLowerCase().trim() === user &&
+            u.contrasena.trim() === pass
         );
 
         if (!encontrado) {
@@ -80,36 +83,33 @@
           return;
         }
 
-        // Guarda datos del usuario en localStorage
         const datosUsuario = {
           nombre: encontrado.nombre,
           usuario: encontrado.usuario,
-          rol: encontrado.rol.toLowerCase()
+          rol: (encontrado.rol || "").toLowerCase().trim(),
         };
+
         localStorage.setItem("usuarioActivo", JSON.stringify(datosUsuario));
 
-        // 🔁 Redirección automática según el rol
-        switch (datosUsuario.rol) {
-          case "superadmin":
-          case "admin":
-            window.location.href = "admin.html";
-            break;
-          case "arrendamiento":
-            window.location.href = "arrendamiento.html";
-            break;
-          case "reparaciones":
-            window.location.href = "reparaciones.html";
-            break;
-          case "contabilidad":
-            window.location.href = "facturacion.html";
-            break;
-          default:
-            window.location.href = "dashboard.html";
-            break;
+        console.log("✅ Rol detectado:", datosUsuario.rol);
+
+        // 🔁 Redirección flexible según rol
+        const rol = datosUsuario.rol;
+
+        if (rol.includes("super") || rol.includes("admin")) {
+          window.location.href = "admin.html";
+        } else if (rol.includes("arrendamiento")) {
+          window.location.href = "arrendamiento.html";
+        } else if (rol.includes("reparaciones")) {
+          window.location.href = "reparaciones.html";
+        } else if (rol.includes("contabilidad")) {
+          window.location.href = "facturacion.html";
+        } else {
+          window.location.href = "dashboard.html";
         }
 
       } catch (err) {
-        console.error("⚠️ Error conectando con el servidor:", err);
+        console.error(⚠️ Error conectando con el servidor:", err);
         msg.textContent = "⚠️ Error conectando con el servidor.";
       }
     });
@@ -118,7 +118,7 @@
   <script>
     // 🕒 Cierre automático de sesión tras 10 min de inactividad
     let tiempoInactividad;
-    const TIEMPO_LIMITE = 10 * 60 * 1000; // 10 minutos
+    const TIEMPO_LIMITE = 10 * 60 * 1000;
 
     function reiniciarTemporizador() {
       clearTimeout(tiempoInactividad);
