@@ -52,4 +52,135 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ================================================
+// ======================================================
+// 🔹 LISTAR USUARIOS (solo admin o superadmin)
+// ======================================================
+router.get("/", async (req, res) => {
+  try {
+    const rows = await getSheetData(SHEET_NAME);
+    if (!rows || rows.length < 2) return res.json([]);
+
+    const headers = rows[0];
+    const data = rows.slice(1).map((r, i) => {
+      const obj = {};
+      headers.forEach((h, j) => (obj[h] = r[j] || ""));
+      obj.fila = i + 2;
+      return obj;
+    });
+
+    res.json(data);
+  } catch (e) {
+    console.error("❌ Error al obtener usuarios:", e);
+    res.status(500).json({ error: "Error al cargar usuarios" });
+  }
+});
+
+// ======================================================
+// 🔹 CREAR NUEVO USUARIO (solo superadmin)
+// ======================================================
+router.post("/", async (req, res) => {
+  try {
+    const { nombre, usuario, contrasena, rol, token } = req.body;
+
+    // Verificar rol del token
+    const user = token ? JSON.parse(Buffer.from(token, "base64").toString("utf8")) : null;
+    if (!user || user.rol.toLowerCase() !== "superadmin") {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    if (!nombre || !usuario || !contrasena || !rol) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    await appendRow(SHEET_NAME, [nombre, usuario, contrasena, rol]);
+    console.log(`✅ Usuario ${usuario} creado correctamente`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al crear usuario:", e);
+    res.status(500).json({ error: "Error al crear usuario" });
+  }
+});
+
+// ======================================================
+// 🔹 ACTUALIZAR USUARIO POR FILA (solo superadmin)
+// ======================================================
+router.post("/update", async (req, res) => {
+  try {
+    const { fila, nombre, usuario, contrasena, rol, token } = req.body;
+
+    // Validar token y rol
+    const user = token ? JSON.parse(Buffer.from(token, "base64").toString("utf8")) : null;
+    if (!user || user.rol.toLowerCase() !== "superadmin") {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    if (!fila || isNaN(fila)) {
+      return res.status(400).json({ error: "Fila inválida" });
+    }
+
+    const rows = await getSheetData(SHEET_NAME);
+    const headers = rows[0].map(h => h.toLowerCase());
+
+    const campos = { nombre, usuario, contrasena, rol };
+
+    for (const [key, value] of Object.entries(campos)) {
+      // ⚠️ Evita sobreescribir si el campo viene vacío o nulo
+      if (value === undefined || value === null || value === "") continue;
+
+      // Maneja encabezados con o sin tilde en “contraseña”
+      const colIdx = headers.findIndex(h =>
+        key === "contrasena"
+          ? /contraseñ|contrasena/.test(h)
+          : h === key
+      );
+
+      if (colIdx >= 0) {
+        // Convierte el índice de columna a letra (A, B, C...)
+        const letra = String.fromCharCode("A".charCodeAt(0) + colIdx);
+        const celda = `${SHEET_NAME}!${letra}${fila}`;
+
+        try {
+          await updateCell(SHEET_NAME, celda, value);
+        } catch (err) {
+          console.error(`⚠️ Error al actualizar celda ${celda}:`, err.message);
+        }
+      }
+    }
+
+    console.log(`✏️ Usuario actualizado correctamente (fila ${fila})`);
+    res.json({ ok: true, message: "Usuario actualizado correctamente" });
+
+  } catch (e) {
+    console.error("❌ Error al actualizar usuario:", e);
+    res.status(500).json({ error: "Error al actualizar usuario" });
+  }
+});
+
+// ======================================================
+// 🔹 ELIMINAR USUARIO POR FILA (solo superadmin)
+// ======================================================
+router.delete("/delete/:fila", async (req, res) => {
+  try {
+    const fila = parseInt(req.params.fila);
+    const token = req.headers["x-user-token"];
+
+    const user = token ? JSON.parse(Buffer.from(token, "base64").toString("utf8")) : null;
+    if (!user || user.rol.toLowerCase() !== "superadmin") {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    if (!fila || fila < 2) return res.status(400).json({ error: "Fila inválida" });
+
+    await deleteRow(SHEET_NAME, fila);
+    console.log(`🗑️ Usuario eliminado (fila ${fila})`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("❌ Error al eliminar usuario:", e);
+    res.status(500).json({ error: "Error al eliminar usuario" });
+  }
+});
+
+// ======================================================
+// 🔹 Exportar router por defecto
+// ======================================================
+export default router;
