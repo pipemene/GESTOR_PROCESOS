@@ -1,65 +1,139 @@
-// ======================================================
-// 🏠 Blue Home Gestor — Servidor Principal (index.js)
-// ======================================================
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso al Gestor Blue Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #003366 0%, #0074cc 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      text-align: center;
+    }
+    .login-card h3 {
+      color: #003366;
+      font-weight: bold;
+      margin-bottom: 25px;
+    }
+    .logo {
+      width: 110px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+  </style>
+</head>
 
-// 🔹 Rutas del sistema
-import authRouter from "./routes/auth.js";
-import usersRouter from "./routes/users.js";
-import { router as ordersRouter } from "./routes/orders.js";
+<body>
+  <div class="login-card">
+    <img src="https://i.imgur.com/FEBvZ6N.png" alt="Logo Blue Home" class="logo" />
+    <h3>Acceso al Gestor Blue Home</h3>
 
-// ======================================================
-// 🔧 Configuración base
-// ======================================================
-dotenv.config();
-const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    <form id="loginForm">
+      <div class="mb-3 text-start">
+        <label for="usuario" class="form-label fw-semibold">Usuario</label>
+        <input type="text" class="form-control" id="usuario" placeholder="Ej. dayan" required>
+      </div>
+      <div class="mb-3 text-start">
+        <label for="contrasena" class="form-label fw-semibold">Contraseña</label>
+        <input type="password" class="form-control" id="contrasena" placeholder="********" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 mt-3">Ingresar</button>
+    </form>
 
-// ======================================================
-// 🔧 Middlewares
-// ======================================================
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // 📁 Public
+    <div id="msgError" class="text-danger mt-3 fw-semibold"></div>
+  </div>
 
-// ======================================================
-// 🚀 Rutas principales de la API
-// ======================================================
-app.use("/api/auth", authRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/orders", ordersRouter);
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-// ======================================================
-// 🌐 Ruta raíz — entrega el login (index.html)
-// ======================================================
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+      const user = document.getElementById("usuario").value.trim().toLowerCase();
+      const pass = document.getElementById("contrasena").value.trim();
+      const msg = document.getElementById("msgError");
 
-// ======================================================
-// 🛠️ Captura cualquier ruta no encontrada y redirige al login
-// ======================================================
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+      try {
+        // 🔹 Consulta a la API de usuarios (Google Sheets)
+        const res = await fetch(window.location.origin + "/api/users", {
+          headers: { "Cache-Control": "no-cache" }
+        });
+        if (!res.ok) throw new Error("Error en la API");
 
-// ======================================================
-// ⚠️ Manejo de errores global
-// ======================================================
-app.use((err, req, res, next) => {
-  console.error("❌ Error no controlado:", err);
-  res.status(500).json({ error: "Error interno del servidor." });
-});
+        const users = await res.json();
 
-// ======================================================
-// 🚀 Iniciar servidor
-// ======================================================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`✅ PROGESTOR ejecutándose correctamente en puerto ${PORT}`)
-);
+        // 🔍 Busca coincidencia
+        const encontrado = users.find(
+          (u) =>
+            u.usuario.toLowerCase().trim() === user &&
+            u.contrasena.trim() === pass
+        );
+
+        if (!encontrado) {
+          msg.textContent = "❌ Usuario o contraseña incorrectos.";
+          return;
+        }
+
+        // 🔐 Guarda datos del usuario activo
+        const datosUsuario = {
+          nombre: encontrado.nombre,
+          usuario: encontrado.usuario,
+          rol: (encontrado.rol || "").toLowerCase().trim(),
+        };
+        localStorage.setItem("usuarioActivo", JSON.stringify(datosUsuario));
+
+        console.log("✅ Rol detectado:", datosUsuario.rol);
+
+        // 🔁 Redirección flexible según el rol
+        const rol = datosUsuario.rol;
+        if (rol.includes("super") || rol.includes("admin")) {
+          window.location.href = "admin.html";
+        } else if (rol.includes("arrendamiento")) {
+          window.location.href = "arrendamiento.html";
+        } else if (rol.includes("reparaciones")) {
+          window.location.href = "reparaciones.html";
+        } else if (rol.includes("contabilidad")) {
+          window.location.href = "facturacion.html";
+        } else {
+          window.location.href = "dashboard.html";
+        }
+
+      } catch (err) {
+        console.error("⚠️ Error conectando con el servidor:", err);
+        msg.textContent = "⚠️ Error conectando con el servidor.";
+      }
+    });
+  </script>
+
+  <script>
+    // 🕒 Cierre automático de sesión tras 10 min de inactividad
+    let tiempoInactividad;
+    const TIEMPO_LIMITE = 10 * 60 * 1000; // 10 minutos
+
+    function reiniciarTemporizador() {
+      clearTimeout(tiempoInactividad);
+      tiempoInactividad = setTimeout(() => {
+        alert("⚠️ Tu sesión ha expirado por inactividad.");
+        localStorage.clear();
+        window.location.href = "index.html";
+      }, TIEMPO_LIMITE);
+    }
+
+    ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach(evt =>
+      document.addEventListener(evt, reiniciarTemporizador)
+    );
+
+    reiniciarTemporizador();
+  </script>
+</body>
+</html>
