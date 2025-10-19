@@ -110,6 +110,7 @@
                 <option value="reparaciones">Reparaciones</option>
                 <option value="contabilidad">Contabilidad</option>
                 <option value="tecnico">Técnico</option>
+                <option value="superadmin">Superadministrador</option>
               </select>
             </div>
           </form>
@@ -224,10 +225,16 @@
     const usuarioActivo = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
     document.getElementById("usuarioActivo").textContent = `${usuarioActivo.nombre} (${usuarioActivo.rol})`;
 
-    // Verificar permisos
-    if (usuarioActivo.rol !== "admin") {
-      alert("⚠️ Acceso restringido al área de administración.");
-      window.location.href = "dashboard.html";
+    // ✅ Verificar permisos de acceso (superadmin o admin)
+    if (!usuarioActivo || !usuarioActivo.rol) {
+      alert("⚠️ Debes iniciar sesión primero.");
+      window.location.href = "index.html";
+    } else {
+      const rol = usuarioActivo.rol.toLowerCase();
+      if (!(rol.includes("super") || rol === "admin")) {
+        alert("⚠️ Acceso restringido al área de administración.");
+        window.location.href = "dashboard.html";
+      }
     }
 
     // Cerrar sesión
