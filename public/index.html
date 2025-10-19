@@ -64,7 +64,7 @@
       const msg = document.getElementById("msgError");
 
       try {
-        // 🚀 Se fuerza a usar la URL completa del dominio activo (Railway incluido)
+        // 🚀 Obtiene todos los usuarios desde la API
         const res = await fetch(window.location.origin + "/api/users", {
           headers: { "Cache-Control": "no-cache" }
         });
@@ -90,6 +90,7 @@
 
         // 🔁 Redirección automática según el rol
         switch (datosUsuario.rol) {
+          case "superadmin":
           case "admin":
             window.location.href = "admin.html";
             break;
@@ -128,7 +129,6 @@
       }, TIEMPO_LIMITE);
     }
 
-    // Detectar actividad del usuario
     ["click", "mousemove", "keypress", "scroll", "touchstart"].forEach(evt =>
       document.addEventListener(evt, reiniciarTemporizador)
     );
