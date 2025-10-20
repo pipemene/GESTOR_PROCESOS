@@ -1,14 +1,274 @@
-<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><title>Usuarios – Blue Home</title>
-<style>body{font-family:Poppins,sans-serif;background:linear-gradient(180deg,#e6f0ff,#fff);padding:30px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.08)}th,td{padding:10px;border-bottom:1px solid #eee}th{background:#007bff;color:#fff}.row{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}input,select,button{padding:10px;border:1px solid #ddd;border-radius:8px}button{background:#007bff;color:#fff;border:none;cursor:pointer}button:hover{background:#005ed0}</style></head>
-<body><div style="text-align:right"><a href="/dashboard.html">⬅ Volver</a></div><h2>👤 Gestión de Usuarios</h2>
-<div class="row"><input id="u" placeholder="Usuario"/><input id="c" placeholder="Clave"/><select id="r"><option>SuperAdmin</option><option>admin</option><option>tecnico</option></select><button onclick="crear()">Crear</button></div>
-<div id="tabla"></div>
-<script>
-const token=localStorage.getItem('token');if(!token) location.href='/';
-async function cargar(){const res=await fetch('/api/users',{headers:{Authorization:'Bearer '+token}});const json=await res.json();const lista=json.data||[];let html='<table><tr><th>Usuario</th><th>Rol</th><th>Acciones</th></tr>';for(const x of lista){html+=`<tr><td>${x.usuario}</td><td>${x.rol}</td><td><button onclick="editar('${x.usuario}')">Editar</button> <button onclick="eliminar('${x.usuario}')">Eliminar</button></td></tr>`;}html+='</table>';document.getElementById('tabla').innerHTML=html;}
-async function crear(){const body={usuario:u.value,clave:c.value,rol:r.value};const res=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});const data=await res.json();alert(data.message||(data.ok?'Creado':'Error'));cargar();}
-async function editar(usuario){const nuevaClave=prompt('Nueva clave (deja vacío si no cambias):','');const nuevoRol=prompt('Nuevo rol (SuperAdmin/admin/tecnico):','');const body={};if(nuevaClave!==null) body.clave=nuevaClave;if(nuevoRol!==null) body.rol=nuevoRol;const res=await fetch('/api/users/'+encodeURIComponent(usuario),{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});const data=await res.json();alert(data.message||(data.ok?'Actualizado':'Error'));cargar();}
-async function eliminar(usuario){if(!confirm('Eliminar usuario '+usuario+'?')) return;const res=await fetch('/api/users/'+encodeURIComponent(usuario),{method:'DELETE',headers:{Authorization:'Bearer '+token}});const data=await res.json();alert(data.message||(data.ok?'Eliminado':'Error'));cargar();}
-cargar();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Usuarios | Blue Home Gestor</title>
+  <link rel="stylesheet" href="assets/css/estilos.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .header {
+      background-color: #004aad;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 30px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+    .logo { height: 45px; }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    #logoutBtn {
+      background-color: white;
+      color: #004aad;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #logoutBtn:hover {
+      background-color: #1f64d1;
+      color: white;
+    }
+
+    main {
+      padding: 30px;
+    }
+
+    h1 {
+      color: #004aad;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .form-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input, select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background-color: #004aad;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #1f64d1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #004aad;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .btn-danger {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/img/logo-blanco.png" alt="Logo Blue Home" class="logo" />
+      <h2>Blue Home Gestor</h2>
+    </div>
+    <div class="user-info">
+      <span id="userName"></span>
+      <button id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <h1>Gestión de Usuarios</h1>
+
+    <div class="form-container">
+      <input type="text" id="nombre" placeholder="Nombre completo" />
+      <input type="text" id="usuario" placeholder="Usuario" />
+      <input type="text" id="contrasena" placeholder="Contraseña" />
+      <select id="rol">
+        <option value="">Rol</option>
+        <option value="superadmin">Superadmin</option>
+        <option value="admin">Admin</option>
+        <option value="tecnico">Técnico</option>
+        <option value="arrendamiento">Arrendamiento</option>
+        <option value="contabilidad">Contabilidad</option>
+        <option value="reparaciones">Reparaciones</option>
+      </select>
+      <button class="btn-primary" id="crearBtn">Crear</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaUsuarios">
+        <tr><td colspan="4">Cargando usuarios...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const API_URL = "/api/users";
+    const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+
+    if (!user.usuario) {
+      alert("Debes iniciar sesión.");
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("usuarioActivo");
+      window.location.href = "index.html";
+    });
+
+    const tabla = document.getElementById("tablaUsuarios");
+    const crearBtn = document.getElementById("crearBtn");
+
+    // 🟢 Cargar usuarios
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        tabla.innerHTML = "";
+
+        if (!data || data.length === 0) {
+          tabla.innerHTML = `<tr><td colspan="4">No hay usuarios registrados.</td></tr>`;
+          return;
+        }
+
+        data.forEach(u => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${u.nombre}</td>
+            <td>${u.usuario}</td>
+            <td>${u.rol}</td>
+            <td>
+              <button class="btn-danger" onclick="eliminarUsuario(${u.fila})">Eliminar</button>
+            </td>
+          `;
+          tabla.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Error al cargar usuarios.");
+      }
+    }
+
+    cargarUsuarios();
+
+    // 🟢 Crear usuario
+    crearBtn.addEventListener("click", async () => {
+      const nombre = document.getElementById("nombre").value.trim();
+      const usuario = document.getElementById("usuario").value.trim();
+      const contrasena = document.getElementById("contrasena").value.trim();
+      const rol = document.getElementById("rol").value.trim();
+
+      if (!nombre || !usuario || !contrasena || !rol) {
+        alert("Completa todos los campos.");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nombre, usuario, contrasena, rol, token: btoa(JSON.stringify(user)) })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          alert("✅ Usuario creado correctamente.");
+          document.getElementById("nombre").value = "";
+          document.getElementById("usuario").value = "";
+          document.getElementById("contrasena").value = "";
+          document.getElementById("rol").value = "";
+          cargarUsuarios();
+        } else {
+          alert("❌ " + (data.error || "Error al crear usuario"));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error al guardar usuario.");
+      }
+    });
+
+    // 🟢 Eliminar usuario
+    async function eliminarUsuario(fila) {
+      if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+      try {
+        const res = await fetch(`${API_URL}/delete/${fila}`, {
+          method: "DELETE",
+          headers: { "x-user-token": btoa(JSON.stringify(user)) }
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          alert("🗑️ Usuario eliminado correctamente.");
+          cargarUsuarios();
+        } else {
+          alert("❌ " + (data.error || "Error al eliminar usuario"));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error al eliminar usuario.");
+      }
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
