@@ -1,43 +1,165 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Órdenes Técnicas | Blue Home Gestor</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/estilos.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { background-color: #eef3f8; font-family: 'Segoe UI', sans-serif; }
-    header { background-color: #003366; color: white; padding: 10px 20px;
-             display: flex; justify-content: space-between; align-items: center; }
+    .header {
+      background-color: #004aad;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 30px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+    .logo { height: 45px; }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    #logoutBtn {
+      background-color: white;
+      color: #004aad;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #logoutBtn:hover {
+      background-color: #1f64d1;
+      color: white;
+    }
+    main {
+      padding: 30px;
+    }
+    h1 {
+      color: #004aad;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #004aad;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: #004aad;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #1f64d1;
+    }
   </style>
 </head>
-
 <body>
-  <header>
-    <h5>📋 Órdenes Técnicas — Blue Home</h5>
-    <div>
-      <button class="btn btn-sm btn-light me-2" onclick="volver()">🏠 Dashboard</button>
-      <span id="usuarioInfo" class="fw-semibold me-2"></span>
-      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/img/logo-blanco.png" alt="Logo Blue Home" class="logo" />
+      <h2>Blue Home Gestor</h2>
+    </div>
+    <div class="user-info">
+      <span id="userName"></span>
+      <button id="logoutBtn">Cerrar sesión</button>
     </div>
   </header>
 
-  <main class="container mt-4">
-    <h4 class="text-primary mb-3">Listado General de Órdenes</h4>
-    <p>Aquí se muestran todas las órdenes activas, pendientes o cerradas del sistema.</p>
+  <main>
+    <h1>Gestión de Órdenes Técnicas</h1>
+    <div id="ordenesContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Técnico</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaOrdenes">
+          <tr><td colspan="5">Cargando órdenes...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </main>
 
   <script>
-    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!usuario.nombre || !["admin", "arrendamiento", "reparaciones"].includes(usuario.rol.toLowerCase())) {
-      alert("⚠️ Acceso restringido al área de órdenes.");
+    // 🔐 Validación de sesión y permisos
+    const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    if (!user.usuario) {
+      alert("Debes iniciar sesión.");
       window.location.href = "index.html";
     }
-    document.getElementById("usuarioInfo").textContent =
-      `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
 
-    function volver() { window.location.href = "dashboard.html"; }
-    function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
+    const rol = (user.rol || "").toLowerCase();
+    const usuario = (user.usuario || "").toLowerCase();
+
+    const accesoPermitido = ["superadmin", "admin", "tecnico", "dayan"];
+    if (!accesoPermitido.includes(rol) && usuario !== "dayan") {
+      alert("⚠️ Acceso restringido al área de órdenes.");
+      window.location.href = "dashboard.html";
+    }
+
+    document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("usuarioActivo");
+      window.location.href = "index.html";
+    });
+
+    // ⚙️ Simulación de carga de órdenes
+    const ordenes = [
+      { codigo: "BH-2025-001", descripcion: "Cambio de cerradura", tecnico: "Mauricio", estado: "En proceso" },
+      { codigo: "BH-2025-002", descripcion: "Pintura pared sala", tecnico: "Jair", estado: "Finalizada" },
+      { codigo: "BH-2025-003", descripcion: "Limpieza tanque agua", tecnico: "Sin asignar", estado: "Pendiente" }
+    ];
+
+    const tabla = document.getElementById("tablaOrdenes");
+    tabla.innerHTML = "";
+    ordenes.forEach(o => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${o.codigo}</td>
+        <td>${o.descripcion}</td>
+        <td>${o.tecnico}</td>
+        <td>${o.estado}</td>
+        <td>
+          <button class="btn btn-primary">Ver</button>
+        </td>
+      `;
+      tabla.appendChild(tr);
+    });
   </script>
+
+  <script>lucide.createIcons();</script>
 </body>
 </html>
