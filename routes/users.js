@@ -1,17 +1,15 @@
-// routes/users.js
 import express from "express";
 import { getSheetData, appendRow, updateCell, deleteRow } from "../services/sheetsService.js";
 
 const router = express.Router();
-const SHEET_NAME = "Usuarios";
+const SHEET_NAME = process.env.USERS_SHEET || "Usuarios";
 
 // ======================================================
-// 🔹 LOGIN — acceso público (sin token)
+// 🔹 LOGIN
 // ======================================================
 router.post("/login", async (req, res) => {
   try {
     const { usuario, contrasena } = req.body;
-
     if (!usuario || !contrasena) {
       return res.status(400).json({ error: "Usuario y contraseña requeridos" });
     }
@@ -23,37 +21,32 @@ router.post("/login", async (req, res) => {
     const idxRol = headers.findIndex(h => /rol/i.test(h));
     const idxNombre = headers.findIndex(h => /nombre/i.test(h));
 
-    let encontrado = null;
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (
-        row[idxUser]?.trim().toLowerCase() === usuario.trim().toLowerCase() &&
-        row[idxPass]?.trim() === contrasena.trim()
-      ) {
-        encontrado = {
-          nombre: row[idxNombre] || "",
-          usuario: row[idxUser],
-          rol: row[idxRol] || "usuario"
-        };
-        break;
-      }
-    }
+    const userRow = rows.find((r, i) => 
+      i > 0 &&
+      r[idxUser]?.trim().toLowerCase() === usuario.trim().toLowerCase() &&
+      r[idxPass]?.trim() === contrasena.trim()
+    );
 
-    if (!encontrado) {
+    if (!userRow) {
       return res.status(401).json({ error: "Credenciales incorrectas" });
     }
 
-    // Token básico (base64)
+    const encontrado = {
+      nombre: userRow[idxNombre] || "",
+      usuario: userRow[idxUser],
+      rol: userRow[idxRol] || "usuario"
+    };
+
     const token = Buffer.from(JSON.stringify(encontrado)).toString("base64");
     res.json({ ok: true, token, user: encontrado });
-  } catch (e) {
-    console.error("❌ Error al iniciar sesión:", e);
+  } catch (error) {
+    console.error("❌ Error al iniciar sesión:", error);
     res.status(500).json({ error: "Error al iniciar sesión" });
   }
 });
 
 // ======================================================
-// 🔹 LISTAR USUARIOS (solo admin o superadmin)
+// 🔹 LISTAR USUARIOS
 // ======================================================
 router.get("/", async (req, res) => {
   try {
@@ -61,29 +54,28 @@ router.get("/", async (req, res) => {
     if (!rows || rows.length < 2) return res.json([]);
 
     const headers = rows[0];
-    const data = rows.slice(1).map((r, i) => {
+    const usuarios = rows.slice(1).map((r, i) => {
       const obj = {};
       headers.forEach((h, j) => (obj[h] = r[j] || ""));
       obj.fila = i + 2;
       return obj;
     });
 
-    res.json(data);
-  } catch (e) {
-    console.error("❌ Error al obtener usuarios:", e);
+    res.json(usuarios);
+  } catch (error) {
+    console.error("❌ Error al obtener usuarios:", error);
     res.status(500).json({ error: "Error al cargar usuarios" });
   }
 });
 
 // ======================================================
-// 🔹 CREAR NUEVO USUARIO (solo superadmin)
+// 🔹 CREAR USUARIO (solo superadmin)
 // ======================================================
 router.post("/", async (req, res) => {
   try {
     const { nombre, usuario, contrasena, rol, token } = req.body;
-
-    // Verificar rol del token
     const user = token ? JSON.parse(Buffer.from(token, "base64").toString("utf8")) : null;
+
     if (!user || user.rol.toLowerCase() !== "superadmin") {
       return res.status(403).json({ error: "No autorizado" });
     }
@@ -93,23 +85,21 @@ router.post("/", async (req, res) => {
     }
 
     await appendRow(SHEET_NAME, [nombre, usuario, contrasena, rol]);
-    console.log(`✅ Usuario ${usuario} creado correctamente`);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("❌ Error al crear usuario:", e);
+    res.json({ ok: true, message: "Usuario creado correctamente" });
+  } catch (error) {
+    console.error("❌ Error al crear usuario:", error);
     res.status(500).json({ error: "Error al crear usuario" });
   }
 });
 
 // ======================================================
-// 🔹 ACTUALIZAR USUARIO POR FILA (solo superadmin)
+// 🔹 ACTUALIZAR USUARIO (solo superadmin)
 // ======================================================
 router.post("/update", async (req, res) => {
   try {
     const { fila, nombre, usuario, contrasena, rol, token } = req.body;
-
-    // Validar token y rol
     const user = token ? JSON.parse(Buffer.from(token, "base64").toString("utf8")) : null;
+
     if (!user || user.rol.toLowerCase() !== "superadmin") {
       return res.status(403).json({ error: "No autorizado" });
     }
@@ -118,46 +108,22 @@ router.post("/update", async (req, res) => {
       return res.status(400).json({ error: "Fila inválida" });
     }
 
-    const rows = await getSheetData(SHEET_NAME);
-    const headers = rows[0].map(h => h.toLowerCase());
-
-    const campos = { nombre, usuario, contrasena, rol };
-
-    for (const [key, value] of Object.entries(campos)) {
-      // ⚠️ Evita sobreescribir si el campo viene vacío o nulo
-      if (value === undefined || value === null || value === "") continue;
-
-      // Maneja encabezados con o sin tilde en “contraseña”
-      const colIdx = headers.findIndex(h =>
-        key === "contrasena"
-          ? /contraseñ|contrasena/.test(h)
-          : h === key
-      );
-
-      if (colIdx >= 0) {
-        // Convierte el índice de columna a letra (A, B, C...)
-        const letra = String.fromCharCode("A".charCodeAt(0) + colIdx);
-        const celda = `${SHEET_NAME}!${letra}${fila}`;
-
-        try {
-          await updateCell(SHEET_NAME, celda, value);
-        } catch (err) {
-          console.error(`⚠️ Error al actualizar celda ${celda}:`, err.message);
-        }
+    const columnas = [nombre, usuario, contrasena, rol];
+    for (let i = 0; i < columnas.length; i++) {
+      if (columnas[i]) {
+        await updateCell(SHEET_NAME, fila, i + 1, columnas[i]);
       }
     }
 
-    console.log(`✏️ Usuario actualizado correctamente (fila ${fila})`);
     res.json({ ok: true, message: "Usuario actualizado correctamente" });
-
-  } catch (e) {
-    console.error("❌ Error al actualizar usuario:", e);
+  } catch (error) {
+    console.error("❌ Error al actualizar usuario:", error);
     res.status(500).json({ error: "Error al actualizar usuario" });
   }
 });
 
 // ======================================================
-// 🔹 ELIMINAR USUARIO POR FILA (solo superadmin)
+// 🔹 ELIMINAR USUARIO (solo superadmin)
 // ======================================================
 router.delete("/delete/:fila", async (req, res) => {
   try {
@@ -172,15 +138,11 @@ router.delete("/delete/:fila", async (req, res) => {
     if (!fila || fila < 2) return res.status(400).json({ error: "Fila inválida" });
 
     await deleteRow(SHEET_NAME, fila);
-    console.log(`🗑️ Usuario eliminado (fila ${fila})`);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("❌ Error al eliminar usuario:", e);
+    res.json({ ok: true, message: "Usuario eliminado correctamente" });
+  } catch (error) {
+    console.error("❌ Error al eliminar usuario:", error);
     res.status(500).json({ error: "Error al eliminar usuario" });
   }
 });
 
-// ======================================================
-// 🔹 Exportar router por defecto
-// ======================================================
 export default router;
