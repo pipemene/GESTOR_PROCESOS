@@ -102,12 +102,14 @@
       try {
         const res = await fetch(`${API_URL}/${fila}`);
         const data = await res.json();
-        document.getElementById("codigo").innerText = data.codigo || codigo;
-        document.getElementById("inquilino").innerText = data.inquilino || "—";
-        document.getElementById("telefono").innerText = data.telefono || "—";
-        document.getElementById("tecnico").innerText = data.tecnico || "—";
-        document.getElementById("estado").innerText = data.estado || "Pendiente";
-        document.getElementById("descripcion").innerText = data.descripcion || "";
+
+        // Mostrar datos (tolerando nombres de columnas con mayúsculas)
+        document.getElementById("codigo").innerText = data.codigo || data.Código || codigo;
+        document.getElementById("inquilino").innerText = data.inquilino || data.Inquilino || data.Cliente || "—";
+        document.getElementById("telefono").innerText = data.telefono || data.Teléfono || "—";
+        document.getElementById("tecnico").innerText = data.tecnico || data.Técnico || "—";
+        document.getElementById("estado").innerText = data.estado || data.Estado || "Pendiente";
+        document.getElementById("descripcion").innerText = data.descripcion || data.Descripción || "";
       } catch (err) {
         console.error(err);
         alert("Error al cargar la orden.");
@@ -146,7 +148,7 @@
       if (!nombreFirmante) return alert("Por favor ingrese el nombre del firmante.");
       const firmaData = canvas.toDataURL("image/png");
       const body = { fila, nombreFirmante, firmaData };
-      const res = await fetch(`${API_URL}/firma`, {
+      const res = await fetch(`${API_URL}/${fila}/sign`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
@@ -155,7 +157,7 @@
       else alert("❌ Error al guardar la firma.");
     };
 
-    // Subir fotos (solo simulado)
+    // Subir fotos
     document.getElementById("subirFotos").onclick = async () => {
       alert("Las fotos se subirán automáticamente al Drive vinculado (pendiente de conexión).");
     };
@@ -177,13 +179,12 @@
       else alert("❌ Error al guardar.");
     };
 
-    // Finalizar orden → cambia estado y pasa a Dayan
+    // Finalizar orden
     document.getElementById("finalizarOrden").onclick = async () => {
       if (!confirm("¿Finalizar esta orden?")) return;
-      const res = await fetch(`${API_URL}/update`, {
+      const res = await fetch(`${API_URL}/${fila}/finish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fila, estado: "Finalizada" })
       });
       const data = await res.json();
       if (data.ok) {
