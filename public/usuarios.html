@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    /* ======= ENCABEZADO ======= */
     .header {
       background-color: #004aad;
       color: white;
@@ -22,7 +23,7 @@
       align-items: center;
       gap: 15px;
     }
-    #logoutBtn {
+    #logoutBtn, #backBtn {
       background-color: white;
       color: #004aad;
       border: none;
@@ -32,11 +33,12 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    #logoutBtn:hover {
+    #logoutBtn:hover, #backBtn:hover {
       background-color: #1f64d1;
       color: white;
     }
 
+    /* ======= CONTENIDO ======= */
     main {
       padding: 30px;
     }
@@ -121,6 +123,7 @@
     </div>
     <div class="user-info">
       <span id="userName"></span>
+      <button id="backBtn">Volver</button>
       <button id="logoutBtn">Cerrar sesión</button>
     </div>
   </header>
@@ -163,6 +166,7 @@
     const API_URL = "/api/users";
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
 
+    // 🔐 Validar sesión
     if (!user.usuario) {
       alert("Debes iniciar sesión.");
       window.location.href = "index.html";
@@ -170,6 +174,12 @@
 
     document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
 
+    // 🔁 Botón volver al panel principal
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
+
+    // 🔐 Cerrar sesión
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("usuarioActivo");
       window.location.href = "index.html";
