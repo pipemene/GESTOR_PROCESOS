@@ -8,75 +8,64 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    body {
-      background-color: #f5f7fa;
-      font-family: "Segoe UI", sans-serif;
-    }
+    body { background-color: #f5f7fa; font-family: "Segoe UI", sans-serif; }
     .header {
-      background-color: #004aad;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 30px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      background-color: #004aad; color: white;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 30px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);
     }
     .logo { height: 45px; }
     .user-info { display: flex; gap: 15px; align-items: center; }
     #logoutBtn, #backBtn {
-      background-color: white;
-      color: #004aad;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
+      background-color: white; color: #004aad;
+      border: none; padding: 8px 14px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; transition: 0.3s;
     }
     #logoutBtn:hover, #backBtn:hover { background-color: #1f64d1; color: white; }
     main { padding: 30px; }
     h1 { color: #004aad; text-align: center; margin-bottom: 25px; }
 
+    .tabs {
+      display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
+    }
+    .tab {
+      background-color: #ddd; border-radius: 6px; padding: 8px 16px;
+      cursor: pointer; font-weight: 600; color: #004aad;
+    }
+    .tab.active { background-color: #004aad; color: white; }
+
     .form-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 20px;
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; margin-bottom: 15px;
     }
     input, select {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      padding: 8px; border-radius: 6px; border: 1px solid #ccc;
       font-size: 14px;
     }
     .btn-primary {
-      background-color: #004aad;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      cursor: pointer;
+      background-color: #004aad; color: white; border: none;
+      border-radius: 6px; padding: 8px 16px; cursor: pointer;
     }
     .btn-primary:hover { background-color: #1f64d1; }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      border-radius: 10px;
+      width: 100%; border-collapse: collapse; background: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1); border-radius: 10px;
       overflow: hidden;
     }
     th, td { padding: 10px; text-align: center; border-bottom: 1px solid #ddd; }
     th { background-color: #004aad; color: white; }
     tr:hover { background-color: #f1f1f1; }
 
-    .btn-warning {
-      background-color: #f39c12; color: white; border: none;
-      border-radius: 6px; padding: 5px 10px; cursor: pointer;
+    .estado {
+      font-weight: bold; padding: 6px 10px; border-radius: 6px;
+      color: white;
     }
-    .btn-warning:hover { background-color: #e67e22; }
+    .rojo { background-color: #e74c3c; }
+    .amarillo { background-color: #f1c40f; color: #333; }
+    .verde { background-color: #2ecc71; }
+
+    #busqueda { width: 250px; border-radius: 8px; border: 1px solid #ccc; padding: 6px; }
   </style>
 </head>
 
@@ -96,26 +85,38 @@
   <main>
     <h1>Gestión de Órdenes</h1>
 
+    <div class="tabs">
+      <div class="tab active" data-estado="Pendiente">Pendientes / Sin asignar</div>
+      <div class="tab" data-estado="En proceso">En proceso</div>
+      <div class="tab" data-estado="Finalizada">Finalizadas</div>
+    </div>
+
     <div class="form-container">
       <input type="text" id="cliente" placeholder="Cliente" value="BLUE HOME INMOBILIARIA" />
       <input type="text" id="telefono" placeholder="Teléfono" />
       <input type="text" id="codigo" placeholder="Código" />
-      <input type="text" id="descripcion" placeholder="Descripción del trabajo" />
-      <input type="text" id="tecnico" placeholder="Técnico asignado" />
+      <input type="date" id="fecha" />
+      <input type="text" id="descripcion" placeholder="Descripción" />
+      <select id="tecnico">
+        <option value="">Seleccionar técnico...</option>
+      </select>
       <select id="estado">
         <option value="">Estado</option>
-        <option value="Pendiente">Pendiente</option>
+        <option value="Pendiente">Pendiente / Sin asignar</option>
         <option value="En proceso">En proceso</option>
         <option value="Finalizada">Finalizada</option>
       </select>
       <button class="btn-primary" id="crearBtn">Crear orden</button>
     </div>
 
+    <div style="text-align:center; margin-bottom:15px;">
+      <input id="busqueda" type="text" placeholder="Buscar por código o fecha..." />
+    </div>
+
     <table>
       <thead>
         <tr>
-          <th>Cliente</th>
-          <th>Teléfono</th>
+          <th>Fecha</th>
           <th>Código</th>
           <th>Descripción</th>
           <th>Técnico</th>
@@ -124,21 +125,19 @@
         </tr>
       </thead>
       <tbody id="tablaOrdenes">
-        <tr><td colspan="7">Cargando órdenes...</td></tr>
+        <tr><td colspan="6">Cargando órdenes...</td></tr>
       </tbody>
     </table>
   </main>
 
   <script>
     const API_URL = "/api/orders";
+    const USERS_URL = "/api/users";
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
     if (!user.usuario) {
-      alert("Debes iniciar sesión.");
-      window.location.href = "index.html";
+      alert("Debes iniciar sesión."); window.location.href = "index.html";
     }
-
     document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
-
     document.getElementById("logoutBtn").onclick = () => {
       localStorage.removeItem("usuarioActivo");
       window.location.href = "index.html";
@@ -148,9 +147,30 @@
     };
 
     const tabla = document.getElementById("tablaOrdenes");
+    const tecnicoSelect = document.getElementById("tecnico");
+    const tabs = document.querySelectorAll(".tab");
+    const busqueda = document.getElementById("busqueda");
     let ordenes = [];
+    let estadoActual = "Pendiente";
 
-    // 🟢 Cargar órdenes desde Google Sheets
+    async function cargarTecnicos() {
+      try {
+        const res = await fetch(USERS_URL);
+        const usuarios = await res.json();
+        tecnicoSelect.innerHTML = `<option value="">Sin asignar</option>`;
+        usuarios
+          .filter(u => u.rol && u.rol.toLowerCase() === "tecnico")
+          .forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.nombre;
+            opt.textContent = t.nombre;
+            tecnicoSelect.appendChild(opt);
+          });
+      } catch (e) {
+        console.error("Error al cargar técnicos", e);
+      }
+    }
+
     async function cargarOrdenes() {
       try {
         const res = await fetch(API_URL);
@@ -163,51 +183,67 @@
       }
     }
 
-    // 🟢 Renderizar tabla
     function renderTabla() {
       tabla.innerHTML = "";
-      if (ordenes.length === 0) {
-        tabla.innerHTML = `<tr><td colspan="7">No hay órdenes registradas.</td></tr>`;
+      let filtradas = ordenes.filter(o => 
+        (o.Estado || o.estado || "").toLowerCase().includes(estadoActual.toLowerCase())
+      );
+
+      // Filtro por búsqueda
+      const filtro = busqueda.value.trim().toLowerCase();
+      if (filtro) {
+        filtradas = filtradas.filter(o => 
+          (o.Código || "").toLowerCase().includes(filtro) ||
+          (o.Fecha || "").toLowerCase().includes(filtro)
+        );
+      }
+
+      if (filtradas.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="6">No hay órdenes en este estado.</td></tr>`;
         return;
       }
 
-      ordenes.forEach((o, i) => {
+      filtradas.forEach((o, i) => {
         const tr = document.createElement("tr");
-        const codigo = o.Código || o.codigo || "—";
-        const fila = o.fila || i + 2;
+        const estado = (o.Estado || "").toLowerCase();
+        let color = "rojo";
+        if (estado.includes("proceso")) color = "amarillo";
+        if (estado.includes("final")) color = "verde";
+
         tr.innerHTML = `
-          <td>${o.Cliente || o.cliente || ""}</td>
-          <td>${o.Telefono || o.telefono || ""}</td>
-          <td>${codigo}</td>
-          <td>${o.Descripcion || o.descripcion || ""}</td>
-          <td>${o.Tecnico || o.tecnico || ""}</td>
-          <td>${o.Estado || o.estado || ""}</td>
-          <td>
-            <button class="btn-warning" onclick="abrirOrden('${fila}', '${codigo}')">Ver / Gestionar</button>
-          </td>
+          <td>${o.Fecha || ""}</td>
+          <td>${o.Código || ""}</td>
+          <td>${o.Descripcion || ""}</td>
+          <td>${o.Tecnico || "Sin asignar"}</td>
+          <td><span class="estado ${color}">${o.Estado || ""}</span></td>
+          <td><button class="btn-primary" onclick="abrirOrden('${o.fila}','${o.Código}')">Ver / Gestionar</button></td>
         `;
         tabla.appendChild(tr);
       });
     }
 
-    // 🟢 Redirigir a orden.html
-    window.abrirOrden = (fila, codigo) => {
-      window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`;
-    };
+    // Tabs de estado
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        estadoActual = tab.dataset.estado;
+        renderTabla();
+      };
+    });
 
-    // 🟢 Crear nueva orden
+    // Crear orden
     document.getElementById("crearBtn").addEventListener("click", async () => {
       const cliente = document.getElementById("cliente").value.trim();
       const telefono = document.getElementById("telefono").value.trim();
       const codigo = document.getElementById("codigo").value.trim();
+      const fecha = document.getElementById("fecha").value.trim();
       const descripcion = document.getElementById("descripcion").value.trim();
       const tecnico = document.getElementById("tecnico").value.trim();
-      const estado = document.getElementById("estado").value.trim();
+      const estado = document.getElementById("estado").value.trim() || "Pendiente";
 
-      if (!cliente || !telefono || !codigo || !descripcion || !tecnico || !estado) {
-        alert("Completa todos los campos.");
-        return;
-      }
+      if (!cliente || !telefono || !codigo || !descripcion)
+        return alert("Completa todos los campos obligatorios.");
 
       try {
         const res = await fetch(API_URL, {
@@ -228,8 +264,13 @@
       }
     });
 
+    busqueda.addEventListener("input", renderTabla);
+    window.abrirOrden = (fila, codigo) => {
+      window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`;
+    };
+
+    cargarTecnicos();
     cargarOrdenes();
-    lucide.createIcons();
   </script>
 </body>
 </html>
