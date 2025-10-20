@@ -31,8 +31,28 @@
     .form-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px; }
     input, select {
       padding: 8px; border-radius: 6px; border: 1px solid #ccc;
-      font-size: 14px;
+      font-size: 14px; transition: 0.3s;
     }
+    input.error, select.error {
+      border-color: #e74c3c;
+      animation: blinkRed 0.6s linear infinite alternate;
+    }
+    @keyframes blinkRed {
+      from { box-shadow: 0 0 5px rgba(231,76,60,0.3); }
+      to { box-shadow: 0 0 10px rgba(231,76,60,0.7); }
+    }
+
+    .error-message {
+      background-color: #ffdddd;
+      color: #b30000;
+      border: 1px solid #ff4d4d;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+
     .btn-primary {
       background-color: #004aad; color: white; border: none;
       border-radius: 6px; padding: 8px 16px; cursor: pointer;
@@ -68,6 +88,8 @@
 
   <main>
     <h1>Gestión de Órdenes</h1>
+
+    <div id="errorBox" class="error-message" style="display:none;"></div>
 
     <div class="tabs">
       <div class="tab active" data-estado="Pendiente">Pendientes / Sin asignar</div>
@@ -120,7 +142,11 @@
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
     if (!user.usuario) { alert("Debes iniciar sesión."); window.location.href = "index.html"; }
     document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
-    document.getElementById("logoutBtn").onclick = () => { localStorage.removeItem("usuarioActivo"); window.location.href = "index.html"; };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.removeItem("usuarioActivo");
+      window.location.href = "index.html";
+    };
     document.getElementById("backBtn").onclick = () => { window.location.href = "dashboard.html"; };
 
     const tabla = document.getElementById("tablaOrdenes");
@@ -173,7 +199,6 @@
         const estado = (o.Estado || "").toLowerCase();
         let color = "rojo"; if (estado.includes("proceso")) color = "amarillo"; if (estado.includes("final")) color = "verde";
 
-        // Crear selector de técnico
         const select = document.createElement("select");
         select.innerHTML = `<option value="">Sin asignar</option>`;
         tecnicos.forEach(t => {
@@ -188,7 +213,7 @@
         tr.innerHTML = `
           <td>${o.Fecha || ""}</td>
           <td>${o.Código || ""}</td>
-          <td>${o.Descripcion || ""}</td>
+          <td>${o.Descripción || ""}</td>
           <td></td>
           <td><span class="estado ${color}">${o.Estado || ""}</span></td>
           <td><button class="btn-primary" onclick="abrirOrden('${o.fila}','${o.Código}')">Ver / Gestionar</button></td>
@@ -215,30 +240,55 @@
       }
     }
 
-    // Crear nueva orden
+    // ✅ Crear orden con validación visual
     document.getElementById("crearBtn").addEventListener("click", async () => {
-      const cliente = document.getElementById("cliente").value.trim();
-      const telefono = document.getElementById("telefono").value.trim();
-      const codigo = document.getElementById("codigo").value.trim();
-      const fecha = document.getElementById("fecha").value.trim();
-      const descripcion = document.getElementById("descripcion").value.trim();
-      const tecnico = document.getElementById("tecnico").value.trim();
+      const inputs = {
+        cliente: document.getElementById("cliente"),
+        telefono: document.getElementById("telefono"),
+        codigo: document.getElementById("codigo"),
+        fecha: document.getElementById("fecha"),
+        descripcion: document.getElementById("descripcion")
+      };
+
+      let error = false;
+      for (const key in inputs) {
+        const input = inputs[key];
+        input.classList.remove("error");
+        if (!input.value.trim()) {
+          input.classList.add("error");
+          error = true;
+        }
+      }
+
+      if (error) {
+        document.getElementById("errorBox").innerText = "⚠️ Faltan datos obligatorios. Los campos marcados en rojo deben completarse.";
+        document.getElementById("errorBox").style.display = "block";
+        return;
+      }
+
+      document.getElementById("errorBox").style.display = "none";
+
+      const cliente = inputs.cliente.value.trim();
+      const telefono = inputs.telefono.value.trim();
+      const codigo = inputs.codigo.value.trim();
+      const fecha = inputs.fecha.value;
+      const descripcion = inputs.descripcion.value.trim();
+      const tecnico = document.getElementById("tecnico").value.trim() || "Sin asignar";
       const estado = document.getElementById("estado").value.trim() || "Pendiente";
 
-      if (!cliente || !telefono || !codigo || !descripcion || !fecha) {
-        return alert("Faltan datos obligatorios.");
-      }
+      const body = { cliente, telefono, codigo, fecha, descripcion, tecnico, estado };
 
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cliente, telefono, codigo, fecha, descripcion, tecnico, estado })
+          body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.ok) {
           alert("✅ Orden creada correctamente.");
           cargarOrdenes();
+          Object.values(inputs).forEach(i => i.value = "");
         } else {
           alert("❌ " + (data.error || "Error al crear orden"));
         }
@@ -249,8 +299,17 @@
     });
 
     busqueda.addEventListener("input", renderTabla);
-    tabs.forEach(tab => { tab.onclick = () => { tabs.forEach(t => t.classList.remove("active")); tab.classList.add("active"); estadoActual = tab.dataset.estado; renderTabla(); }; });
-    window.abrirOrden = (fila, codigo) => { window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`; };
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        estadoActual = tab.dataset.estado;
+        renderTabla();
+      };
+    });
+    window.abrirOrden = (fila, codigo) => {
+      window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`;
+    };
 
     cargarTecnicos();
     cargarOrdenes();
