@@ -28,12 +28,18 @@
       cursor: pointer; font-weight: 600; color: #004aad; }
     .tab.active { background-color: #004aad; color: white; }
 
-    .form-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px; }
-    input, select {
+    .form-container { display: grid; grid-template-columns: repeat(6, minmax(140px,1fr)); gap: 10px; align-items: start; margin-bottom: 15px; }
+    .form-container > * { width: 100%; }
+
+    input, select, textarea {
       padding: 8px; border-radius: 6px; border: 1px solid #ccc;
       font-size: 14px; transition: 0.3s;
     }
-    input.error, select.error {
+    textarea#descripcion { min-height: 110px; grid-column: span 3; } /* ~4x más grande */
+    input#telefono, input#cliente, input#codigo { height: 36px; }
+    select#tecnico, select#estado { height: 36px; }
+
+    input.error, select.error, textarea.error {
       border-color: #e74c3c;
       animation: blinkRed 0.6s linear infinite alternate;
     }
@@ -101,8 +107,8 @@
       <input type="text" id="cliente" placeholder="Cliente" value="BLUE HOME INMOBILIARIA" />
       <input type="text" id="telefono" placeholder="Teléfono" />
       <input type="text" id="codigo" placeholder="Código" />
-      <input type="date" id="fecha" />
-      <input type="text" id="descripcion" placeholder="Descripción" />
+      <input type="date" id="fecha" /> <!-- opcional -->
+      <textarea id="descripcion" placeholder="Descripción detallada de la orden..."></textarea>
       <select id="tecnico">
         <option value="">Seleccionar técnico...</option>
       </select>
@@ -187,7 +193,10 @@
       tabla.innerHTML = "";
       let filtradas = ordenes.filter(o => (o.Estado || "").toLowerCase().includes(estadoActual.toLowerCase()));
       const filtro = busqueda.value.trim().toLowerCase();
-      if (filtro) filtradas = filtradas.filter(o => (o.Código || "").toLowerCase().includes(filtro) || (o.Fecha || "").toLowerCase().includes(filtro));
+      if (filtro) filtradas = filtradas.filter(o =>
+        (o.Código || "").toLowerCase().includes(filtro) ||
+        (o.Fecha || "").toLowerCase().includes(filtro)
+      );
 
       if (filtradas.length === 0) {
         tabla.innerHTML = `<tr><td colspan="6">No hay órdenes en este estado.</td></tr>`;
@@ -199,6 +208,7 @@
         const estado = (o.Estado || "").toLowerCase();
         let color = "rojo"; if (estado.includes("proceso")) color = "amarillo"; if (estado.includes("final")) color = "verde";
 
+        // Selector de técnico editable en la tabla
         const select = document.createElement("select");
         select.innerHTML = `<option value="">Sin asignar</option>`;
         tecnicos.forEach(t => {
@@ -213,7 +223,7 @@
         tr.innerHTML = `
           <td>${o.Fecha || ""}</td>
           <td>${o.Código || ""}</td>
-          <td>${o.Descripción || ""}</td>
+          <td>${o.Descripción || o.Descripcion || ""}</td>
           <td></td>
           <td><span class="estado ${color}">${o.Estado || ""}</span></td>
           <td><button class="btn-primary" onclick="abrirOrden('${o.fila}','${o.Código}')">Ver / Gestionar</button></td>
@@ -240,38 +250,45 @@
       }
     }
 
-    // ✅ Crear orden con validación visual
+    // Crear orden (fecha ya NO es obligatoria; si falta, se auto-completa)
     document.getElementById("crearBtn").addEventListener("click", async () => {
       const inputs = {
         cliente: document.getElementById("cliente"),
         telefono: document.getElementById("telefono"),
         codigo: document.getElementById("codigo"),
-        fecha: document.getElementById("fecha"),
         descripcion: document.getElementById("descripcion")
       };
+      const optional = { fecha: document.getElementById("fecha") };
 
+      // limpiar errores
+      Object.values(inputs).forEach(i => i.classList.remove("error"));
+      optional.fecha.classList.remove("error");
+
+      // validar SOLO campos obligatorios (sin fecha)
       let error = false;
       for (const key in inputs) {
         const input = inputs[key];
-        input.classList.remove("error");
-        if (!input.value.trim()) {
-          input.classList.add("error");
-          error = true;
-        }
+        if (!input.value.trim()) { input.classList.add("error"); error = true; }
       }
-
       if (error) {
-        document.getElementById("errorBox").innerText = "⚠️ Faltan datos obligatorios. Los campos marcados en rojo deben completarse.";
-        document.getElementById("errorBox").style.display = "block";
+        const box = document.getElementById("errorBox");
+        box.innerText = "⚠️ Faltan datos obligatorios. Los campos marcados en rojo deben completarse.";
+        box.style.display = "block";
         return;
       }
-
       document.getElementById("errorBox").style.display = "none";
+
+      // si la fecha viene vacía → generar ahora en formato `dd/mm/yyyy HH:MM:SS`
+      let fecha = optional.fecha.value;
+      if (!fecha) {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        fecha = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
 
       const cliente = inputs.cliente.value.trim();
       const telefono = inputs.telefono.value.trim();
       const codigo = inputs.codigo.value.trim();
-      const fecha = inputs.fecha.value;
       const descripcion = inputs.descripcion.value.trim();
       const tecnico = document.getElementById("tecnico").value.trim() || "Sin asignar";
       const estado = document.getElementById("estado").value.trim() || "Pendiente";
@@ -288,7 +305,13 @@
         if (data.ok) {
           alert("✅ Orden creada correctamente.");
           cargarOrdenes();
-          Object.values(inputs).forEach(i => i.value = "");
+          // limpiar (menos cliente si quieres mantenerlo)
+          inputs.telefono.value = "";
+          inputs.codigo.value = "";
+          inputs.descripcion.value = "";
+          optional.fecha.value = "";
+          document.getElementById("tecnico").value = "";
+          document.getElementById("estado").value = "Pendiente";
         } else {
           alert("❌ " + (data.error || "Error al crear orden"));
         }
