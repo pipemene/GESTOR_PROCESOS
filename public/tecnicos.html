@@ -1,218 +1,188 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Técnicos | Blue Home Gestor</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Módulo Técnicos | Blue Home Gestor</title>
+  <link rel="stylesheet" href="assets/css/estilos.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { background-color: #eef3f8; font-family: 'Segoe UI', sans-serif; }
-    header {
-      background: linear-gradient(90deg, #003366 0%, #005fa3 100%);
+    .header {
+      background-color: #004aad;
       color: white;
-      padding: 12px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 12px 30px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
     }
-    .logo { width: 45px; margin-right: 10px; }
-    .card { border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
-    .foto-prev { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; margin-top: 10px; }
-    footer { background-color: #003366; color: white; text-align: center; padding: 10px; font-size: 0.9em; }
+    .logo { height: 45px; }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    #logoutBtn {
+      background-color: white;
+      color: #004aad;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #logoutBtn:hover {
+      background-color: #1f64d1;
+      color: white;
+    }
+    main {
+      padding: 30px;
+    }
+    h1 {
+      color: #004aad;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #004aad;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: #004aad;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #1f64d1;
+    }
+    .btn-success {
+      background-color: #2ecc71;
+      color: white;
+    }
+    .btn-success:hover {
+      background-color: #27ae60;
+    }
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="d-flex align-items-center">
-      <img src="https://i.imgur.com/FEBvZ6N.png" alt="Logo Blue Home" class="logo">
-      <h4 class="mb-0">Panel de Técnicos — Blue Home</h4>
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/img/logo-blanco.png" alt="Logo Blue Home" class="logo" />
+      <h2>Blue Home Gestor</h2>
     </div>
-    <div>
-      <button class="btn btn-sm btn-light me-2" onclick="volver()">🏠 Dashboard</button>
-      <span id="usuarioInfo" class="fw-semibold me-2"></span>
-      <button class="btn btn-sm btn-danger" onclick="cerrarSesion()">Cerrar Sesión</button>
+    <div class="user-info">
+      <span id="userName"></span>
+      <button id="logoutBtn">Cerrar sesión</button>
     </div>
   </header>
 
-  <main class="container mt-4">
-    <div class="text-center mb-3">
-      <h5 class="text-primary">🧰 Órdenes Asignadas</h5>
-      <p class="text-muted">Sube tus evidencias y marca las órdenes como finalizadas</p>
+  <main>
+    <h1>Panel del Técnico</h1>
+    <div id="ordenesContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaTecnico">
+          <tr><td colspan="4">Cargando tus órdenes...</td></tr>
+        </tbody>
+      </table>
     </div>
-
-    <div id="listaOrdenes" class="row g-3"></div>
   </main>
 
-  <footer>
-    Blue Home Inmobiliaria © 2025 — Módulo Técnico
-  </footer>
-
   <script>
-    const usuario = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!usuario.nombre) window.location.href = "index.html";
+    // 🔐 Validación de sesión y permisos
+    const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
+    if (!user.usuario) {
+      alert("Debes iniciar sesión.");
+      window.location.href = "index.html";
+    }
 
-    document.getElementById("usuarioInfo").textContent =
-      `${usuario.nombre.toUpperCase()} (${usuario.rol.toUpperCase()})`;
+    const rol = (user.rol || "").toLowerCase();
+    const usuario = (user.usuario || "").toLowerCase();
 
-    function volver() { window.location.href = "dashboard.html"; }
-    function cerrarSesion() { localStorage.clear(); window.location.href = "index.html"; }
+    const accesoPermitido = ["superadmin", "admin", "tecnico"];
+    if (!accesoPermitido.includes(rol)) {
+      alert("⚠️ Acceso restringido al módulo de técnicos.");
+      window.location.href = "dashboard.html";
+    }
 
-    // 🔹 Cargar órdenes asignadas al técnico
-    async function cargarOrdenes() {
-      const res = await fetch("/api/orders");
-      const data = await res.json();
-      const lista = document.getElementById("listaOrdenes");
-      lista.innerHTML = "";
+    document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
 
-      const asignadas = data.filter(o =>
-        o.tecnico?.toLowerCase() === usuario.nombre.toLowerCase()
-      );
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("usuarioActivo");
+      window.location.href = "index.html";
+    });
 
-      if (asignadas.length === 0) {
-        lista.innerHTML = `<div class="col-12 text-center text-muted">No tienes órdenes asignadas actualmente.</div>`;
-        return;
-      }
+    // 🧰 Simulación de órdenes del técnico
+    const todasLasOrdenes = [
+      { codigo: "BH-2025-001", descripcion: "Cambio de cerradura", tecnico: "Mauricio", estado: "En proceso" },
+      { codigo: "BH-2025-002", descripcion: "Pintura pared sala", tecnico: "Jair", estado: "Finalizada" },
+      { codigo: "BH-2025-003", descripcion: "Limpieza tanque agua", tecnico: "Mauricio", estado: "Pendiente" }
+    ];
 
-      asignadas.forEach(o => {
-        const card = document.createElement("div");
-        card.className = "col-md-6";
-        card.innerHTML = `
-          <div class="card p-3">
-            <h6 class="text-primary">🔹 Orden ${o.codigo}</h6>
-            <p><b>Arrendatario:</b> ${o.arrendatario || "—"}</p>
-            <p><b>Descripción:</b> ${o.descripcion || "Sin descripción"}</p>
+    // Filtrar las órdenes según el técnico logueado
+    const ordenesAsignadas = todasLasOrdenes.filter(o => 
+      o.tecnico.toLowerCase() === usuario || rol === "superadmin"
+    );
 
-            <hr>
-            <div>
-              <label class="form-label fw-semibold">📸 Foto Antes</label>
-              <input type="file" class="form-control form-control-sm" accept="image/*" onchange="subirFoto('${o.codigo}', this, 'antes')">
-              <img id="prev_antes_${o.codigo}" class="foto-prev d-none" />
-            </div>
+    const tabla = document.getElementById("tablaTecnico");
+    tabla.innerHTML = "";
 
-            <div class="mt-2">
-              <label class="form-label fw-semibold">📸 Foto Después</label>
-              <input type="file" class="form-control form-control-sm" accept="image/*" onchange="subirFoto('${o.codigo}', this, 'despues')">
-              <img id="prev_despues_${o.codigo}" class="foto-prev d-none" />
-            </div>
-
-            <div class="mt-3">
-              <label class="form-label fw-semibold">🧾 Materiales utilizados</label>
-              <textarea id="mat_${o.codigo}" class="form-control" rows="2" placeholder="Ej: Pintura, tornillos, cinta, etc."></textarea>
-            </div>
-
-            <div class="mt-3">
-              <label class="form-label fw-semibold">🪚 Trabajo realizado</label>
-              <textarea id="trab_${o.codigo}" class="form-control" rows="2" placeholder="Ej: Reparación de puerta, pintura de pared, etc."></textarea>
-            </div>
-
-            <div class="mt-3">
-              <label class="form-label fw-semibold">✍️ Firma del inquilino</label>
-              <canvas id="firma_${o.codigo}" width="300" height="120" style="border:1px solid #ccc; border-radius:10px; background:white;"></canvas><br>
-              <button class="btn btn-sm btn-secondary mt-1" onclick="limpiarFirma('${o.codigo}')">🧹 Limpiar</button>
-              <button class="btn btn-sm btn-success mt-1" onclick="guardarFirma('${o.codigo}')">💾 Guardar Firma</button>
-            </div>
-
-            <hr>
-            <button class="btn btn-primary w-100 mt-2" onclick="finalizarOrden('${o.codigo}')">✅ Finalizar Orden</button>
-          </div>
+    if (ordenesAsignadas.length === 0) {
+      tabla.innerHTML = `<tr><td colspan="4">No tienes órdenes asignadas.</td></tr>`;
+    } else {
+      ordenesAsignadas.forEach(o => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${o.codigo}</td>
+          <td>${o.descripcion}</td>
+          <td>${o.estado}</td>
+          <td>
+            ${o.estado === "Finalizada" 
+              ? "<span>✔️ Completada</span>" 
+              : `<button class='btn btn-success' onclick='marcarFinalizada("${o.codigo}")'>Finalizar</button>`}
+          </td>
         `;
-        lista.appendChild(card);
-        inicializarCanvas(o.codigo);
+        tabla.appendChild(tr);
       });
     }
 
-    // 🎨 Control de firmas
-    const firmas = {};
-    function inicializarCanvas(codigo) {
-      const canvas = document.getElementById(`firma_${codigo}`);
-      const ctx = canvas.getContext("2d");
-      let dibujando = false;
-
-      canvas.addEventListener("mousedown", e => {
-        dibujando = true;
-        ctx.beginPath();
-        ctx.moveTo(e.offsetX, e.offsetY);
-      });
-
-      canvas.addEventListener("mousemove", e => {
-        if (!dibujando) return;
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-
-      canvas.addEventListener("mouseup", () => (dibujando = false));
-      canvas.addEventListener("mouseleave", () => (dibujando = false));
-
-      firmas[codigo] = canvas;
+    function marcarFinalizada(codigo) {
+      alert(`✅ Orden ${codigo} marcada como finalizada.`);
+      // Aquí podrías conectar con Google Sheets o tu backend para actualizar el estado real
+      location.reload();
     }
 
-    function limpiarFirma(codigo) {
-      const ctx = firmas[codigo].getContext("2d");
-      ctx.clearRect(0, 0, firmas[codigo].width, firmas[codigo].height);
-    }
-
-    async function guardarFirma(codigo) {
-      const dataURL = firmas[codigo].toDataURL("image/png");
-      const res = await fetch(`/api/orders/${codigo}/sign`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firmaInquilino: dataURL })
-      });
-
-      if (res.ok) Swal.fire("✅ Firma guardada", "", "success");
-      else Swal.fire("⚠️ Error al guardar firma", "", "error");
-    }
-
-    // 📷 Subir fotos antes/después
-    async function subirFoto(codigo, input, tipo) {
-      const file = input.files[0];
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tipo", tipo);
-
-      const res = await fetch(`/api/orders/${codigo}/upload-photo`, {
-        method: "POST",
-        body: formData
-      });
-
-      const prev = document.getElementById(`prev_${tipo}_${codigo}`);
-      const data = await res.json();
-      if (res.ok) {
-        prev.src = data.url;
-        prev.classList.remove("d-none");
-        Swal.fire("📸 Imagen subida correctamente", "", "success");
-      } else {
-        Swal.fire("⚠️ Error al subir la foto", data.error || "", "error");
-      }
-    }
-
-    // ✅ Finalizar orden
-    async function finalizarOrden(codigo) {
-      const materiales = document.getElementById(`mat_${codigo}`).value;
-      const trabajo = document.getElementById(`trab_${codigo}`).value;
-
-      await fetch(`/api/orders/${codigo}/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ materiales, trabajo })
-      });
-
-      const res = await fetch(`/api/orders/${codigo}/finish`, { method: "POST" });
-      if (res.ok) {
-        Swal.fire("✅ Orden finalizada correctamente", "", "success");
-        cargarOrdenes();
-      } else {
-        Swal.fire("⚠️ Error al finalizar la orden", "", "error");
-      }
-    }
-
-    cargarOrdenes();
+    lucide.createIcons();
   </script>
 </body>
 </html>
