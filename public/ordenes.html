@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestión de Órdenes | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
-  <script src="https://unpkg.com/lucide@latest"></script>
-
   <style>
     body { background-color: #f5f7fa; font-family: "Segoe UI", sans-serif; }
     .header {
@@ -25,19 +23,12 @@
     main { padding: 30px; }
     h1 { color: #004aad; text-align: center; margin-bottom: 25px; }
 
-    .tabs {
-      display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
-    }
-    .tab {
-      background-color: #ddd; border-radius: 6px; padding: 8px 16px;
-      cursor: pointer; font-weight: 600; color: #004aad;
-    }
+    .tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+    .tab { background-color: #ddd; border-radius: 6px; padding: 8px 16px;
+      cursor: pointer; font-weight: 600; color: #004aad; }
     .tab.active { background-color: #004aad; color: white; }
 
-    .form-container {
-      display: flex; flex-wrap: wrap; gap: 10px;
-      justify-content: center; margin-bottom: 15px;
-    }
+    .form-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 15px; }
     input, select {
       padding: 8px; border-radius: 6px; border: 1px solid #ccc;
       font-size: 14px;
@@ -48,23 +39,16 @@
     }
     .btn-primary:hover { background-color: #1f64d1; }
 
-    table {
-      width: 100%; border-collapse: collapse; background: white;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1); border-radius: 10px;
-      overflow: hidden;
-    }
+    table { width: 100%; border-collapse: collapse; background: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
     th, td { padding: 10px; text-align: center; border-bottom: 1px solid #ddd; }
     th { background-color: #004aad; color: white; }
     tr:hover { background-color: #f1f1f1; }
 
-    .estado {
-      font-weight: bold; padding: 6px 10px; border-radius: 6px;
-      color: white;
-    }
+    .estado { font-weight: bold; padding: 6px 10px; border-radius: 6px; color: white; }
     .rojo { background-color: #e74c3c; }
     .amarillo { background-color: #f1c40f; color: #333; }
     .verde { background-color: #2ecc71; }
-
     #busqueda { width: 250px; border-radius: 8px; border: 1px solid #ccc; padding: 6px; }
   </style>
 </head>
@@ -134,41 +118,31 @@
     const API_URL = "/api/orders";
     const USERS_URL = "/api/users";
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!user.usuario) {
-      alert("Debes iniciar sesión."); window.location.href = "index.html";
-    }
+    if (!user.usuario) { alert("Debes iniciar sesión."); window.location.href = "index.html"; }
     document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
-    document.getElementById("logoutBtn").onclick = () => {
-      localStorage.removeItem("usuarioActivo");
-      window.location.href = "index.html";
-    };
-    document.getElementById("backBtn").onclick = () => {
-      window.location.href = "dashboard.html";
-    };
+    document.getElementById("logoutBtn").onclick = () => { localStorage.removeItem("usuarioActivo"); window.location.href = "index.html"; };
+    document.getElementById("backBtn").onclick = () => { window.location.href = "dashboard.html"; };
 
     const tabla = document.getElementById("tablaOrdenes");
     const tecnicoSelect = document.getElementById("tecnico");
     const tabs = document.querySelectorAll(".tab");
     const busqueda = document.getElementById("busqueda");
-    let ordenes = [];
+    let ordenes = [], tecnicos = [];
     let estadoActual = "Pendiente";
 
     async function cargarTecnicos() {
       try {
         const res = await fetch(USERS_URL);
         const usuarios = await res.json();
+        tecnicos = usuarios.filter(u => u.rol && u.rol.toLowerCase() === "tecnico");
         tecnicoSelect.innerHTML = `<option value="">Sin asignar</option>`;
-        usuarios
-          .filter(u => u.rol && u.rol.toLowerCase() === "tecnico")
-          .forEach(t => {
-            const opt = document.createElement("option");
-            opt.value = t.nombre;
-            opt.textContent = t.nombre;
-            tecnicoSelect.appendChild(opt);
-          });
-      } catch (e) {
-        console.error("Error al cargar técnicos", e);
-      }
+        tecnicos.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.nombre;
+          opt.textContent = t.nombre;
+          tecnicoSelect.appendChild(opt);
+        });
+      } catch (e) { console.error("Error al cargar técnicos", e); }
     }
 
     async function cargarOrdenes() {
@@ -185,54 +159,63 @@
 
     function renderTabla() {
       tabla.innerHTML = "";
-      let filtradas = ordenes.filter(o => 
-        (o.Estado || o.estado || "").toLowerCase().includes(estadoActual.toLowerCase())
-      );
-
-      // Filtro por búsqueda
+      let filtradas = ordenes.filter(o => (o.Estado || "").toLowerCase().includes(estadoActual.toLowerCase()));
       const filtro = busqueda.value.trim().toLowerCase();
-      if (filtro) {
-        filtradas = filtradas.filter(o => 
-          (o.Código || "").toLowerCase().includes(filtro) ||
-          (o.Fecha || "").toLowerCase().includes(filtro)
-        );
-      }
+      if (filtro) filtradas = filtradas.filter(o => (o.Código || "").toLowerCase().includes(filtro) || (o.Fecha || "").toLowerCase().includes(filtro));
 
       if (filtradas.length === 0) {
         tabla.innerHTML = `<tr><td colspan="6">No hay órdenes en este estado.</td></tr>`;
         return;
       }
 
-      filtradas.forEach((o, i) => {
+      filtradas.forEach((o) => {
         const tr = document.createElement("tr");
         const estado = (o.Estado || "").toLowerCase();
-        let color = "rojo";
-        if (estado.includes("proceso")) color = "amarillo";
-        if (estado.includes("final")) color = "verde";
+        let color = "rojo"; if (estado.includes("proceso")) color = "amarillo"; if (estado.includes("final")) color = "verde";
+
+        // Crear selector de técnico
+        const select = document.createElement("select");
+        select.innerHTML = `<option value="">Sin asignar</option>`;
+        tecnicos.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.nombre;
+          opt.textContent = t.nombre;
+          if (o.Tecnico === t.nombre) opt.selected = true;
+          select.appendChild(opt);
+        });
+        select.onchange = () => actualizarTecnico(o.fila, select.value);
 
         tr.innerHTML = `
           <td>${o.Fecha || ""}</td>
           <td>${o.Código || ""}</td>
           <td>${o.Descripcion || ""}</td>
-          <td>${o.Tecnico || "Sin asignar"}</td>
+          <td></td>
           <td><span class="estado ${color}">${o.Estado || ""}</span></td>
           <td><button class="btn-primary" onclick="abrirOrden('${o.fila}','${o.Código}')">Ver / Gestionar</button></td>
         `;
+        tr.children[3].appendChild(select);
         tabla.appendChild(tr);
       });
     }
 
-    // Tabs de estado
-    tabs.forEach(tab => {
-      tab.onclick = () => {
-        tabs.forEach(t => t.classList.remove("active"));
-        tab.classList.add("active");
-        estadoActual = tab.dataset.estado;
-        renderTabla();
-      };
-    });
+    async function actualizarTecnico(fila, nuevoTecnico) {
+      try {
+        const body = { fila, tecnico: nuevoTecnico };
+        const res = await fetch(`${API_URL}/update`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok) alert("✅ Técnico asignado correctamente.");
+        else alert("❌ Error al asignar técnico.");
+      } catch (err) {
+        console.error(err);
+        alert("Error al actualizar técnico.");
+      }
+    }
 
-    // Crear orden
+    // Crear nueva orden
     document.getElementById("crearBtn").addEventListener("click", async () => {
       const cliente = document.getElementById("cliente").value.trim();
       const telefono = document.getElementById("telefono").value.trim();
@@ -242,14 +225,15 @@
       const tecnico = document.getElementById("tecnico").value.trim();
       const estado = document.getElementById("estado").value.trim() || "Pendiente";
 
-      if (!cliente || !telefono || !codigo || !descripcion)
-        return alert("Completa todos los campos obligatorios.");
+      if (!cliente || !telefono || !codigo || !descripcion || !fecha) {
+        return alert("Faltan datos obligatorios.");
+      }
 
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cliente, telefono, codigo, descripcion, tecnico, estado })
+          body: JSON.stringify({ cliente, telefono, codigo, fecha, descripcion, tecnico, estado })
         });
         const data = await res.json();
         if (data.ok) {
@@ -265,9 +249,8 @@
     });
 
     busqueda.addEventListener("input", renderTabla);
-    window.abrirOrden = (fila, codigo) => {
-      window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`;
-    };
+    tabs.forEach(tab => { tab.onclick = () => { tabs.forEach(t => t.classList.remove("active")); tab.classList.add("active"); estadoActual = tab.dataset.estado; renderTabla(); }; });
+    window.abrirOrden = (fila, codigo) => { window.location.href = `orden.html?fila=${fila}&codigo=${codigo}`; };
 
     cargarTecnicos();
     cargarOrdenes();
