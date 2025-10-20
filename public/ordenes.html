@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Órdenes Técnicas | Blue Home Gestor</title>
+  <title>Gestión de Órdenes | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    /* ======= ENCABEZADO ======= */
     .header {
       background-color: #004aad;
       color: white;
@@ -22,7 +23,7 @@
       align-items: center;
       gap: 15px;
     }
-    #logoutBtn {
+    #logoutBtn, #backBtn {
       background-color: white;
       color: #004aad;
       border: none;
@@ -32,10 +33,12 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    #logoutBtn:hover {
+    #logoutBtn:hover, #backBtn:hover {
       background-color: #1f64d1;
       color: white;
     }
+
+    /* ======= TABLA ======= */
     main {
       padding: 30px;
     }
@@ -78,6 +81,68 @@
     .btn-primary:hover {
       background-color: #1f64d1;
     }
+    .btn-warning {
+      background-color: #f39c12;
+      color: white;
+    }
+    .btn-warning:hover {
+      background-color: #e67e22;
+    }
+    .btn-danger {
+      background-color: #e74c3c;
+      color: white;
+    }
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+
+    /* ======= FORMULARIO CREAR ======= */
+    .form-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    input, select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    /* ======= MODAL ======= */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -88,45 +153,71 @@
     </div>
     <div class="user-info">
       <span id="userName"></span>
+      <button id="backBtn">Volver</button>
       <button id="logoutBtn">Cerrar sesión</button>
     </div>
   </header>
 
   <main>
-    <h1>Gestión de Órdenes Técnicas</h1>
-    <div id="ordenesContainer">
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th>Técnico</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaOrdenes">
-          <tr><td colspan="5">Cargando órdenes...</td></tr>
-        </tbody>
-      </table>
+    <h1>Gestión de Órdenes</h1>
+
+    <!-- FORMULARIO NUEVA ORDEN -->
+    <div class="form-container">
+      <input type="text" id="codigo" placeholder="Código" />
+      <input type="text" id="descripcion" placeholder="Descripción" />
+      <input type="text" id="tecnico" placeholder="Técnico asignado" />
+      <select id="estado">
+        <option value="">Estado</option>
+        <option value="Pendiente">Pendiente</option>
+        <option value="En proceso">En proceso</option>
+        <option value="Finalizada">Finalizada</option>
+      </select>
+      <button class="btn-primary" id="crearBtn">Crear</button>
     </div>
+
+    <!-- TABLA -->
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Técnico</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaOrdenes">
+        <tr><td colspan="5">Cargando órdenes...</td></tr>
+      </tbody>
+    </table>
   </main>
 
+  <!-- MODAL EDITAR -->
+  <div class="modal" id="modalEditar">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Editar Orden</h3>
+        <button class="close-btn" id="cerrarModal">&times;</button>
+      </div>
+      <div>
+        <p><b>Código:</b> <span id="modalCodigo"></span></p>
+        <label>Estado:</label>
+        <select id="modalEstado">
+          <option value="Pendiente">Pendiente</option>
+          <option value="En proceso">En proceso</option>
+          <option value="Finalizada">Finalizada</option>
+        </select>
+        <br /><br />
+        <button class="btn-primary" id="guardarCambios">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 🔐 Validación de sesión y permisos
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
     if (!user.usuario) {
       alert("Debes iniciar sesión.");
       window.location.href = "index.html";
-    }
-
-    const rol = (user.rol || "").toLowerCase();
-    const usuario = (user.usuario || "").toLowerCase();
-
-    const accesoPermitido = ["superadmin", "admin", "tecnico", "dayan"];
-    if (!accesoPermitido.includes(rol) && usuario !== "dayan") {
-      alert("⚠️ Acceso restringido al área de órdenes.");
-      window.location.href = "dashboard.html";
     }
 
     document.getElementById("userName").innerText = `${user.nombre} (${user.rol})`;
@@ -135,31 +226,93 @@
       localStorage.removeItem("usuarioActivo");
       window.location.href = "index.html";
     });
-
-    // ⚙️ Simulación de carga de órdenes
-    const ordenes = [
-      { codigo: "BH-2025-001", descripcion: "Cambio de cerradura", tecnico: "Mauricio", estado: "En proceso" },
-      { codigo: "BH-2025-002", descripcion: "Pintura pared sala", tecnico: "Jair", estado: "Finalizada" },
-      { codigo: "BH-2025-003", descripcion: "Limpieza tanque agua", tecnico: "Sin asignar", estado: "Pendiente" }
-    ];
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
 
     const tabla = document.getElementById("tablaOrdenes");
-    tabla.innerHTML = "";
-    ordenes.forEach(o => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${o.codigo}</td>
-        <td>${o.descripcion}</td>
-        <td>${o.tecnico}</td>
-        <td>${o.estado}</td>
-        <td>
-          <button class="btn btn-primary">Ver</button>
-        </td>
-      `;
-      tabla.appendChild(tr);
-    });
-  </script>
+    const modal = document.getElementById("modalEditar");
+    const modalCodigo = document.getElementById("modalCodigo");
+    const modalEstado = document.getElementById("modalEstado");
+    const cerrarModal = document.getElementById("cerrarModal");
+    const guardarCambios = document.getElementById("guardarCambios");
 
-  <script>lucide.createIcons();</script>
+    let ordenes = [
+      { codigo: "BH-2025-001", descripcion: "Cambio de cerradura", tecnico: "Mauricio", estado: "Pendiente" },
+      { codigo: "BH-2025-002", descripcion: "Pintura pared sala", tecnico: "Jair", estado: "En proceso" },
+      { codigo: "BH-2025-003", descripcion: "Limpieza tanque agua", tecnico: "Mauricio", estado: "Finalizada" }
+    ];
+
+    function renderTabla() {
+      tabla.innerHTML = "";
+      if (ordenes.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="5">No hay órdenes registradas.</td></tr>`;
+        return;
+      }
+      ordenes.forEach((o, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${o.codigo}</td>
+          <td>${o.descripcion}</td>
+          <td>${o.tecnico}</td>
+          <td>${o.estado}</td>
+          <td>
+            <button class="btn btn-warning" onclick="editarOrden(${i})">Ver / Editar</button>
+            <button class="btn btn-danger" onclick="eliminarOrden(${i})">Eliminar</button>
+          </td>
+        `;
+        tabla.appendChild(tr);
+      });
+    }
+
+    renderTabla();
+
+    // Crear orden
+    document.getElementById("crearBtn").addEventListener("click", () => {
+      const codigo = document.getElementById("codigo").value.trim();
+      const descripcion = document.getElementById("descripcion").value.trim();
+      const tecnico = document.getElementById("tecnico").value.trim();
+      const estado = document.getElementById("estado").value.trim();
+
+      if (!codigo || !descripcion || !tecnico || !estado) {
+        alert("Completa todos los campos.");
+        return;
+      }
+
+      ordenes.push({ codigo, descripcion, tecnico, estado });
+      renderTabla();
+
+      document.getElementById("codigo").value = "";
+      document.getElementById("descripcion").value = "";
+      document.getElementById("tecnico").value = "";
+      document.getElementById("estado").value = "";
+    });
+
+    // Editar orden
+    window.editarOrden = (i) => {
+      const orden = ordenes[i];
+      modal.style.display = "flex";
+      modalCodigo.innerText = orden.codigo;
+      modalEstado.value = orden.estado;
+
+      guardarCambios.onclick = () => {
+        ordenes[i].estado = modalEstado.value;
+        modal.style.display = "none";
+        renderTabla();
+      };
+    };
+
+    cerrarModal.addEventListener("click", () => (modal.style.display = "none"));
+
+    // Eliminar orden
+    window.eliminarOrden = (i) => {
+      if (confirm("¿Seguro que deseas eliminar esta orden?")) {
+        ordenes.splice(i, 1);
+        renderTabla();
+      }
+    };
+
+    lucide.createIcons();
+  </script>
 </body>
 </html>
