@@ -1,47 +1,137 @@
-<script>
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blue Home Gestor - Login</title>
+  <style>
+    body {
+      background: linear-gradient(135deg, #004aad, #0078d7);
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      margin: 0;
+    }
 
-  const usuario = document.getElementById("usuario").value.trim();
-  const contrasena = document.getElementById("contrasena").value.trim();
+    .login-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 40px 30px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      width: 300px;
+      text-align: center;
+    }
 
-  if (!usuario || !contrasena) {
-    alert("Por favor ingresa usuario y contraseña.");
-    return;
-  }
+    h2 {
+      margin-bottom: 20px;
+      font-weight: normal;
+    }
 
-  try {
-    const res = await fetch("/api/users/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usuario, contrasena }),
-    });
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+      font-size: 14px;
+    }
 
-    const data = await res.json();
-    console.log("Respuesta del backend:", data);
+    input[type="text"],
+    input[type="password"] {
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+    }
 
-    if (!data.ok) {
-      alert(data.error || "Usuario o contraseña incorrectos.");
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #00b4d8;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0096c7;
+    }
+
+    .logo {
+      width: 80px;
+      margin-bottom: 15px;
+    }
+
+    .footer {
+      margin-top: 15px;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <img src="logo.png" alt="Blue Home Logo" class="logo" />
+    <h2>Ingreso al Sistema</h2>
+    <form id="loginForm">
+      <input type="text" id="usuario" placeholder="Usuario" required />
+      <input type="password" id="contrasena" placeholder="Contraseña" required />
+      <button type="submit">Ingresar</button>
+    </form>
+    <div class="footer">© Blue Home Inmobiliaria</div>
+  </div>
+
+  <script>
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const usuario = document.getElementById("usuario").value.trim();
+    const contrasena = document.getElementById("contrasena").value.trim();
+
+    if (!usuario || !contrasena) {
+      alert("Por favor ingresa usuario y contraseña.");
       return;
     }
 
-    // Guardar token e información del usuario
-    localStorage.setItem("usuarioActivo", JSON.stringify(data.user));
-    localStorage.setItem("token", data.token);
+    try {
+      const res = await fetch("/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario, contrasena }),
+      });
 
-    const rol = (data.user.rol || "").toLowerCase();
-    console.log("✅ Rol detectado:", rol);
+      const data = await res.json();
+      console.log("Respuesta del backend:", data);
 
-    // Redirección según el rol
-    if (rol === "superadmin" || rol === "admin") {
-      window.location.href = "admin.html";
-    } else {
-      window.location.href = "dashboard.html";
+      if (!data.ok) {
+        alert(data.error || "Usuario o contraseña incorrectos.");
+        return;
+      }
+
+      // Guardar token e información del usuario
+      localStorage.setItem("usuarioActivo", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+
+      const rol = (data.user.rol || "").toLowerCase();
+      console.log("✅ Rol detectado:", rol);
+
+      // Redirección según el rol
+      if (rol === "superadmin" || rol === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+
+    } catch (err) {
+      console.error("Error al iniciar sesión:", err);
+      alert("Error de conexión con el servidor.");
     }
-
-  } catch (err) {
-    console.error("Error al iniciar sesión:", err);
-    alert("Error de conexión con el servidor.");
-  }
-});
-</script>
+  });
+  </script>
+</body>
+</html>
