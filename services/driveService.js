@@ -1,101 +1,143 @@
-import fs from "fs";
-import path from "path";
-import { google } from "googleapis";
-import { GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_DRIVE_FOLDER_ID } from "../config.js";
+// ======================================================
+// 📂 services/driveService.js
+// Blue Home Gestor - Manejo de archivos en Google Drive
+// ======================================================
 
-const auth = new google.auth.JWT(
-  GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  null,
-  GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/drive"]
-);
+import { google } from "googleapis";
+import dotenv from "dotenv";
+dotenv.config();
+
+// 🔹 Autenticación con Google API
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  },
+  scopes: ["https://www.googleapis.com/auth/drive"],
+});
+
 const drive = google.drive({ version: "v3", auth });
 
-// ✅ Crea carpeta para cada orden (si no existe)
-export async function ensureOrderFolder(codigo) {
-  const folderName = `Orden_${codigo}`;
-  const res = await drive.files.list({
-    q: `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: "files(id, name)",
-  });
+// ======================================================
+// 🔹 Verifica o crea la carpeta raíz
+// ======================================================
+export async function ensureRootFolder() {
+  try {
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    if (!folderId) throw new Error("❌ Falta GOOGLE_DRIVE_FOLDER_ID en .env");
 
-  if (res.data.files.length) {
-    console.log("📁 Carpeta existente para", folderName);
-    return res.data.files[0].id;
+    // Verificar si existe la carpeta raíz
+    const check = await drive.files.get({ fileId: folderId, fields: "id, name" }).catch(() => null);
+
+    if (!check) {
+      console.log("⚠️ Carpeta raíz no encontrada, se creará una nueva...");
+
+      const newFolder = await drive.files.create({
+        resource: {
+          name: "BlueHome_Gestor_Files",
+          mimeType: "application/vnd.google-apps.folder",
+        },
+        fields: "id, webViewLink",
+      });
+
+      console.log(`✅ Nueva carpeta creada en Drive: ${newFolder.data.webViewLink}`);
+      return newFolder.data.id;
+    }
+
+    console.log(`📁 Carpeta raíz válida: ${check.data.name}`);
+    return folderId;
+  } catch (err) {
+    console.error("❌ Error verificando carpeta raíz:", err.message);
+    throw err;
   }
-
-  const folder = await drive.files.create({
-    requestBody: {
-      name: folderName,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [GOOGLE_DRIVE_FOLDER_ID],
-    },
-    fields: "id",
-  });
-
-  console.log("📂 Carpeta creada para la orden", folderName, ":", folder.data.id);
-  return folder.data.id;
 }
 
-// ✅ Sube un archivo a Drive desde buffer
-export async function uploadFileBufferToDrive(file, filename, codigo) {
+// ======================================================
+// 🔹 Sube imagen en base64 (firmas)
+// ======================================================
+export async function uploadBase64ImageToDrive(base64Data, fileName, folderId = null) {
   try {
-    const folderId = await ensureOrderFolder(codigo);
-    const tempPath = path.join("/tmp", filename);
+    const rootFolder = await ensureRootFolder();
+    const targetFolder = folderId || rootFolder;
 
-    fs.writeFileSync(tempPath, file.buffer); // ✅ Ahora es buffer real
+    const buffer = Buffer.from(base64Data.split(",")[1], "base64");
 
-    const res = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-      },
-      media: {
-        mimeType: file.mimetype,
-        body: fs.createReadStream(tempPath),
-      },
-      fields: "id, webViewLink, webContentLink",
+    const fileMetadata = {
+      name: fileName,
+      parents: [targetFolder],
+    };
+
+    const media = {
+      mimeType: "image/png",
+      body: Buffer.from(buffer),
+    };
+
+    const response = await drive.files.create({
+      resource: fileMetadata,
+      media,
+      fields: "id, webViewLink",
     });
 
-    fs.unlinkSync(tempPath); // 🔥 Limpieza
-    const { id, webViewLink, webContentLink } = res.data;
-    const viewLink = `https://drive.google.com/file/d/${id}/view?usp=drivesdk`;
-    const downloadLink = `https://drive.google.com/uc?export=download&id=${id}`;
-
-    console.log("✅ Archivo subido:", viewLink);
-    return { viewLink, downloadLink };
+    console.log(`✅ Imagen subida a Drive: ${fileName}`);
+    return response.data.webViewLink;
   } catch (err) {
-    console.error("❌ Error al subir archivo a Drive:", err);
-    throw new Error("Error al subir archivo a Google Drive");
+    console.error("❌ Error al subir imagen base64:", err);
+    throw err;
   }
 }
 
-// ✅ Sube imágenes base64 (firmas)
-export async function uploadBase64ImageToDrive(base64, filename, codigo) {
-  const buffer = Buffer.from(base64.split(",")[1], "base64");
-  return await uploadFileBufferToDrive({ buffer, mimetype: "image/png" }, `${filename}.png`, codigo);
+// ======================================================
+// 🔹 Sube archivo recibido por formulario (fotos)
+// ======================================================
+export async function uploadFileToDrive(file, tipo = "Foto", folderId = null) {
+  try {
+    const rootFolder = await ensureRootFolder();
+    const targetFolder = folderId || rootFolder;
+
+    const fileMetadata = {
+      name: `${tipo}_${Date.now()}_${file.originalname}`,
+      parents: [targetFolder],
+    };
+
+    const media = {
+      mimeType: file.mimetype,
+      body: Buffer.from(file.buffer),
+    };
+
+    const response = await drive.files.create({
+      resource: fileMetadata,
+      media,
+      fields: "id, webViewLink",
+    });
+
+    console.log(`✅ Archivo ${file.originalname} subido a Drive correctamente`);
+    return response.data.webViewLink;
+  } catch (err) {
+    console.error("❌ Error al subir archivo a Drive:", err.message);
+    throw err;
+  }
 }
 
-// ✅ Sube PDFs
-export async function uploadPDFToDrive(pdfPath, codigo) {
-  const folderId = await ensureOrderFolder(codigo);
-  const fileName = `orden_${codigo}.pdf`;
+// ======================================================
+// 🔹 Crea carpeta individual por orden (opcional)
+// ======================================================
+export async function createOrderFolder(orderCode) {
+  try {
+    const rootFolder = await ensureRootFolder();
 
-  const res = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-    },
-    media: {
-      mimeType: "application/pdf",
-      body: fs.createReadStream(pdfPath),
-    },
-    fields: "id, webViewLink, webContentLink",
-  });
+    const res = await drive.files.create({
+      resource: {
+        name: `Orden_${orderCode}`,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [rootFolder],
+      },
+      fields: "id, webViewLink",
+    });
 
-  const { id, webViewLink, webContentLink } = res.data;
-  const viewLink = `https://drive.google.com/file/d/${id}/view?usp=drivesdk`;
-  const downloadLink = `https://drive.google.com/uc?export=download&id=${id}`;
-
-  return { viewLink, downloadLink };
+    console.log(`📁 Carpeta creada para orden ${orderCode}`);
+    return res.data.id;
+  } catch (err) {
+    console.error("❌ Error al crear carpeta de orden:", err.message);
+    throw err;
+  }
 }
