@@ -1,197 +1,294 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orden de Trabajo | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background-color: #f5f7fa; font-family: "Segoe UI", sans-serif; }
-    .header {
+    body { background-color: #f6f8fb; font-family: "Segoe UI", sans-serif; }
+    header {
       background-color: #004aad; color: white;
       display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 30px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      padding: 12px 30px;
     }
-    .logo { height: 45px; }
-    main { padding: 30px; max-width: 900px; margin: auto; }
-    h2 { color: #004aad; margin-bottom: 20px; }
+    .logo { height: 42px; }
+    main { padding: 24px; max-width: 1000px; margin: 0 auto; }
+    h2 { color: #004aad; margin: 10px 0 18px; }
+    h3 { color: #004aad; margin: 0 0 14px; }
+
     .card {
-      background: white; border-radius: 10px; padding: 20px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1); margin-bottom: 25px;
+      background: white; border-radius: 10px;
+      padding: 18px; margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    label { font-weight: bold; display: block; margin-top: 10px; }
-    input, textarea, select {
-      width: 100%; padding: 8px; border: 1px solid #ccc;
-      border-radius: 6px; margin-top: 5px;
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 18px; font-size: 15px;
     }
-    button {
-      border: none; border-radius: 8px; padding: 10px 18px; cursor: pointer;
-      margin-top: 10px; font-weight: bold;
+    .info-item b { color: #004aad; display:inline-block; min-width: 95px; }
+
+    input[type="file"], input[type="text"], textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid #cfd6e4; border-radius: 8px;
+      font-size: 14px; outline: none;
     }
-    .btn-primary { background-color: #004aad; color: white; }
-    .btn-primary:hover { background-color: #1f64d1; }
-    .btn-success { background-color: #28a745; color: white; }
-    .btn-success:hover { background-color: #218838; }
-    .btn-danger { background-color: #dc3545; color: white; }
-    .btn-secondary { background-color: #6c757d; color: white; }
-    canvas { border: 2px solid #ccc; border-radius: 10px; width: 100%; height: 200px; }
+    textarea { min-height: 90px; resize: vertical; }
+
+    .btn {
+      border: none; border-radius: 8px; padding: 9px 14px; cursor: pointer; font-weight: 600;
+    }
+    .btn-primary { background:#004aad; color:#fff; }
+    .btn-primary:hover { background:#1f64d1; }
+    .btn-muted { background:#6c757d; color:#fff; }
+    .btn-muted:hover { background:#5a6268; }
+    .btn-success { background:#2ecc71; color:#fff; }
+    .btn-danger { background:#e74c3c; color:#fff; }
+
+    /* Firma */
+    .signature-wrap {
+      border: 2px dashed #bfc6d8; border-radius: 10px; background:#fff;
+      height: 220px; position: relative;
+    }
+    #firmaCanvas {
+      width: 100%; height: 100%;
+      border-radius: 8px;
+      display:block; background: #ffffff;
+    }
+    .row-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .hint { color:#6b7280; font-size: 12px; margin-top: 8px; }
   </style>
 </head>
 
 <body>
-  <header class="header">
-    <div class="logo-container">
+  <header>
+    <div style="display:flex;align-items:center;gap:10px;">
       <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
-      <h2>Blue Home Gestor</h2>
+      <h2>Orden de Trabajo</h2>
     </div>
-    <button class="btn-secondary" onclick="window.location.href='dashboard.html'">← Volver al Dashboard</button>
+    <button class="btn btn-muted" id="btnBack">← Volver</button>
   </header>
 
   <main>
-    <h2>🧾 Orden de Trabajo</h2>
-
+    <!-- INFO ORDEN -->
     <div class="card">
-      <p><b>Código:</b> <span id="codigo"></span></p>
-      <p><b>Arrendatario:</b> <span id="inquilino"></span></p>
-      <p><b>Teléfono:</b> <span id="telefono"></span></p>
-      <p><b>Técnico:</b> <span id="tecnico"></span></p>
-      <p><b>Estado:</b> <span id="estado"></span></p>
-      <p><b>Descripción:</b> <span id="descripcion"></span></p>
+      <div class="info-grid">
+        <div class="info-item"><b>Código:</b> <span id="codigo">—</span></div>
+        <div class="info-item"><b>Arrendatario:</b> <span id="cliente">—</span></div>
+        <div class="info-item"><b>Teléfono:</b> <span id="telefono">—</span></div>
+        <div class="info-item"><b>Técnico:</b> <span id="tecnico">—</span></div>
+        <div class="info-item"><b>Estado:</b> <span id="estado">—</span></div>
+      </div>
+      <p style="margin-top:12px;"><b>Descripción:</b> <span id="descripcion">—</span></p>
     </div>
 
+    <!-- FOTOS -->
     <div class="card">
       <h3>📸 Evidencias del trabajo</h3>
-      <label>Foto Antes:</label>
-      <input type="file" id="fotoAntes" accept="image/*" />
-      <label>Foto Después:</label>
-      <input type="file" id="fotoDespues" accept="image/*" />
-      <button class="btn-primary" id="subirFotos">📤 Subir Fotos</button>
-    </div>
-
-    <div class="card">
-      <h3>🪚 Materiales y Trabajo Realizado</h3>
-      <textarea id="materiales" rows="3" placeholder="Describe materiales o trabajos realizados..."></textarea>
-      <textarea id="observaciones" rows="3" placeholder="Observaciones o comentarios..."></textarea>
-      <button class="btn-primary" id="guardarDatos">💾 Guardar Retroalimentación</button>
-    </div>
-
-    <div class="card">
-      <h3>✍️ Firma del Inquilino</h3>
-      <label>Nombre del firmante:</label>
-      <input type="text" id="nombreFirmante" placeholder="Ej: Juan Pérez" />
-      <canvas id="canvasFirma"></canvas>
-      <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn-danger" id="limpiarFirma">Limpiar</button>
-        <button class="btn-primary" id="guardarFirma">Guardar Firma</button>
+      <div style="display:grid; grid-template-columns:1fr; gap:10px;">
+        <div>
+          <label><b>Foto Antes:</b></label>
+          <input type="file" id="fotoAntes" accept="image/*"/>
+        </div>
+        <div>
+          <label><b>Foto Después:</b></label>
+          <input type="file" id="fotoDespues" accept="image/*"/>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary" id="btnSubirFotos">📤 Subir Fotos</button>
+        </div>
+        <div class="hint">Se suben a Drive y se guardan los enlaces en la orden.</div>
       </div>
     </div>
 
-    <div style="text-align:center;">
-      <button class="btn-success" id="finalizarOrden">✅ Finalizar Orden</button>
+    <!-- RETROALIMENTACION -->
+    <div class="card">
+      <h3>🪚 Materiales y Trabajo Realizado</h3>
+      <textarea id="materiales" placeholder="Describe materiales o trabajos realizados..."></textarea>
+      <textarea id="observaciones" placeholder="Observaciones o comentarios..."></textarea>
+      <div class="row-actions">
+        <button class="btn btn-primary" id="btnGuardarRetro">💾 Guardar Retroalimentación</button>
+      </div>
+    </div>
+
+    <!-- FIRMA -->
+    <div class="card">
+      <h3>✍️ Firma del Inquilino</h3>
+      <input type="text" id="nombreFirmante" placeholder="Nombre del firmante (Ej: Juan Pérez)" />
+      <div class="signature-wrap">
+        <canvas id="firmaCanvas"></canvas>
+      </div>
+      <div class="row-actions" style="margin-top:10px;">
+        <button class="btn btn-danger" id="btnLimpiarFirma">Limpiar</button>
+        <button class="btn btn-primary" id="btnGuardarFirma">💾 Guardar Firma</button>
+      </div>
+      <div class="hint">Firme con el dedo (móvil) o con el mouse (PC). Si se equivoca, use “Limpiar”.</div>
+    </div>
+
+    <!-- FINALIZAR -->
+    <div style="text-align:center; margin-top:18px;">
+      <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden</button>
     </div>
   </main>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
+    const API = "/api/orders";
+    const params = new URLSearchParams(location.search);
     const fila = params.get("fila");
-    const codigo = params.get("codigo");
-    const API_URL = "/api/orders";
+    const codigoParam = params.get("codigo");
 
-    // Cargar datos de la orden
+    // NAV
+    document.getElementById("btnBack").onclick = () => location.href = "ordenes.html";
+
+    // ===== Carga de la orden =====
     async function cargarOrden() {
       try {
-        const res = await fetch(`${API_URL}/${fila}`);
-        const data = await res.json();
+        // intentamos endpoint individual
+        let data;
+        try {
+          const r1 = await fetch(\`\${API}/\${fila}\`);
+          if (r1.ok) data = await r1.json();
+        } catch {}
 
-        // Mostrar datos (tolerando nombres de columnas con mayúsculas)
-        document.getElementById("codigo").innerText = data.codigo || data.Código || codigo;
-        document.getElementById("inquilino").innerText = data.inquilino || data.Inquilino || data.Cliente || "—";
-        document.getElementById("telefono").innerText = data.telefono || data.Teléfono || "—";
-        document.getElementById("tecnico").innerText = data.tecnico || data.Técnico || "—";
-        document.getElementById("estado").innerText = data.estado || data.Estado || "Pendiente";
-        document.getElementById("descripcion").innerText = data.descripcion || data.Descripción || "";
-      } catch (err) {
-        console.error(err);
+        // fallback: buscar en el listado
+        if (!data || !data.Código) {
+          const r2 = await fetch(API);
+          const all = await r2.json();
+          data = all.find(o => String(o.fila) === String(fila) || o.Código === codigoParam) || {};
+        }
+
+        // Mapear tolerando tildes / mayúsculas
+        const tel = data.Teléfono || data.Telefono || data.telefono || "—";
+        const cli = data.Cliente || data.Inquilino || data.Arrendatario || "—";
+        const cod = data.Código || data.codigo || codigoParam || "—";
+        const est = data.Estado || data.estado || "—";
+        const tec = data.Técnico || data.Tecnico || data.tecnico || "—";
+        const des = data.Descripción || data.Descripcion || data.descripcion || "—";
+
+        document.getElementById("telefono").textContent  = tel;
+        document.getElementById("cliente").textContent   = cli;
+        document.getElementById("codigo").textContent    = cod;
+        document.getElementById("estado").textContent    = est;
+        document.getElementById("tecnico").textContent   = tec;
+        document.getElementById("descripcion").textContent = des;
+      } catch (e) {
+        console.error(e);
         alert("Error al cargar la orden.");
       }
     }
 
-    // Firma digital
-    const canvas = document.getElementById("canvasFirma");
+    // ===== FOTOS =====
+    document.getElementById("btnSubirFotos").onclick = async () => {
+      const antes = document.getElementById("fotoAntes").files[0];
+      const despues = document.getElementById("fotoDespues").files[0];
+      if (!antes && !despues) { alert("Selecciona al menos una foto."); return; }
+
+      const fd = new FormData();
+      if (antes)   fd.append("fotoAntes", antes);
+      if (despues) fd.append("fotoDespues", despues);
+
+      try {
+        const res = await fetch(\`\${API}/\${fila}/photos\`, { method: "POST", body: fd });
+        const out = await res.json();
+        if (out.ok) alert("✅ Fotos subidas correctamente.");
+        else alert("❌ Error subiendo fotos.");
+      } catch (e) {
+        console.error(e); alert("Error subiendo fotos.");
+      }
+    };
+
+    // ===== Retroalimentación =====
+    document.getElementById("btnGuardarRetro").onclick = async () => {
+      const materiales    = document.getElementById("materiales").value.trim();
+      const observaciones = document.getElementById("observaciones").value.trim();
+      try {
+        const res = await fetch(\`\${API}/update\`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fila, materiales, observaciones })
+        });
+        const out = await res.json();
+        if (out.ok) alert("💾 Retroalimentación guardada.");
+        else alert("❌ Error al guardar retroalimentación.");
+      } catch (e) {
+        console.error(e); alert("Error al guardar retroalimentación.");
+      }
+    };
+
+    // ===== Firma =====
+    const canvas = document.getElementById("firmaCanvas");
     const ctx = canvas.getContext("2d");
-    let dibujando = false;
-
-    canvas.addEventListener("mousedown", e => { dibujando = true; dibujar(e); });
-    canvas.addEventListener("mouseup", () => (dibujando = false, ctx.beginPath()));
-    canvas.addEventListener("mousemove", dibujar);
-    canvas.addEventListener("touchstart", e => (dibujando = true, dibujar(e.touches[0])));
-    canvas.addEventListener("touchend", () => (dibujando = false, ctx.beginPath()));
-    canvas.addEventListener("touchmove", e => dibujar(e.touches[0]));
-
-    function dibujar(e) {
-      if (!dibujando) return;
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      const rect = canvas.getBoundingClientRect();
-      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    function resizeCanvas() {
+      // ajustar tamaño al contenedor manteniendo nitidez
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#111827";
     }
+    resizeCanvas(); window.addEventListener("resize", resizeCanvas);
 
-    document.getElementById("limpiarFirma").onclick = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let dibujando = false;
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches && e.touches.length) e = e.touches[0];
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    function start(e){ dibujando = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+    function draw(e){ if(!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+    function end(){ dibujando = false; }
+
+    canvas.addEventListener("mousedown", start);
+    canvas.addEventListener("mousemove", draw);
+    window.addEventListener("mouseup", end);
+    canvas.addEventListener("touchstart", start, {passive:false});
+    canvas.addEventListener("touchmove", draw, {passive:false});
+    canvas.addEventListener("touchend", end);
+
+    document.getElementById("btnLimpiarFirma").onclick = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      resizeCanvas();
     };
 
-    document.getElementById("guardarFirma").onclick = async () => {
+    document.getElementById("btnGuardarFirma").onclick = async () => {
       const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
-      if (!nombreFirmante) return alert("Por favor ingrese el nombre del firmante.");
-      const firmaData = canvas.toDataURL("image/png");
-      const body = { fila, nombreFirmante, firmaData };
-      const res = await fetch(`${API_URL}/${fila}/sign`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.ok) alert("✅ Firma guardada correctamente.");
-      else alert("❌ Error al guardar la firma.");
+      if (!nombreFirmante) { alert("Ingresa el nombre del firmante."); return; }
+      const dataUrl = canvas.toDataURL("image/png"); // base64
+      try {
+        const res = await fetch(\`\${API}/\${fila}/sign\`, {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ nombreFirmante, firmaData: dataUrl })
+        });
+        const out = await res.json();
+        if (out.ok) alert("✅ Firma guardada correctamente.");
+        else alert("❌ Error al guardar la firma.");
+      } catch(e){ console.error(e); alert("Error al guardar la firma."); }
     };
 
-    // Subir fotos
-    document.getElementById("subirFotos").onclick = async () => {
-      alert("Las fotos se subirán automáticamente al Drive vinculado (pendiente de conexión).");
-    };
-
-    // Guardar observaciones
-    document.getElementById("guardarDatos").onclick = async () => {
-      const body = {
-        fila,
-        materiales: document.getElementById("materiales").value,
-        observaciones: document.getElementById("observaciones").value
-      };
-      const res = await fetch(`${API_URL}/update`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (data.ok) alert("💾 Información actualizada correctamente.");
-      else alert("❌ Error al guardar.");
-    };
-
-    // Finalizar orden
-    document.getElementById("finalizarOrden").onclick = async () => {
-      if (!confirm("¿Finalizar esta orden?")) return;
-      const res = await fetch(`${API_URL}/${fila}/finish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      if (data.ok) {
-        alert("✅ Orden finalizada y enviada al área de revisión (Dayan).");
-        window.location.href = "dashboard.html";
-      } else {
-        alert("❌ Error al finalizar la orden.");
+    // ===== Finalizar (con notificación a Dayan desde backend) =====
+    document.getElementById("btnFinalizar").onclick = async () => {
+      if (!confirm("¿Finalizar esta orden? Se notificará al área de reparaciones.")) return;
+      try {
+        const res = await fetch(\`\${API}/\${fila}/finish\`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notify: true }) // el backend usa esto para enviar correo a reparaciones@bluehomeinmo.co
+        });
+        const out = await res.json();
+        if (out.ok) {
+          alert("✅ Orden finalizada. Se notificó a Dayan (reparaciones@bluehomeinmo.co).");
+          location.href = "ordenes.html";
+        } else {
+          alert("❌ No se pudo finalizar la orden.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error al finalizar la orden.");
       }
     };
 
