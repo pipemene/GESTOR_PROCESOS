@@ -1,13 +1,16 @@
 // ======================================================
-// 📂 services/driveService.js
+// 📂 services/driveService.js (versión auto-reparadora)
 // Blue Home Gestor - Manejo de archivos en Google Drive
 // ======================================================
 
 import { google } from "googleapis";
+import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 
+// ======================================================
 // 🔹 Autenticación con Google API
+// ======================================================
 const auth = new google.auth.GoogleAuth({
   credentials: {
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -19,41 +22,59 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: "v3", auth });
 
 // ======================================================
-// 🔹 Verifica o crea la carpeta raíz
+// 🔹 Verificar o crear carpeta raíz automáticamente
 // ======================================================
 export async function ensureRootFolder() {
+  let folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
   try {
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    if (!folderId) throw new Error("❌ Falta GOOGLE_DRIVE_FOLDER_ID en .env");
+    if (!folderId) throw new Error("Falta GOOGLE_DRIVE_FOLDER_ID");
 
-    // Verificar si existe la carpeta raíz
+    // Verificar existencia
     const check = await drive.files.get({ fileId: folderId, fields: "id, name" }).catch(() => null);
-
-    if (!check) {
-      console.log("⚠️ Carpeta raíz no encontrada, se creará una nueva...");
-
-      const newFolder = await drive.files.create({
-        resource: {
-          name: "BlueHome_Gestor_Files",
-          mimeType: "application/vnd.google-apps.folder",
-        },
-        fields: "id, webViewLink",
-      });
-
-      console.log(`✅ Nueva carpeta creada en Drive: ${newFolder.data.webViewLink}`);
-      return newFolder.data.id;
-    }
+    if (!check) throw new Error("Carpeta raíz no encontrada");
 
     console.log(`📁 Carpeta raíz válida: ${check.data.name}`);
     return folderId;
   } catch (err) {
-    console.error("❌ Error verificando carpeta raíz:", err.message);
-    throw err;
+    console.warn("⚠️ Carpeta raíz inválida o borrada, se creará una nueva...");
+
+    // Crear carpeta nueva en Drive
+    const newFolder = await drive.files.create({
+      resource: {
+        name: "BlueHome_Gestor_Files",
+        mimeType: "application/vnd.google-apps.folder",
+      },
+      fields: "id, webViewLink",
+    });
+
+    const newId = newFolder.data.id;
+    console.log(`✅ Nueva carpeta creada automáticamente: ${newFolder.data.webViewLink}`);
+
+    // 🔧 Actualizar variable en ejecución
+    process.env.GOOGLE_DRIVE_FOLDER_ID = newId;
+
+    // Intentar actualizar el archivo .env local (si existe)
+    try {
+      if (fs.existsSync(".env")) {
+        let envData = fs.readFileSync(".env", "utf-8");
+        if (envData.includes("GOOGLE_DRIVE_FOLDER_ID=")) {
+          envData = envData.replace(/GOOGLE_DRIVE_FOLDER_ID=.*/g, `GOOGLE_DRIVE_FOLDER_ID="${newId}"`);
+        } else {
+          envData += `\nGOOGLE_DRIVE_FOLDER_ID="${newId}"`;
+        }
+        fs.writeFileSync(".env", envData);
+        console.log("🧩 .env actualizado con nuevo GOOGLE_DRIVE_FOLDER_ID");
+      }
+    } catch (err2) {
+      console.warn("⚠️ No se pudo actualizar el archivo .env, pero el sistema seguirá funcionando.");
+    }
+
+    return newId;
   }
 }
 
 // ======================================================
-// 🔹 Sube imagen en base64 (firmas)
+// 🔹 Subir imagen en base64 (firmas)
 // ======================================================
 export async function uploadBase64ImageToDrive(base64Data, fileName, folderId = null) {
   try {
@@ -81,13 +102,13 @@ export async function uploadBase64ImageToDrive(base64Data, fileName, folderId = 
     console.log(`✅ Imagen subida a Drive: ${fileName}`);
     return response.data.webViewLink;
   } catch (err) {
-    console.error("❌ Error al subir imagen base64:", err);
+    console.error("❌ Error al subir imagen base64:", err.message);
     throw err;
   }
 }
 
 // ======================================================
-// 🔹 Sube archivo recibido por formulario (fotos)
+// 🔹 Subir archivo recibido por formulario (fotos)
 // ======================================================
 export async function uploadFileToDrive(file, tipo = "Foto", folderId = null) {
   try {
@@ -110,16 +131,16 @@ export async function uploadFileToDrive(file, tipo = "Foto", folderId = null) {
       fields: "id, webViewLink",
     });
 
-    console.log(`✅ Archivo ${file.originalname} subido a Drive correctamente`);
+    console.log(`✅ Archivo ${file.originalname} subido correctamente`);
     return response.data.webViewLink;
   } catch (err) {
-    console.error("❌ Error al subir archivo a Drive:", err.message);
+    console.error("❌ Error al subir archivo:", err.message);
     throw err;
   }
 }
 
 // ======================================================
-// 🔹 Crea carpeta individual por orden (opcional)
+// 🔹 Crear carpeta individual por orden
 // ======================================================
 export async function createOrderFolder(orderCode) {
   try {
@@ -134,7 +155,7 @@ export async function createOrderFolder(orderCode) {
       fields: "id, webViewLink",
     });
 
-    console.log(`📁 Carpeta creada para orden ${orderCode}`);
+    console.log(`📂 Carpeta creada para orden ${orderCode}`);
     return res.data.id;
   } catch (err) {
     console.error("❌ Error al crear carpeta de orden:", err.message);
