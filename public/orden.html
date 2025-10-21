@@ -2,54 +2,36 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orden de Trabajo | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background-color: #f5f7fa; font-family: "Segoe UI", sans-serif; }
-    header {
-      background-color: #004aad; color: white;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 30px;
-    }
-    .logo { height: 45px; }
-    main { padding: 25px 10%; max-width: 1000px; margin: auto; }
-    h2 { color: #004aad; margin: 10px 0 18px; }
-    .card {
-      background: white; border-radius: 10px;
-      padding: 18px; margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 10px 18px; font-size: 15px;
-    }
-    .info-item b { color: #004aad; display:inline-block; min-width: 95px; }
+    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
+    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
+    .logo { height:42px; }
+    main { padding:24px; max-width:1000px; margin:0 auto; }
+    h2 { color:#004aad; margin:0; }
+    h3 { color:#004aad; margin:0 0 12px; }
+    .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
+    .info-item b { color:#004aad; min-width:95px; display:inline-block; }
 
     input[type="file"], input[type="text"], textarea {
-      width: 100%; padding: 8px 10px; border: 1px solid #cfd6e4; border-radius: 8px;
-      font-size: 14px; outline: none;
+      width:100%; padding:8px 10px; border:1px solid #cfd6e4; border-radius:8px; font-size:14px; outline:none;
     }
-    textarea { min-height: 100px; resize: vertical; }
+    textarea { min-height:100px; resize:vertical; }
 
-    .btn {
-      border: none; border-radius: 8px; padding: 9px 14px; cursor: pointer; font-weight: 600;
-    }
-    .btn-primary { background:#004aad; color:#fff; }
-    .btn-primary:hover { background:#1f64d1; }
-    .btn-muted { background:#6c757d; color:#fff; }
-    .btn-muted:hover { background:#5a6268; }
-    .btn-success { background:#2ecc71; color:#fff; }
-    .btn-danger { background:#e74c3c; color:#fff; }
+    .btn { border:none; border-radius:8px; padding:9px 14px; cursor:pointer; font-weight:600; }
+    .btn-primary{ background:#004aad; color:#fff; } .btn-primary:hover{ background:#1f64d1; }
+    .btn-muted{ background:#6c757d; color:#fff; } .btn-muted:hover{ background:#5a6268; }
+    .btn-success{ background:#2ecc71; color:#fff; }
+    .btn-danger{ background:#e74c3c; color:#fff; }
 
     /* Firma */
-    .signature-wrap {
-      border: 2px dashed #bfc6d8; border-radius: 10px; background:#fff;
-      height: 220px; position: relative;
-    }
-    #firmaCanvas { width: 100%; height: 100%; display:block; background: #ffffff; border-radius: 8px; }
-    .row-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .signature-wrap{ border:2px dashed #bfc6d8; border-radius:10px; background:#fff; height:220px; }
+    #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -62,7 +44,7 @@
   </header>
 
   <main>
-    <!-- Información general -->
+    <!-- INFO -->
     <div class="card">
       <div class="info-grid">
         <div class="info-item"><b>Código:</b> <span id="codigo">—</span></div>
@@ -71,22 +53,22 @@
         <div class="info-item"><b>Técnico:</b> <span id="tecnico">—</span></div>
         <div class="info-item"><b>Estado:</b> <span id="estado">—</span></div>
       </div>
-      <p style="margin-top:12px;"><b>Descripción:</b> <span id="descripcion">—</span></p>
+      <p style="margin-top:10px;"><b>Descripción:</b> <span id="descripcion">—</span></p>
     </div>
 
-    <!-- Fotos -->
+    <!-- FOTOS -->
     <div class="card">
       <h3>📸 Evidencias del trabajo</h3>
       <label><b>Foto Antes:</b></label>
       <input type="file" id="fotoAntes" accept="image/*"/>
-      <label><b>Foto Después:</b></label>
+      <label style="margin-top:8px;"><b>Foto Después:</b></label>
       <input type="file" id="fotoDespues" accept="image/*"/>
       <div class="row-actions" style="margin-top:10px;">
         <button class="btn btn-primary" id="btnSubirFotos">📤 Subir Fotos</button>
       </div>
     </div>
 
-    <!-- Retroalimentación -->
+    <!-- RETRO -->
     <div class="card">
       <h3>🪚 Materiales y Trabajo Realizado</h3>
       <textarea id="materiales" placeholder="Describe materiales o trabajos realizados..."></textarea>
@@ -96,11 +78,11 @@
       </div>
     </div>
 
-    <!-- Firma -->
+    <!-- FIRMA -->
     <div class="card">
       <h3>✍️ Firma del Inquilino</h3>
       <input type="text" id="nombreFirmante" placeholder="Nombre del firmante (Ej: Juan Pérez)" />
-      <div class="signature-wrap">
+      <div class="signature-wrap" style="margin-top:8px;">
         <canvas id="firmaCanvas"></canvas>
       </div>
       <div class="row-actions" style="margin-top:10px;">
@@ -109,58 +91,83 @@
       </div>
     </div>
 
-    <!-- Finalizar -->
-    <div style="text-align:center; margin-top:18px;">
+    <!-- FINALIZAR -->
+    <div style="text-align:center; margin-top:12px;">
       <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden</button>
     </div>
   </main>
 
   <script>
     const API = "/api/orders";
-    const params = new URLSearchParams(location.search);
-    const fila = params.get("fila");
-    const codigoParam = params.get("codigo");
-    document.getElementById("btnBack").onclick = () => (location.href = "ordenes.html");
+    const q = new URLSearchParams(location.search);
+    const fila = q.get("fila");           // usamos fila como id en las rutas
+    const codigoParam = q.get("codigo");
 
-    // === CARGAR ORDEN DESDE SHEETS ===
+    // nav
+    document.getElementById("btnBack").onclick = () => location.href = "ordenes.html";
+
+    // ===== CARGAR ORDEN =====
     async function cargarOrden() {
       try {
-        const res = await fetch(API);
-        const data = await res.json();
-        const orden = data.find(o => String(o.fila) === String(fila) || o.codigo === codigoParam || o.Código === codigoParam);
-        if (!orden) { alert("No se encontró la orden."); return; }
+        // puedes usar GET /api/orders/:id si prefieres, aquí uso el listado para tolerancia
+        const r = await fetch(API);
+        const all = await r.json();
+        const o = all.find(x => String(x.fila) === String(fila) || x.codigo === codigoParam || x.Código === codigoParam);
+        if (!o) { alert("No se encontró la orden."); return; }
 
-        document.getElementById("cliente").textContent = orden.cliente || orden.Cliente || orden.Arrendatario || "—";
-        document.getElementById("telefono").textContent = orden.telefono || orden.Telefono || "—";
-        document.getElementById("codigo").textContent = orden.codigo || orden.Código || "—";
-        document.getElementById("tecnico").textContent = orden.tecnico || orden.Tecnico || "—";
-        document.getElementById("estado").textContent = orden.estado || orden.Estado || "—";
-        document.getElementById("descripcion").textContent = orden.descripcion || orden.Descripcion || "—";
-      } catch (err) {
-        console.error(err);
+        const cliente = o.cliente || o.Cliente || o.Arrendatario || "—";
+        const telefono = o.telefono || o.Telefono || "—";
+        const codigo = o.codigo || o.Código || "—";
+        const tecnico = o.tecnico || o.Tecnico || o.Técnico || "—";
+        const estado = o.estado || o.Estado || "—";
+        const descripcion = o.descripcion || o.Descripcion || "—";
+
+        document.getElementById("cliente").textContent = cliente;
+        document.getElementById("telefono").textContent = telefono;
+        document.getElementById("codigo").textContent = codigo;
+        document.getElementById("tecnico").textContent = tecnico;
+        document.getElementById("estado").textContent = estado;
+        document.getElementById("descripcion").textContent = descripcion;
+      } catch (e) {
+        console.error(e);
         alert("Error cargando la orden desde el servidor.");
       }
     }
 
-    // === SUBIR FOTOS ===
+    // ===== SUBIR FOTOS (usa /:id/upload-photo con campo 'foto' y body 'tipo') =====
     document.getElementById("btnSubirFotos").onclick = async () => {
       const antes = document.getElementById("fotoAntes").files[0];
       const despues = document.getElementById("fotoDespues").files[0];
       if (!antes && !despues) return alert("Selecciona al menos una foto.");
-      const fd = new FormData();
-      if (antes) fd.append("fotoAntes", antes);
-      if (despues) fd.append("fotoDespues", despues);
+
       try {
-        const res = await fetch(`${API}/upload?fila=${fila}`, { method: "POST", body: fd });
-        const out = await res.json();
-        alert(out.ok ? "✅ Fotos subidas correctamente." : "❌ Error al subir fotos.");
+        // Foto Antes
+        if (antes) {
+          const fd1 = new FormData();
+          fd1.append("foto", antes);
+          fd1.append("tipo", "FotoAntes"); // debe coincidir con encabezado (regex) en Sheets
+          const r1 = await fetch(`${API}/${fila}/upload-photo`, { method: "POST", body: fd1 });
+          const j1 = await r1.json();
+          if (!j1.ok) return alert("❌ Error al subir Foto Antes.");
+        }
+        // Foto Después
+        if (despues) {
+          const fd2 = new FormData();
+          fd2.append("foto", despues);
+          fd2.append("tipo", "FotoDesp"); // tu hoja usa 'FotoDesp'
+          const r2 = await fetch(`${API}/${fila}/upload-photo`, { method: "POST", body: fd2 });
+          const j2 = await r2.json();
+          if (!j2.ok) return alert("❌ Error al subir Foto Después.");
+        }
+
+        alert("✅ Fotos subidas correctamente.");
       } catch (e) {
         console.error(e);
-        alert("Error al conectar con el servidor.");
+        alert("Error al conectar con el servidor (subida de fotos).");
       }
     };
 
-    // === GUARDAR RETROALIMENTACIÓN ===
+    // ===== GUARDAR RETRO =====
     document.getElementById("btnGuardarRetro").onclick = async () => {
       const materiales = document.getElementById("materiales").value.trim();
       const observaciones = document.getElementById("observaciones").value.trim();
@@ -168,17 +175,17 @@
         const res = await fetch(`${API}/update`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fila, materiales, observaciones }),
+          body: JSON.stringify({ fila, materiales, observaciones })
         });
         const out = await res.json();
         alert(out.ok ? "💾 Retroalimentación guardada." : "❌ Error al guardar.");
-      } catch (err) {
-        console.error(err);
-        alert("Error guardando retroalimentación.");
+      } catch (e) {
+        console.error(e);
+        alert("Error al conectar con el servidor (retroalimentación).");
       }
     };
 
-    // === FIRMA ===
+    // ===== FIRMA (/:id/sign) =====
     const canvas = document.getElementById("firmaCanvas");
     const ctx = canvas.getContext("2d");
     function resizeCanvas() {
@@ -188,64 +195,54 @@
       canvas.height = rect.height * ratio;
       canvas.style.width = rect.width + "px";
       canvas.style.height = rect.height + "px";
-      ctx.scale(ratio, ratio);
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#111827";
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#111827";
     }
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas(); window.addEventListener("resize", resizeCanvas);
+
     let dibujando = false;
-    function getPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      if (e.touches && e.touches.length) e = e.touches[0];
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
-    function start(e) { dibujando = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
-    function draw(e) { if (!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
-    function end() { dibujando = false; }
-    canvas.addEventListener("mousedown", start);
-    canvas.addEventListener("mousemove", draw);
-    window.addEventListener("mouseup", end);
-    canvas.addEventListener("touchstart", start, { passive: false });
-    canvas.addEventListener("touchmove", draw, { passive: false });
-    canvas.addEventListener("touchend", end);
-    document.getElementById("btnLimpiarFirma").onclick = () => ctx.clearRect(0,0,canvas.width,canvas.height);
+    function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length) e=e.touches[0]; return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+    function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+    function end(){ dibujando=false; }
+    canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",draw); window.addEventListener("mouseup",end);
+    canvas.addEventListener("touchstart",start,{passive:false}); canvas.addEventListener("touchmove",draw,{passive:false}); canvas.addEventListener("touchend",end);
+
+    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); };
+
     document.getElementById("btnGuardarFirma").onclick = async () => {
-      const nombre = document.getElementById("nombreFirmante").value.trim();
-      if (!nombre) return alert("Ingresa el nombre del firmante.");
-      const firma = canvas.toDataURL("image/png");
+      const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
+      if (!nombreFirmante) return alert("Ingresa el nombre del firmante.");
+      const firmaData = canvas.toDataURL("image/png");
       try {
-        const res = await fetch(`${API}/update`, {
+        const r = await fetch(`${API}/${fila}/sign`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fila, nombreFirmante: nombre, firma }),
+          body: JSON.stringify({ nombreFirmante, firmaData })
         });
-        const out = await res.json();
+        const out = await r.json();
         alert(out.ok ? "✅ Firma guardada correctamente." : "❌ No se pudo guardar la firma.");
-      } catch (err) {
-        console.error(err);
-        alert("Error al conectar con el servidor.");
+      } catch (e) {
+        console.error(e);
+        alert("Error al conectar con el servidor (firma).");
       }
     };
 
-    // === FINALIZAR ORDEN ===
+    // ===== FINALIZAR (/:id/finish) =====
     document.getElementById("btnFinalizar").onclick = async () => {
-      if (!confirm("¿Finalizar la orden y notificar a Dayan (reparaciones@bluehomeinmo.co)?")) return;
+      if (!confirm("¿Finalizar esta orden?")) return;
       try {
-        const res = await fetch(`${API}/update`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fila, estado: "Finalizada", notify: "reparaciones@bluehomeinmo.co" }),
-        });
-        const out = await res.json();
+        const r = await fetch(`${API}/${fila}/finish`, { method:"POST" });
+        const out = await r.json();
         if (out.ok) {
-          alert("✅ Orden finalizada y notificada correctamente.");
+          alert("✅ Orden finalizada correctamente.");
           location.href = "ordenes.html";
-        } else alert("❌ Error al finalizar la orden.");
-      } catch (err) {
-        console.error(err);
-        alert("Error al conectar con el servidor.");
+        } else {
+          alert("❌ Error al finalizar la orden.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error al conectar con el servidor (finalizar).");
       }
     };
 
