@@ -6,7 +6,6 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { google } from "googleapis";
 import { getSheetData, appendRow, updateCell } from "../services/sheetsService.js";
 import { uploadFileToDrive } from "../services/driveService.js";
 import { sendMail } from "../services/mailService.js";
@@ -68,12 +67,14 @@ router.post("/", upload.array("fotos", 10), async (req, res) => {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    // Subir fotos al Drive
+    // Subir fotos al Drive (si hay)
     let enlacesFotos = [];
-    for (const file of req.files) {
-      const upload = await uploadFileToDrive(file.path, file.originalname);
-      enlacesFotos.push(upload.webViewLink);
-      fs.unlinkSync(file.path); // borrar temporal
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const upload = await uploadFileToDrive(file.path, file.originalname);
+        enlacesFotos.push(upload.webViewLink);
+        fs.unlinkSync(file.path); // borrar temporal
+      }
     }
 
     await appendRow(SHEET_NAME, [
@@ -88,6 +89,7 @@ router.post("/", upload.array("fotos", 10), async (req, res) => {
       new Date().toLocaleString("es-CO"),
     ]);
 
+    console.log("✅ Orden creada correctamente");
     res.json({ ok: true, message: "Orden creada correctamente" });
   } catch (err) {
     console.error("❌ Error al crear orden:", err.message);
@@ -132,6 +134,6 @@ router.put("/finalizar/:fila", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 Exportar router (forma nombrada)
+// 🔹 Exportación final corregida
 // ======================================================
-export const router = router;
+export { router };
