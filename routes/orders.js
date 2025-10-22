@@ -1,215 +1,164 @@
 // ======================================================
-// 🧱 routes/orders.js
-// Blue Home Gestor - Módulo de órdenes de trabajo
+// 📄 routes/orders.js
+// Blue Home Gestor — Módulo de Órdenes
 // ======================================================
 
 import express from "express";
 import multer from "multer";
+import fs from "fs";
 import {
   getSheetData,
   appendRow,
   updateCell,
-  getExcelColumnName,
 } from "../services/sheetsService.js";
-import {
-  uploadFileToDrive,
-  uploadBase64ImageToDrive,
-  createOrderFolder,
-} from "../services/driveService.js";
-import { sendOrderNotification } from "../services/mailService.js";
+import { uploadFileToDrive } from "../services/driveService.js";
+import { sendMail } from "../services/mailService.js";
 
 const router = express.Router();
-const upload = multer();
 const SHEET_NAME = process.env.ORDERS_SHEET || "Ordenes";
 
 // ======================================================
-// 🔹 Listar todas las órdenes
+// ⚙️ Configuración de Multer — guarda en carpeta uploads/
+// ======================================================
+const upload = multer({ dest: "uploads/" });
+
+// ======================================================
+// 🔹 GET: Listar órdenes desde Google Sheets
 // ======================================================
 router.get("/", async (req, res) => {
   try {
     const rows = await getSheetData(SHEET_NAME);
     if (!rows || rows.length < 2) return res.json([]);
 
-    const headers = rows[0];
-    const data = rows.slice(1).map((row, i) => {
+    const headers = rows[0].map((h) => h.trim().toLowerCase());
+    const data = rows.slice(1).map((r, i) => {
       const obj = {};
-      headers.forEach((h, j) => (obj[h] = row[j] || ""));
+      headers.forEach((h, j) => (obj[h] = r[j] || ""));
       obj.fila = i + 2;
       return obj;
     });
 
     res.json(data);
-  } catch (e) {
-    console.error("❌ Error al obtener órdenes:", e);
+  } catch (err) {
+    console.error("❌ Error al obtener órdenes:", err.message);
     res.status(500).json({ error: "Error al cargar órdenes" });
   }
 });
 
 // ======================================================
-// 🔹 Crear nueva orden
+// 🔹 POST: Crear nueva orden en Google Sheets
 // ======================================================
 router.post("/", async (req, res) => {
   try {
-    const { codigo, cliente, telefono, descripcion, tecnico, estado } = req.body;
-    if (!codigo || !cliente || !descripcion) {
+    const { codigo, inquilino, descripcion, tecnico, estado } = req.body;
+
+    if (!codigo || !inquilino || !descripcion) {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    const nueva = [
+    await appendRow(SHEET_NAME, [
       codigo,
-      cliente,
-      telefono || "",
+      inquilino,
       descripcion,
       tecnico || "Sin asignar",
-      estado || "Disponible",
-      "",
-      "",
-      "",
-    ];
+      estado || "Pendiente",
+      new Date().toLocaleString("es-CO"),
+    ]);
 
-    await appendRow(SHEET_NAME, nueva);
-    console.log(`✅ Nueva orden creada: ${codigo}`);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("❌ Error al crear orden:", e);
+    console.log(`✅ Orden creada correctamente: ${codigo}`);
+    res.json({ ok: true, message: "Orden creada correctamente" });
+  } catch (err) {
+    console.error("❌ Error al crear orden:", err.message);
     res.status(500).json({ error: "Error al crear orden" });
   }
 });
 
 // ======================================================
-// 🔹 Subir foto (Antes / Después)
+// 🔹 POST: Subir foto (Antes / Después)
 // ======================================================
-router.post("/:fila/upload-photo", upload.single("foto"), async (req, res) => {
+router.post("/:codigo/upload-photo", upload.single("photo"), async (req, res) => {
   try {
-    const { tipo } = req.body;
-    const { fila } = req.params;
+    const { codigo } = req.params;
+    const tipo = req.body.tipo || "Foto";
+    const file = req.file;
 
-    if (!req.file) return res.status(400).json({ error: "No se envió archivo" });
-
-    const driveLink = await uploadFileToDrive(req.file, tipo || "Foto");
-    const rows = await getSheetData(SHEET_NAME);
-    const headers = rows[0].map((h) => h.toLowerCase());
-
-    const colIdx = headers.findIndex((h) => h.includes(tipo.toLowerCase()));
-    if (colIdx === -1) {
-      console.warn(`⚠️ No se encontró columna para tipo: ${tipo}`);
-      return res.json({ ok: true, warning: "Columna no encontrada" });
+    if (!file) {
+      return res.status(400).json({ error: "Archivo no recibido" });
     }
 
-    const colLetter = getExcelColumnName(colIdx);
-    await updateCell(SHEET_NAME, `${colLetter}${fila}`, driveLink);
+    // ✅ Subir a Drive
+    const driveFile = await uploadFileToDrive(file, `${tipo}_${codigo}`);
 
-    console.log(`✅ Foto (${tipo}) subida correctamente a fila ${fila}`);
-    res.json({ ok: true, driveLink });
-  } catch (e) {
-    console.error("❌ Error al subir foto:", e);
+    // ✅ Eliminar el archivo temporal
+    if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+    console.log(`📸 ${tipo} subida correctamente para orden ${codigo}`);
+    res.json({ ok: true, link: driveFile });
+  } catch (err) {
+    console.error("❌ Error al subir foto:", err.message);
     res.status(500).json({ error: "Error al subir foto" });
   }
 });
 
 // ======================================================
-// 🔹 Guardar firma (imagen base64)
+// 🔹 POST: Actualizar estado o comentarios de la orden
 // ======================================================
-router.post("/:fila/sign", async (req, res) => {
+router.post("/:fila/update", async (req, res) => {
   try {
-    const { firmaData, nombreFirmante } = req.body;
     const { fila } = req.params;
-    if (!firmaData) return res.status(400).json({ error: "Falta firma" });
+    const { estado, observacion } = req.body;
 
-    const driveLink = await uploadBase64ImageToDrive(firmaData, `Firma_${nombreFirmante || "Inquilino"}.png`);
-
-    const rows = await getSheetData(SHEET_NAME);
-    const headers = rows[0].map((h) => h.toLowerCase());
-    const idxFirma = headers.findIndex((h) => /firma/.test(h));
-
-    if (idxFirma >= 0) {
-      const colLetter = getExcelColumnName(idxFirma);
-      await updateCell(SHEET_NAME, `${colLetter}${fila}`, driveLink);
+    if (!fila || isNaN(fila)) {
+      return res.status(400).json({ error: "Fila inválida" });
     }
 
-    console.log(`✅ Firma guardada para fila ${fila}`);
-    res.json({ ok: true, link: driveLink });
-  } catch (e) {
-    console.error("❌ Error al guardar firma:", e);
-    res.status(500).json({ error: "Error al guardar firma" });
-  }
-});
-
-// ======================================================
-// 🔹 Guardar retroalimentación / materiales
-// ======================================================
-router.post("/update", async (req, res) => {
-  try {
-    const { fila, materiales, observaciones } = req.body;
-    if (!fila) return res.status(400).json({ error: "Fila requerida" });
-
-    const rows = await getSheetData(SHEET_NAME);
-    const headers = rows[0].map((h) => h.toLowerCase());
-
-    const campos = { materiales, observaciones };
-
-    for (const [key, value] of Object.entries(campos)) {
-      if (!value) continue;
-      const colIdx = headers.findIndex((h) => h.includes(key.toLowerCase()));
-      if (colIdx >= 0) {
-        const colLetter = getExcelColumnName(colIdx);
-        await updateCell(SHEET_NAME, `${colLetter}${fila}`, value);
-      }
+    if (estado) {
+      await updateCell(SHEET_NAME, `${SHEET_NAME}!E${fila}`, estado);
+    }
+    if (observacion) {
+      await updateCell(SHEET_NAME, `${SHEET_NAME}!F${fila}`, observacion);
     }
 
-    console.log(`✏️ Retroalimentación actualizada (fila ${fila})`);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("❌ Error al actualizar orden:", e);
+    console.log(`✏️ Orden actualizada correctamente (fila ${fila})`);
+    res.json({ ok: true, message: "Orden actualizada correctamente" });
+  } catch (err) {
+    console.error("❌ Error al actualizar orden:", err.message);
     res.status(500).json({ error: "Error al actualizar orden" });
   }
 });
 
 // ======================================================
-// 🔹 Finalizar orden
+// 🔹 POST: Finalizar orden y enviar correo a Dayan
 // ======================================================
-router.post("/:fila/finish", async (req, res) => {
+router.post("/:codigo/finalizar", async (req, res) => {
   try {
-    const { fila } = req.params;
+    const { codigo } = req.params;
+    const { fila } = req.body;
 
-    const rows = await getSheetData(SHEET_NAME);
-    const headers = rows[0].map((h) => h.toLowerCase());
-    const row = rows[fila - 1];
-
-    if (!row) return res.status(404).json({ error: "Orden no encontrada" });
-
-    const codigo = row[headers.findIndex((h) => h.includes("codigo"))] || "Sin código";
-    const descripcion = row[headers.findIndex((h) => h.includes("descripcion"))] || "";
-    const tecnico = row[headers.findIndex((h) => h.includes("tecnico"))] || "";
-    const cliente = row[headers.findIndex((h) => h.includes("cliente"))] || "";
-
-    // Crear carpeta de Drive específica
-    const orderFolder = await createOrderFolder(codigo);
-    const driveLink = `https://drive.google.com/drive/folders/${orderFolder}`;
-
-    // Cambiar estado a FINALIZADA
-    const idxEstado = headers.findIndex((h) => /estado/.test(h));
-    if (idxEstado >= 0) {
-      const colLetter = getExcelColumnName(idxEstado);
-      await updateCell(SHEET_NAME, `${colLetter}${fila}`, "Finalizada");
+    if (!fila || !codigo) {
+      return res.status(400).json({ error: "Datos insuficientes para finalizar" });
     }
 
-    // Guardar link de carpeta en Sheets (columna "Drive" si existe)
-    const idxDrive = headers.findIndex((h) => /drive|evidencia/.test(h));
-    if (idxDrive >= 0) {
-      const colLetter = getExcelColumnName(idxDrive);
-      await updateCell(SHEET_NAME, `${colLetter}${fila}`, driveLink);
-    }
+    // Actualiza estado en la hoja
+    await updateCell(SHEET_NAME, `${SHEET_NAME}!E${fila}`, "Finalizada");
 
-    // Enviar correo automático a Dayan
-    await sendOrderNotification(codigo, driveLink, descripcion, tecnico, cliente);
+    // Enviar correo a Dayan
+    const destinatario = "reparaciones@bluehomeinmo.co";
+    const asunto = `🔧 Orden ${codigo} finalizada`;
+    const mensaje = `
+      <h3>Orden finalizada</h3>
+      <p>La orden con código <b>${codigo}</b> ha sido finalizada por el técnico.</p>
+      <p>Por favor, revisa y valida los precios correspondientes.</p>
+    `;
 
-    console.log(`✅ Orden ${codigo} finalizada y notificada a reparaciones@bluehomeinmo.co`);
-    res.json({ ok: true, driveLink });
-  } catch (e) {
-    console.error("❌ Error al finalizar orden:", e);
+    await sendMail(destinatario, asunto, mensaje);
+    console.log(`📨 Correo enviado a Dayan (${destinatario})`);
+
+    res.json({ ok: true, message: "Orden finalizada y correo enviado" });
+  } catch (err) {
+    console.error("❌ Error al finalizar orden:", err.message);
     res.status(500).json({ error: "Error al finalizar orden" });
   }
 });
 
-export { router };
+export default router;
