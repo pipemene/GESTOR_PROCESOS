@@ -1,31 +1,35 @@
 // ======================================================
-// 📄 routes/orders.js
-// Blue Home Gestor — Módulo de Órdenes
+// 🧾 routes/orders.js — Gestión de órdenes Blue Home
 // ======================================================
 
 import express from "express";
 import multer from "multer";
 import fs from "fs";
-import {
-  getSheetData,
-  appendRow,
-  updateCell,
-} from "../services/sheetsService.js";
+import path from "path";
+import { google } from "googleapis";
+import { getSheetData, appendRow, updateCell } from "../services/sheetsService.js";
 import { uploadFileToDrive } from "../services/driveService.js";
 import { sendMail } from "../services/mailService.js";
 
 const router = express.Router();
-const SHEET_NAME = process.env.ORDERS_SHEET || "Ordenes";
+const SHEET_NAME = "Ordenes";
 
 // ======================================================
-// ⚙️ Configuración de Multer — guarda en carpeta uploads/
+// 📁 Configuración de subida de archivos (multer)
 // ======================================================
-const upload = multer({ dest: "uploads/" });
+const uploadDir = path.resolve("uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, uploadDir),
+  filename: (_, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+});
+const upload = multer({ storage });
 
 // ======================================================
-// 🔹 GET: Listar órdenes desde Google Sheets
+// 🔹 GET — Listar todas las órdenes
 // ======================================================
-router.get("/", async (req, res) => {
+router.get("/", async (_, res) => {
   try {
     const rows = await getSheetData(SHEET_NAME);
     if (!rows || rows.length < 2) return res.json([]);
@@ -46,26 +50,44 @@ router.get("/", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST: Crear nueva orden en Google Sheets
+// 🔹 POST — Crear nueva orden
 // ======================================================
-router.post("/", async (req, res) => {
+router.post("/", upload.array("fotos", 10), async (req, res) => {
   try {
-    const { codigo, inquilino, descripcion, tecnico, estado } = req.body;
+    const {
+      codigo,
+      inquilino,
+      telefono,
+      descripcion,
+      estado,
+      tecnico,
+      prioridad,
+    } = req.body;
 
     if (!codigo || !inquilino || !descripcion) {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
+    // Subir fotos al Drive
+    let enlacesFotos = [];
+    for (const file of req.files) {
+      const upload = await uploadFileToDrive(file.path, file.originalname);
+      enlacesFotos.push(upload.webViewLink);
+      fs.unlinkSync(file.path); // borrar temporal
+    }
+
     await appendRow(SHEET_NAME, [
       codigo,
       inquilino,
+      telefono || "",
       descripcion,
+      estado || "pendiente",
       tecnico || "Sin asignar",
-      estado || "Pendiente",
+      prioridad || "Media",
+      enlacesFotos.join(", "),
       new Date().toLocaleString("es-CO"),
     ]);
 
-    console.log(`✅ Orden creada correctamente: ${codigo}`);
     res.json({ ok: true, message: "Orden creada correctamente" });
   } catch (err) {
     console.error("❌ Error al crear orden:", err.message);
@@ -74,81 +96,29 @@ router.post("/", async (req, res) => {
 });
 
 // ======================================================
-// 🔹 POST: Subir foto (Antes / Después)
+// 🔹 PUT — Finalizar orden
 // ======================================================
-router.post("/:codigo/upload-photo", upload.single("photo"), async (req, res) => {
+router.put("/finalizar/:fila", async (req, res) => {
   try {
-    const { codigo } = req.params;
-    const tipo = req.body.tipo || "Foto";
-    const file = req.file;
-
-    if (!file) {
-      return res.status(400).json({ error: "Archivo no recibido" });
-    }
-
-    // ✅ Subir a Drive
-    const driveFile = await uploadFileToDrive(file, `${tipo}_${codigo}`);
-
-    // ✅ Eliminar el archivo temporal
-    if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-
-    console.log(`📸 ${tipo} subida correctamente para orden ${codigo}`);
-    res.json({ ok: true, link: driveFile });
-  } catch (err) {
-    console.error("❌ Error al subir foto:", err.message);
-    res.status(500).json({ error: "Error al subir foto" });
-  }
-});
-
-// ======================================================
-// 🔹 POST: Actualizar estado o comentarios de la orden
-// ======================================================
-router.post("/:fila/update", async (req, res) => {
-  try {
-    const { fila } = req.params;
-    const { estado, observacion } = req.body;
+    const fila = parseInt(req.params.fila);
+    const { observaciones, firma } = req.body;
 
     if (!fila || isNaN(fila)) {
-      return res.status(400).json({ error: "Fila inválida" });
+      return res.status(400).json({ error: "Número de fila inválido" });
     }
 
-    if (estado) {
-      await updateCell(SHEET_NAME, `${SHEET_NAME}!E${fila}`, estado);
-    }
-    if (observacion) {
-      await updateCell(SHEET_NAME, `${SHEET_NAME}!F${fila}`, observacion);
-    }
+    // Actualizar estado y observaciones
+    await updateCell(SHEET_NAME, `Ordenes!E${fila}`, "Finalizada");
+    await updateCell(SHEET_NAME, `Ordenes!I${fila}`, observaciones || "");
+    await updateCell(SHEET_NAME, `Ordenes!J${fila}`, firma || "");
 
-    console.log(`✏️ Orden actualizada correctamente (fila ${fila})`);
-    res.json({ ok: true, message: "Orden actualizada correctamente" });
-  } catch (err) {
-    console.error("❌ Error al actualizar orden:", err.message);
-    res.status(500).json({ error: "Error al actualizar orden" });
-  }
-});
-
-// ======================================================
-// 🔹 POST: Finalizar orden y enviar correo a Dayan
-// ======================================================
-router.post("/:codigo/finalizar", async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    const { fila } = req.body;
-
-    if (!fila || !codigo) {
-      return res.status(400).json({ error: "Datos insuficientes para finalizar" });
-    }
-
-    // Actualiza estado en la hoja
-    await updateCell(SHEET_NAME, `${SHEET_NAME}!E${fila}`, "Finalizada");
-
-    // Enviar correo a Dayan
+    // Notificar a Dayan
     const destinatario = "reparaciones@bluehomeinmo.co";
-    const asunto = `🔧 Orden ${codigo} finalizada`;
+    const asunto = "Nueva orden finalizada en Blue Home";
     const mensaje = `
-      <h3>Orden finalizada</h3>
-      <p>La orden con código <b>${codigo}</b> ha sido finalizada por el técnico.</p>
-      <p>Por favor, revisa y valida los precios correspondientes.</p>
+      <h2>🧾 Nueva orden finalizada</h2>
+      <p>La orden número <b>${fila}</b> ha sido finalizada por el técnico.</p>
+      <p>Puedes revisarla en el Gestor Blue Home.</p>
     `;
 
     await sendMail(destinatario, asunto, mensaje);
@@ -161,4 +131,7 @@ router.post("/:codigo/finalizar", async (req, res) => {
   }
 });
 
-export default router;
+// ======================================================
+// 🔹 Exportar router (forma nombrada)
+// ======================================================
+export const router = router;
