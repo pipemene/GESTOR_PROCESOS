@@ -2,174 +2,581 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Órdenes | Blue Home Gestor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Órdenes | Blue Home Gestor</title>
 
-  <!-- 🔹 Estilo global del sistema -->
-  <link rel="stylesheet" href="/assets/css/estilos.css" />
-  <link rel="icon" href="/assets/img/logo-blanco.png" />
+  <!-- Estilos institucionales -->
+  <link rel="stylesheet" href="/assets/css/estilos.css"/>
+
+  <!-- Icono -->
+  <link rel="icon" href="/assets/logo-blanco.png"/>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Ajustes mínimos para chips de estado y layout sin tocar tu estilos.css */
+    .layout {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+      background: #f4f6f9;
+    }
+    .sidebar {
+      background: #0a3c6e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px 16px;
+    }
+    .sidebar .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .sidebar .brand img {
+      height: 38px;
+    }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .menu a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      color: #e6eef7;
+      text-decoration: none;
+      border-radius: 10px;
+    }
+    .menu a.active,
+    .menu a:hover {
+      background: rgba(255,255,255,0.12);
+    }
+    .sidebar .user {
+      margin-top: auto;
+      font-size: 13px;
+      opacity: 0.9;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      padding-top: 12px;
+    }
+
+    .content {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+    header.topbar {
+      background: #0a3c6e;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+    }
+    header.topbar .left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header.topbar .left img {
+      height: 30px;
+    }
+    .main {
+      padding: 22px;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(10,60,110,0.08);
+      padding: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      background: #eef4ff;
+      color: #0a3c6e;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active {
+      background: #0a3c6e;
+      color: #fff;
+    }
+    .actions-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .actions-right input {
+      padding: 9px 12px;
+      border: 1px solid #d8dee9;
+      border-radius: 10px;
+      outline: none;
+      min-width: 220px;
+    }
+    .btn {
+      background: #0a3c6e;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn.secondary { background: #546e7a; }
+    .btn:hover { filter: brightness(1.05); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .form-grid .col-span-2 { grid-column: span 2; }
+    .form-grid .col-span-3 { grid-column: span 3; }
+    .form-grid .col-span-6 { grid-column: span 6; }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d8dee9;
+      border-radius: 10px;
+      outline: none;
+    }
+    textarea.big {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    thead {
+      background: #0a3c6e;
+      color: #fff;
+    }
+    th, td {
+      padding: 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid #eef2f7;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:hover { background: #eef4ff; }
+
+    .chip {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #fff;
+    }
+    .chip.pendiente { background: #e74c3c; }
+    .chip.proceso   { background: #f1c40f; color: #1b1b1b; }
+    .chip.finalizada{ background: #27ae60; }
+
+    .select-tecnico {
+      padding: 6px 10px;
+      border: 1px solid #d8dee9;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    @media (max-width: 1024px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { flex-direction: row; overflow-x: auto; gap: 6px; }
+      .sidebar .brand, .sidebar .user { display: none; }
+    }
+  </style>
 </head>
-
 <body>
-  <!-- 🔹 Encabezado corporativo -->
-  <header class="header">
-    <div class="header-content">
-      <img src="/assets/img/logo-blanco.png" alt="Blue Home Inmobiliaria" class="logo" />
-      <h1>Gestión de Órdenes</h1>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="/assets/logo-blanco.png" alt="Blue Home"/>
+        <div style="font-weight:700;">Blue Home Gestor</div>
+      </div>
+
+      <nav class="menu">
+        <a href="/admin.html"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+        <a href="/usuarios.html"><i data-lucide="users"></i> Usuarios</a>
+        <a href="/ordenes.html" class="active"><i data-lucide="clipboard-list"></i> Órdenes</a>
+        <a href="/reportes.html"><i data-lucide="file-text"></i> Reportes</a>
+        <a href="/graficas.html"><i data-lucide="bar-chart-3"></i> Gráficas</a>
+        <a href="/arrendamiento.html"><i data-lucide="building-2"></i> Arrendamiento (Daniela)</a>
+        <a href="/contabilidad.html"><i data-lucide="wallet"></i> Contabilidad (Aitana)</a>
+      </nav>
+
+      <div class="user" id="userBox">
+        Pipe Meneses — SuperAdmin
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content">
+      <header class="topbar">
+        <div class="left">
+          <img src="/assets/logo-blanco.png" alt="Blue Home"/>
+          <h2>Órdenes</h2>
+        </div>
+        <div class="right">
+          <button class="btn secondary" onclick="window.location.href='/admin.html'">
+            ← Volver
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="panel">
+          <!-- Tabs y búsqueda -->
+          <div class="toolbar">
+            <div class="tabs">
+              <button class="tab active" id="tabPend">Pendientes</button>
+              <button class="tab" id="tabProc">En proceso</button>
+              <button class="tab" id="tabFin">Finalizadas</button>
+            </div>
+            <div class="actions-right">
+              <input id="buscar" type="text" placeholder="Buscar por código, cliente o fecha...">
+              <button class="btn" id="btnRecargar">Recargar</button>
+            </div>
+          </div>
+
+          <!-- Formulario de creación -->
+          <div class="form-grid" id="formCrear">
+            <input id="codigo" class="col-span-1" placeholder="Código">
+            <input id="cliente" class="col-span-2" placeholder="Cliente">
+            <input id="telefono" class="col-span-1" placeholder="Teléfono">
+            <select id="tecnico" class="col-span-1">
+              <option value="">Técnico (opcional)</option>
+            </select>
+            <select id="estado" class="col-span-1">
+              <option value="Pendiente">Pendiente</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Finalizada">Finalizada</option>
+            </select>
+            <textarea id="descripcion" class="col-span-6 big" placeholder="Descripción detallada de la orden..."></textarea>
+            <div class="col-span-6" style="display:flex; gap:10px; justify-content:flex-end;">
+              <button class="btn secondary" id="btnLimpiar">Limpiar</button>
+              <button class="btn" id="btnCrear">Crear orden</button>
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <div class="tabla-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Código</th>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Descripción</th>
+                  <th>Técnico</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyOrdenes">
+                <tr><td colspan="8">Cargando órdenes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
-  </header>
+  </div>
 
-  <!-- 🔹 Contenedor principal -->
-  <main class="main-container">
-    <section class="panel">
-      <div class="panel-header">
-        <button class="tab-btn active" id="btnPendientes">Pendientes / Sin asignar</button>
-        <button class="tab-btn" id="btnProceso">En proceso</button>
-        <button class="tab-btn" id="btnFinalizadas">Finalizadas</button>
-      </div>
-
-      <div class="busqueda">
-        <input type="text" id="busqueda" placeholder="Buscar por código o fecha..." />
-      </div>
-
-      <table class="tabla-ordenes">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th>Técnico</th>
-            <th>Estado</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="tablaOrdenes">
-          <tr><td colspan="6">Cargando órdenes...</td></tr>
-        </tbody>
-      </table>
-    </section>
-  </main>
-
-  <!-- 🔹 Script funcional -->
   <script>
-    const tabla = document.getElementById("tablaOrdenes");
-    const busqueda = document.getElementById("busqueda");
-    const btnPendientes = document.getElementById("btnPendientes");
-    const btnProceso = document.getElementById("btnProceso");
-    const btnFinalizadas = document.getElementById("btnFinalizadas");
+    // =========================
+    // Estado UI
+    // =========================
+    let ORDENES = [];
+    let TECNICOS = [];
+    let estadoFiltro = "pendiente"; // pendiente | proceso | finalizada
 
-    let ordenes = [];
-    let tecnicos = [];
-    let estadoActual = "pendiente";
+    const tbody = document.getElementById("tbodyOrdenes");
+    const inputBuscar = document.getElementById("buscar");
 
-    async function cargarDatos() {
+    const tabPend = document.getElementById("tabPend");
+    const tabProc = document.getElementById("tabProc");
+    const tabFin  = document.getElementById("tabFin");
+
+    const selTecnico = document.getElementById("tecnico");
+
+    const inputCodigo = document.getElementById("codigo");
+    const inputCliente = document.getElementById("cliente");
+    const inputTelefono = document.getElementById("telefono");
+    const inputEstado = document.getElementById("estado");
+    const txtDescripcion = document.getElementById("descripcion");
+
+    document.getElementById("btnRecargar").onclick = () => init();
+    document.getElementById("btnLimpiar").onclick = limpiarFormulario;
+    document.getElementById("btnCrear").onclick = crearOrden;
+
+    tabPend.onclick = () => { setTabs(tabPend); estadoFiltro = "pendiente"; render(); };
+    tabProc.onclick = () => { setTabs(tabProc); estadoFiltro = "proceso";   render(); };
+    tabFin.onclick  = () => { setTabs(tabFin);  estadoFiltro = "finalizada"; render(); };
+    inputBuscar.addEventListener("input", render);
+
+    // Mostrar usuario desde el token base64 guardado en login
+    (function pintarUsuario() {
       try {
-        const res = await fetch("/api/orders");
-        ordenes = await res.json();
+        const t = localStorage.getItem("userToken");
+        if (!t) return;
+        const u = JSON.parse(atob(t));
+        const box = document.getElementById("userBox");
+        if (u?.nombre || u?.usuario) {
+          box.textContent = `${u.nombre || u.usuario} — ${u.rol || "Usuario"}`;
+        }
+      } catch {}
+    })();
 
-        const resT = await fetch("/api/users");
-        tecnicos = await resT.json();
+    function setTabs(active) {
+      [tabPend, tabProc, tabFin].forEach(b => b.classList.remove("active"));
+      active.classList.add("active");
+    }
 
-        renderTabla();
+    // =========================
+    // Carga de datos
+    // =========================
+    async function init() {
+      try {
+        // Órdenes
+        const r = await fetch("/api/orders");
+        ORDENES = await r.json();
+
+        // Técnicos (desde usuarios, filtrando rol Técnico)
+        const ru = await fetch("/api/users");
+        const USERS = await ru.json();
+        TECNICOS = (USERS || []).filter(u => (u.rol || u["rol"] || "").toLowerCase() === "técnico" || (u.rol || "").toLowerCase() === "tecnico");
+
+        // Llenar select de técnico del formulario
+        selTecnico.innerHTML = `<option value="">Técnico (opcional)</option>`;
+        TECNICOS.forEach(t => {
+          const op = document.createElement("option");
+          op.value = t.nombre || t.usuario || "";
+          op.textContent = t.nombre || t.usuario || "";
+          selTecnico.appendChild(op);
+        });
+
+        render();
       } catch (e) {
-        console.error("❌ Error al cargar órdenes:", e);
-        tabla.innerHTML = `<tr><td colspan="6">Error al cargar órdenes.</td></tr>`;
+        console.error("Error inicializando:", e);
+        tbody.innerHTML = `<tr><td colspan="8">Error al cargar información.</td></tr>`;
       }
     }
 
-    function renderTabla() {
-      tabla.innerHTML = "";
-      let filtradas = ordenes.filter(
-        o => (o.estado || "").toLowerCase().includes(estadoActual.toLowerCase())
-      );
+    // =========================
+    // Render tabla
+    // =========================
+    function render() {
+      tbody.innerHTML = "";
 
-      const filtro = busqueda.value.trim().toLowerCase();
-      if (filtro) {
-        filtradas = filtradas.filter(
-          o =>
-            (o.codigo || "").toLowerCase().includes(filtro) ||
-            (o.fecha || "").toLowerCase().includes(filtro)
+      // Filtro por estado (texto contiene)
+      let lista = ORDENES.filter(o => {
+        const est = (o.estado || "").toLowerCase();
+        if (estadoFiltro === "pendiente")   return est.includes("pend");
+        if (estadoFiltro === "proceso")     return est.includes("proce");
+        if (estadoFiltro === "finalizada")  return est.includes("final");
+        return true;
+      });
+
+      // Búsqueda
+      const q = (inputBuscar.value || "").toLowerCase().trim();
+      if (q) {
+        lista = lista.filter(o =>
+          (o.codigo || "").toLowerCase().includes(q) ||
+          (o.cliente || o.inquilino || "").toLowerCase().includes(q) ||
+          (o.fecha || "").toLowerCase().includes(q)
         );
       }
 
-      if (filtradas.length === 0) {
-        tabla.innerHTML = `<tr><td colspan="6">No hay órdenes en este estado.</td></tr>`;
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8">No hay órdenes para mostrar.</td></tr>`;
         return;
       }
 
-      filtradas.forEach((o) => {
+      lista.forEach(o => {
         const tr = document.createElement("tr");
-        const estado = (o.estado || "").toLowerCase();
-        let color = "rojo";
-        if (estado.includes("proceso")) color = "amarillo";
-        if (estado.includes("final")) color = "verde";
 
+        const est = (o.estado || "").toLowerCase();
+        let chipClass = "pendiente";
+        if (est.includes("proce")) chipClass = "proceso";
+        if (est.includes("final")) chipClass = "finalizada";
+
+        // Select técnico (editable)
+        const tdTecnico = document.createElement("td");
         const select = document.createElement("select");
+        select.className = "select-tecnico";
         select.innerHTML = `<option value="">Sin asignar</option>`;
-        tecnicos.forEach(t => {
+        TECNICOS.forEach(t => {
+          const name = t.nombre || t.usuario || "";
           const opt = document.createElement("option");
-          opt.value = t.nombre;
-          opt.textContent = t.nombre;
-          if (o.tecnico === t.nombre) opt.selected = true;
+          opt.value = name;
+          opt.textContent = name;
+          if ((o.tecnico || "") === name) opt.selected = true;
           select.appendChild(opt);
         });
         select.onchange = () => actualizarTecnico(o.fila, select.value);
+        tdTecnico.appendChild(select);
 
         tr.innerHTML = `
           <td>${o.fecha || ""}</td>
           <td>${o.codigo || ""}</td>
+          <td>${o.cliente || o.inquilino || ""}</td>
+          <td>${o.telefono || ""}</td>
           <td>${o.descripcion || ""}</td>
-          <td></td>
-          <td><span class="estado ${color}">${o.estado || ""}</span></td>
-          <td><button class="btn-primary" onclick="abrirOrden('${o.fila}','${o.codigo}')">Ver / Gestionar</button></td>
+          <td class="td-tecnico"></td>
+          <td><span class="chip ${chipClass}">${o.estado || ""}</span></td>
+          <td>
+            <button class="btn" onclick="abrirOrden('${o.fila}','${o.codigo || ""}')">Ver / Gestionar</button>
+          </td>
         `;
-        tr.children[3].appendChild(select);
-        tabla.appendChild(tr);
+        tr.querySelector(".td-tecnico").replaceWith(tdTecnico);
+        tbody.appendChild(tr);
       });
     }
 
-    async function actualizarTecnico(fila, nuevoTecnico) {
-      try {
-        const res = await fetch(`/api/orders/${fila}/tecnico`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tecnico: nuevoTecnico })
+    // =========================
+    // Crear nueva orden
+    // =========================
+    async function crearOrden() {
+      const codigo = inputCodigo.value.trim();
+      const cliente = inputCliente.value.trim();
+      const telefono = inputTelefono.value.trim();
+      const descripcion = txtDescripcion.value.trim();
+      const tecnico = selTecnico.value.trim();
+      const estado = inputEstado.value;
+
+      if (!codigo || !cliente || !descripcion) {
+        Swal.fire({
+          icon: "warning",
+          title: "Faltan datos",
+          text: "Código, Cliente y Descripción son obligatorios.",
         });
-        const data = await res.json();
-        console.log("✅ Técnico actualizado:", data);
+        return;
+      }
+
+      try {
+        const payload = {
+          // soporta ambos esquemas del backend
+          cliente,
+          inquilino: cliente,
+          telefono,
+          codigo,
+          descripcion,
+          tecnico: tecnico || "Sin asignar",
+          estado: estado || "Pendiente",
+          fecha: new Date().toLocaleString("es-CO")
+        };
+
+        const r = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || "No se pudo crear la orden");
+
+        Swal.fire({ icon: "success", title: "Orden creada", timer: 1300, showConfirmButton: false });
+
+        // Agregar a la tabla sin recargar
+        ORDENES.unshift({
+          fecha: payload.fecha,
+          codigo,
+          cliente,
+          telefono,
+          descripcion,
+          tecnico: payload.tecnico,
+          estado: payload.estado,
+          fila: "" // desconocido hasta que se vuelva a leer, pero visible en la UI
+        });
+        limpiarFormulario();
+        render();
+
+        // Opcional: recargar de la fuente para obtener fila real
+        setTimeout(init, 800);
       } catch (e) {
-        console.error("❌ Error al actualizar técnico:", e);
+        console.error(e);
+        Swal.fire({ icon: "error", title: "Error", text: e.message || "Error al crear la orden" });
       }
     }
 
+    function limpiarFormulario() {
+      inputCodigo.value = "";
+      inputCliente.value = "";
+      inputTelefono.value = "";
+      txtDescripcion.value = "";
+      selTecnico.value = "";
+      inputEstado.value = "Pendiente";
+    }
+
+    // =========================
+    // Actualizar técnico (por fila)
+    // =========================
+    async function actualizarTecnico(fila, nuevoTecnico) {
+      if (!fila) {
+        Swal.fire({ icon: "warning", title: "Sin fila", text: "Refresca las órdenes para poder editar el técnico." });
+        return;
+      }
+      try {
+        const r = await fetch(`/api/orders/${fila}/tecnico`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tecnico: nuevoTecnico || "" })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.error || "No se pudo actualizar el técnico");
+        Swal.fire({ icon: "success", title: "Técnico actualizado", timer: 1000, showConfirmButton: false });
+      } catch (e) {
+        console.error(e);
+        Swal.fire({ icon: "error", title: "Error", text: e.message || "Error al actualizar técnico" });
+      }
+    }
+
+    // =========================
+    // Abrir detalle de orden
+    // =========================
     function abrirOrden(fila, codigo) {
-      window.location.href = `/orden.html?fila=${fila}&codigo=${codigo}`;
+      const url = `/orden.html?fila=${encodeURIComponent(fila || "")}&codigo=${encodeURIComponent(codigo || "")}`;
+      window.location.href = url;
     }
 
-    btnPendientes.onclick = () => {
-      estadoActual = "pendiente";
-      activarBoton(btnPendientes);
-      renderTabla();
-    };
-    btnProceso.onclick = () => {
-      estadoActual = "proceso";
-      activarBoton(btnProceso);
-      renderTabla();
-    };
-    btnFinalizadas.onclick = () => {
-      estadoActual = "finalizada";
-      activarBoton(btnFinalizadas);
-      renderTabla();
-    };
+    // Init
+    init();
 
-    function activarBoton(btn) {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    }
-
-    busqueda.addEventListener("input", renderTabla);
-
-    cargarDatos();
+    // Render icons
+    window.addEventListener("load", () => {
+      if (window.lucide?.createIcons) lucide.createIcons();
+    });
   </script>
 </body>
 </html>
