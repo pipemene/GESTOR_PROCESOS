@@ -3,43 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestor de Órdenes - Blue Home</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Gestión de Órdenes | Blue Home Gestor</title>
+
+  <!-- 🔹 Estilo global del sistema -->
+  <link rel="stylesheet" href="/assets/css/estilos.css" />
+  <link rel="icon" href="/assets/img/logo-blanco.png" />
 </head>
+
 <body>
-  <div class="container">
-    <h1>📋 Órdenes de Servicio</h1>
-
-    <div class="filtros">
-      <select id="estadoFiltro">
-        <option value="pendiente">Pendientes</option>
-        <option value="proceso">En Proceso</option>
-        <option value="finalizada">Finalizadas</option>
-      </select>
-      <input type="text" id="busqueda" placeholder="Buscar por código o fecha..." />
+  <!-- 🔹 Encabezado corporativo -->
+  <header class="header">
+    <div class="header-content">
+      <img src="/assets/img/logo-blanco.png" alt="Blue Home Inmobiliaria" class="logo" />
+      <h1>Gestión de Órdenes</h1>
     </div>
+  </header>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Código</th>
-          <th>Descripción</th>
-          <th>Técnico</th>
-          <th>Estado</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="tablaOrdenes">
-        <tr><td colspan="6">Cargando órdenes...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- 🔹 Contenedor principal -->
+  <main class="main-container">
+    <section class="panel">
+      <div class="panel-header">
+        <button class="tab-btn active" id="btnPendientes">Pendientes / Sin asignar</button>
+        <button class="tab-btn" id="btnProceso">En proceso</button>
+        <button class="tab-btn" id="btnFinalizadas">Finalizadas</button>
+      </div>
 
+      <div class="busqueda">
+        <input type="text" id="busqueda" placeholder="Buscar por código o fecha..." />
+      </div>
+
+      <table class="tabla-ordenes">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Técnico</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaOrdenes">
+          <tr><td colspan="6">Cargando órdenes...</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- 🔹 Script funcional -->
   <script>
     const tabla = document.getElementById("tablaOrdenes");
-    const estadoFiltro = document.getElementById("estadoFiltro");
     const busqueda = document.getElementById("busqueda");
+    const btnPendientes = document.getElementById("btnPendientes");
+    const btnProceso = document.getElementById("btnProceso");
+    const btnFinalizadas = document.getElementById("btnFinalizadas");
 
     let ordenes = [];
     let tecnicos = [];
@@ -87,7 +104,6 @@
         if (estado.includes("proceso")) color = "amarillo";
         if (estado.includes("final")) color = "verde";
 
-        // Selector de técnico editable
         const select = document.createElement("select");
         select.innerHTML = `<option value="">Sin asignar</option>`;
         tecnicos.forEach(t => {
@@ -130,10 +146,26 @@
       window.location.href = `/orden.html?fila=${fila}&codigo=${codigo}`;
     }
 
-    estadoFiltro.addEventListener("change", () => {
-      estadoActual = estadoFiltro.value;
+    btnPendientes.onclick = () => {
+      estadoActual = "pendiente";
+      activarBoton(btnPendientes);
       renderTabla();
-    });
+    };
+    btnProceso.onclick = () => {
+      estadoActual = "proceso";
+      activarBoton(btnProceso);
+      renderTabla();
+    };
+    btnFinalizadas.onclick = () => {
+      estadoActual = "finalizada";
+      activarBoton(btnFinalizadas);
+      renderTabla();
+    };
+
+    function activarBoton(btn) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    }
 
     busqueda.addEventListener("input", renderTabla);
 
