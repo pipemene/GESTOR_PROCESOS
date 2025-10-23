@@ -1,101 +1,292 @@
-/* ======= Estilos Globales ======= */
+/* ==========================================================
+   BLUE HOME GESTOR - LUXURY AERO THEME
+   Autor: Marcelito x Pipe Meneses
+   Versión: 2.0 Premium Glass
+========================================================== */
+
 :root {
-  --azul-bluehome: #004AAD;
-  --azul-suave: #1f64d1;
-  --blanco: #ffffff;
-  --gris-texto: #444;
-  --gris-claro: #f2f2f2;
+  --azul: #0a3c6e;
+  --azul-claro: #1e5da8;
+  --plata: #e3e7ed;
+  --blanco-trans: rgba(255, 255, 255, 0.7);
+  --vidrio: rgba(255, 255, 255, 0.12);
+  --sombra: rgba(10, 60, 110, 0.25);
+  --verde: #27ae60;
+  --rojo: #e74c3c;
+  --amarillo: #f1c40f;
+  --transition: all 0.3s ease;
+}
+
+/* ------------------------------
+   RESET GLOBAL
+------------------------------ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', 'Inter', sans-serif;
 }
 
 body {
-  margin: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background-color: var(--gris-claro);
-  color: var(--gris-texto);
+  background: linear-gradient(145deg, #0a3c6e 0%, #0e2a4d 100%);
+  color: #fff;
+  backdrop-filter: blur(20px);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* ======= Header ======= */
-.header {
-  background-color: var(--azul-bluehome);
-  color: var(--blanco);
+/* ------------------------------
+   SCROLLBAR
+------------------------------ */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+/* ------------------------------
+   SIDEBAR
+------------------------------ */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 250px;
+  background: rgba(255,255,255,0.08);
+  border-right: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(25px);
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 30px;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+  transition: var(--transition);
+  box-shadow: 6px 0 25px rgba(0,0,0,0.2);
 }
 
-.logo-container {
+.sidebar .brand {
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 25px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar .brand img {
+  height: 40px;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+}
+
+.menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
   gap: 10px;
 }
 
-.logo {
-  height: 50px;
-}
-
-.user-info {
+.menu a {
   display: flex;
   align-items: center;
-  gap: 15px;
-}
-
-#logoutBtn {
-  background-color: var(--blanco);
-  color: var(--azul-bluehome);
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-#logoutBtn:hover {
-  background-color: var(--azul-suave);
-  color: var(--blanco);
-}
-
-/* ======= Dashboard ======= */
-.dashboard {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 25px;
-  padding: 40px;
-}
-
-.card {
-  background-color: var(--blanco);
+  gap: 12px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  padding: 10px 14px;
   border-radius: 12px;
-  padding: 30px 10px;
+  transition: var(--transition);
+  background: transparent;
+}
+
+.menu a i {
+  opacity: 0.85;
+}
+
+.menu a:hover, .menu a.active {
+  background: var(--vidrio);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255,255,255,0.1);
+}
+
+.sidebar .user {
+  padding: 20px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  border-top: 1px solid rgba(255,255,255,0.1);
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transition: 0.3s ease;
+}
+
+/* ------------------------------
+   TOPBAR
+------------------------------ */
+.topbar {
+  position: fixed;
+  left: 250px;
+  top: 0;
+  width: calc(100% - 250px);
+  height: 65px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(25px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 25px;
+  box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.topbar h2 {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.btn {
+  background: var(--azul-claro);
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: var(--transition);
+}
+.btn:hover {
+  background: #2977d1;
+  transform: translateY(-1px);
+}
+.btn.secondary {
+  background: rgba(255,255,255,0.15);
+}
+.btn.secondary:hover {
+  background: rgba(255,255,255,0.25);
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+/* ------------------------------
+   CONTENIDO PRINCIPAL
+------------------------------ */
+.main {
+  margin-left: 250px;
+  padding: 90px 30px 30px 30px;
+  color: #fff;
 }
 
-.card i {
-  width: 50px;
-  height: 50px;
-  color: var(--azul-bluehome);
+.panel {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  animation: fadeIn 0.4s ease;
 }
 
-.card h2 {
-  margin-top: 15px;
-  font-size: 18px;
-  color: var(--azul-bluehome);
+/* ------------------------------
+   FORMULARIOS
+------------------------------ */
+input, select, textarea {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  color: #fff;
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  transition: var(--transition);
 }
 
-/* ======= Estado Bloqueado ======= */
-.card.bloqueado {
-  opacity: 0.4;
-  cursor: not-allowed;
-  filter: grayscale(1);
+input::placeholder, textarea::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--azul-claro);
+  box-shadow: 0 0 8px rgba(30,93,168,0.5);
+}
+
+/* ------------------------------
+   TABLA DE ÓRDENES
+------------------------------ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 18px;
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+thead {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+th, td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+  transition: var(--transition);
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #fff;
+  display: inline-block;
+}
+
+.chip.pendiente { background: var(--rojo); }
+.chip.proceso   { background: var(--amarillo); color: #222; }
+.chip.finalizada{ background: var(--verde); }
+
+.select-tecnico {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  color: #fff;
+  padding: 6px 10px;
+}
+
+/* ------------------------------
+   TRANSICIONES
+------------------------------ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------
+   RESPONSIVE
+------------------------------ */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    height: 65px;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  .sidebar .menu {
+    flex-direction: row;
+    gap: 14px;
+  }
+  .topbar {
+    left: 0;
+    width: 100%;
+  }
+  .main {
+    margin: 100px 0 0 0;
+    padding: 20px;
+  }
 }
