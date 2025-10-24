@@ -8,145 +8,170 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    body {
-      background: linear-gradient(145deg, #f5f8fb, #e9eef5);
-      color: #1c2b4a;
-      font-family: "Poppins", "Inter", sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      overflow-x: hidden;
+  body {
+    background: linear-gradient(145deg, #f5f8fb, #e9eef5);
+    color: #1c2b4a;
+    font-family: "Poppins", "Inter", sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #0a3c6e;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    z-index: 999;
+    height: 80px;
+  }
+
+  header img {
+    height: 42px;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  /* 🔹 ESTE AJUSTE SOLUCIONA TU PROBLEMA */
+  main {
+    margin-top: 100px !important; /* deja espacio exacto para la franja azul */
+    padding: 25px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    margin-bottom: 25px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cfd6e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: none;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  .form-actions button {
+    background: #0a3c6e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .form-actions button:hover {
+    background: #164f9c;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  thead {
+    background: #0a3c6e;
+    color: #fff;
+  }
+
+  th, td {
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+
+  tr:nth-child(even) {
+    background: #f5f7fa;
+  }
+
+  tr:hover {
+    background: #eef3ff;
+  }
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+  }
+
+  .badge.pendiente {
+    background: #ff5c5c;
+  }
+
+  .badge.finalizada {
+    background: #4caf50;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      flex-direction: row;
+      justify-content: center;
+      text-align: center;
+      height: auto;
+      padding: 10px 15px;
     }
 
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #0a3c6e;
-      color: white;
-      padding: 12px 25px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-      z-index: 999;
+    header img {
+      height: 36px;
     }
 
     header h1 {
-      font-size: 1.4rem;
-      font-weight: 600;
-      margin: 0;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
+      font-size: 1.1rem;
     }
 
     main {
-      margin-top: 100px;
-      padding: 25px;
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .form-container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-      padding: 25px;
-      margin-bottom: 25px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
-    }
-
-    .form-grid input,
-    .form-grid select,
-    .form-grid textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #cfd6e1;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      resize: none;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .form-actions button {
-      background: #0a3c6e;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .form-actions button:hover {
-      background: #164f9c;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    thead {
-      background: #0a3c6e;
-      color: #fff;
+      margin-top: 120px !important;
+      padding: 15px;
     }
 
     th, td {
-      padding: 12px 15px;
-      text-align: left;
-      font-size: 0.95rem;
-    }
-
-    tr:nth-child(even) {
-      background: #f5f7fa;
-    }
-
-    tr:hover {
-      background: #eef3ff;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-weight: 600;
       font-size: 0.85rem;
-      color: #fff;
     }
-
-    .badge.pendiente {
-      background: #ff5c5c;
-    }
-
-    .badge.finalizada {
-      background: #4caf50;
-    }
-
-    @media (max-width: 768px) {
-      main { padding: 15px; margin-top: 110px; }
-      th, td { font-size: 0.85rem; }
-      header h1 { font-size: 1.1rem; }
-    }
-  </style>
+  }
+</style>
 </head>
 
 <body>
