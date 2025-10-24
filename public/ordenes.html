@@ -6,9 +6,8 @@
   <title>Gestión de Órdenes | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    /* === FIX AERO LUXURY LEGIBLE === */
 
+  <style>
     body {
       background: linear-gradient(145deg, #f5f8fb, #e9eef5);
       color: #1c2b4a;
@@ -37,11 +36,65 @@
       font-size: 1.4rem;
       font-weight: 600;
       margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
     }
 
     main {
-      margin-top: 90px; /* espacio para que no tape el header */
-      padding: 20px;
+      margin-top: 100px;
+      padding: 25px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .form-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+
+    .form-grid input,
+    .form-grid select,
+    .form-grid textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cfd6e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: none;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .form-actions button {
+      background: #0a3c6e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .form-actions button:hover {
+      background: #164f9c;
     }
 
     table {
@@ -88,61 +141,74 @@
       background: #4caf50;
     }
 
-    button {
-      background: #0a3c6e;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #164f9c;
-    }
-
     @media (max-width: 768px) {
-      header h1 { font-size: 1.1rem; }
+      main { padding: 15px; margin-top: 110px; }
       th, td { font-size: 0.85rem; }
-      main { padding: 10px; margin-top: 100px; }
+      header h1 { font-size: 1.1rem; }
     }
   </style>
 </head>
+
 <body>
   <header>
-    <div>
-      <img src="assets/img/logo-blanco.png" alt="Logo Blue Home" height="45" style="vertical-align:middle; margin-right:10px;">
-      <h1 style="display:inline;">Órdenes</h1>
-    </div>
+    <h1><img src="assets/img/logo-blanco.png" alt="Logo Blue Home" height="40" /> Órdenes</h1>
   </header>
 
   <main>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Código</th>
-          <th>Cliente</th>
-          <th>Teléfono</th>
-          <th>Descripción</th>
-          <th>Técnico</th>
-          <th>Estado</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="tablaOrdenes"></tbody>
-    </table>
+    <!-- FORMULARIO DE CREACIÓN -->
+    <section class="form-container">
+      <h2 style="margin-top:0;">Nueva Orden</h2>
+      <div class="form-grid">
+        <input type="text" id="cliente" placeholder="Cliente" value="BLUE HOME INMOBILIARIA" />
+        <input type="text" id="telefono" placeholder="Teléfono" value="3012040465" />
+        <input type="text" id="codigo" placeholder="Código" />
+        <input type="date" id="fecha" />
+        <select id="tecnico">
+          <option value="">Sin asignar</option>
+          <option value="Carlos">Carlos</option>
+          <option value="Daniela">Daniela</option>
+        </select>
+        <select id="estado">
+          <option value="Pendiente">Pendiente</option>
+          <option value="Finalizada">Finalizada</option>
+        </select>
+      </div>
+
+      <textarea id="descripcion" rows="3" placeholder="Descripción detallada de la orden..."></textarea>
+
+      <div class="form-actions">
+        <button id="btnLimpiar">Limpiar</button>
+        <button id="btnCrear">Crear Orden</button>
+      </div>
+    </section>
+
+    <!-- TABLA DE ÓRDENES -->
+    <section>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Código</th>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Descripción</th>
+            <th>Técnico</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaOrdenes"></tbody>
+      </table>
+    </section>
   </main>
 
   <script>
     lucide.createIcons();
 
+    // Cargar órdenes
     async function cargarOrdenes() {
       const resp = await fetch("/api/orders");
       const data = await resp.json();
-
       const tbody = document.getElementById("tablaOrdenes");
       tbody.innerHTML = "";
 
@@ -168,6 +234,32 @@
     }
 
     cargarOrdenes();
+
+    // Crear nueva orden
+    document.getElementById("btnCrear").addEventListener("click", async () => {
+      const nueva = {
+        cliente: document.getElementById("cliente").value,
+        telefono: document.getElementById("telefono").value,
+        codigo: document.getElementById("codigo").value,
+        fecha: document.getElementById("fecha").value,
+        descripcion: document.getElementById("descripcion").value,
+        tecnico: document.getElementById("tecnico").value,
+        estado: document.getElementById("estado").value
+      };
+
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nueva)
+      });
+
+      alert("✅ Orden creada correctamente");
+      cargarOrdenes();
+    });
+
+    document.getElementById("btnLimpiar").addEventListener("click", () => {
+      document.querySelectorAll("input, textarea, select").forEach(el => el.value = "");
+    });
   </script>
 </body>
 </html>
