@@ -6,7 +6,157 @@
   <title>Blue Home Gestor - Panel Superadmin</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ======= AERO LUXURY ADMIN ======= */
+    body {
+      background: linear-gradient(145deg, #0a3c6e 0%, #0e2a4d 100%);
+      color: #fff;
+      font-family: "Poppins", "Inter", sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      backdrop-filter: blur(25px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header.header {
+      width: 100%;
+      padding: 15px 50px;
+      background: rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(25px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      height: 55px;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+    }
+
+    .logo-container h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #userName {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    #logoutBtn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #logoutBtn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* ======= DASHBOARD ======= */
+    main.dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 25px;
+      padding: 50px;
+      width: 100%;
+      max-width: 1300px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 35px 25px;
+      text-align: center;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 5px 30px rgba(0,0,0,0.25);
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 40px rgba(30, 93, 168, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .card i {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 15px;
+      color: #fff;
+      opacity: 0.9;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin: 0;
+      letter-spacing: 0.3px;
+    }
+
+    .card.bloqueado {
+      opacity: 0.4;
+      pointer-events: none;
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.2);
+    }
+
+    /* Sutil glow animado */
+    @keyframes glow {
+      0% { box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+      100% { box-shadow: 0 0 20px rgba(30,93,168,0.5); }
+    }
+
+    .card:hover i {
+      animation: glow 1s alternate infinite;
+    }
+
+    @media (max-width: 768px) {
+      main.dashboard {
+        padding: 25px;
+      }
+      header.header {
+        padding: 15px 25px;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .logo {
+        height: 45px;
+      }
+    }
+  </style>
 </head>
+
 <body>
   <header class="header">
     <div class="logo-container">
@@ -20,7 +170,6 @@
   </header>
 
   <main class="dashboard">
-    <!-- Tarjetas de módulos -->
     <div class="card" data-modulo="usuarios" data-roles="superadmin,admin">
       <i data-lucide="users"></i>
       <h2>Usuarios</h2>
@@ -58,32 +207,27 @@
   </main>
 
   <script>
-    // Inicializar iconos
     lucide.createIcons();
 
-    // Validación de login
     const user = JSON.parse(localStorage.getItem("usuarioActivo") || "{}");
-    if (!user.usuario) {
-      window.location.href = "index.html";
-    }
+    if (!user.usuario) window.location.href = "index.html";
 
-    // Mostrar nombre y rol
-    document.getElementById("userName").innerText = `👋 Bienvenido, ${user.nombre || user.usuario} (${user.rol})`;
+    document.getElementById("userName").innerText =
+      `👋 Bienvenido, ${user.nombre || user.usuario} (${user.rol})`;
 
-    // Cerrar sesión
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.clear();
       window.location.href = "index.html";
     });
 
-    // Mostrar solo los módulos que le corresponden
     const cards = document.querySelectorAll(".card");
     const rolUsuario = (user.rol || "").toLowerCase();
     const nombreUsuario = (user.usuario || "").toLowerCase();
 
     cards.forEach(card => {
       const rolesPermitidos = card.dataset.roles.split(",");
-      const tieneAcceso = rolesPermitidos.includes(rolUsuario) || rolesPermitidos.includes(nombreUsuario);
+      const tieneAcceso =
+        rolesPermitidos.includes(rolUsuario) || rolesPermitidos.includes(nombreUsuario);
 
       if (!tieneAcceso) {
         card.classList.add("bloqueado");
