@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detalle de Orden - Blue Home Gestor</title>
+  <title>Órdenes - Blue Home Gestor</title>
   <style>
     body {
       margin: 0;
@@ -27,22 +27,20 @@
     }
 
     .container {
-      margin-top: 90px;
+      margin: 90px auto 40px auto;
       padding: 20px;
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
+      max-width: 1100px;
     }
 
-    .card {
+    form {
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
+      padding: 25px;
       margin-bottom: 25px;
     }
 
-    h2, h3 {
+    h2 {
       color: #007bff;
       margin-top: 0;
     }
@@ -63,240 +61,240 @@
     }
 
     button {
+      background: #007bff;
+      color: white;
       border: none;
       border-radius: 6px;
       padding: 10px 18px;
+      margin-top: 15px;
       cursor: pointer;
-      margin-top: 10px;
       transition: 0.3s;
     }
 
-    .btn-primary { background: #007bff; color: #fff; }
-    .btn-primary:hover { background: #0056b3; }
-    .btn-danger { background: #dc3545; color: #fff; }
-    .btn-success { background: #28a745; color: #fff; }
+    button:hover { background: #0056b3; }
 
-    .info-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .info-box {
-      flex: 1;
-      min-width: 180px;
-      background: #f9fbff;
-      border-radius: 6px;
-      padding: 10px 15px;
-      border-left: 4px solid #007bff;
-    }
-
-    .info-box strong {
-      display: block;
-      color: #007bff;
-    }
-
-    .signature {
-      border: 1px dashed #ccc;
-      border-radius: 6px;
+    table {
       width: 100%;
-      height: 200px;
+      border-collapse: collapse;
       background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #eef5ff;
+    }
+
+    .btn-ver {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 12px;
+      cursor: pointer;
+    }
+
+    .btn-ver:hover {
+      background: #0056b3;
     }
 
     @media (max-width: 768px) {
-      .container { padding: 10px; }
-      .info-row { flex-direction: column; }
+      .container {
+        padding: 10px;
+      }
+      form {
+        padding: 15px;
+      }
+      th, td {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="header">📋 Detalle de Orden - Blue Home Gestor</div>
+  <div class="header">🧰 Blue Home Gestor — Órdenes de Servicio</div>
 
   <div class="container">
-    <div class="card" id="infoOrden">
-      <h2>Información de la Orden</h2>
-      <div class="info-row">
-        <div class="info-box"><strong>Código:</strong> <span id="codigo"></span></div>
-        <div class="info-box"><strong>Arrendatario:</strong> <span id="cliente"></span></div>
-        <div class="info-box"><strong>Teléfono:</strong> <span id="telefono"></span></div>
-        <div class="info-box"><strong>Técnico:</strong> <span id="tecnico"></span></div>
-        <div class="info-box"><strong>Estado:</strong> <span id="estado"></span></div>
-      </div>
-      <label><strong>Descripción:</strong></label>
-      <textarea id="descripcion" rows="3" readonly></textarea>
-    </div>
+    <!-- ===== FORMULARIO ===== -->
+    <form id="formOrden">
+      <h2>Crear nueva orden</h2>
 
-    <!-- EVIDENCIAS -->
-    <div class="card">
-      <h3>📸 Evidencias del trabajo</h3>
-      <input type="file" id="fotoAntes" />
-      <input type="file" id="fotoDespues" style="margin-top:10px;" />
-      <button class="btn-primary" onclick="subirFotos()">📤 Subir Fotos</button>
-    </div>
+      <label for="codigo">Código del inmueble</label>
+      <input type="text" id="codigo" placeholder="Ej: 001 o 82" required />
 
-    <!-- MATERIALES -->
-    <div class="card">
-      <h3>🧰 Materiales y Trabajo Realizado</h3>
-      <textarea id="retro" rows="3" placeholder="Ej: Se cambió sifón y se aplicó sellante"></textarea>
-      <button class="btn-primary" onclick="guardarRetro()">💾 Guardar Retroalimentación</button>
-    </div>
+      <label for="cliente">Cliente / Arrendatario</label>
+      <input type="text" id="cliente" placeholder="Nombre del arrendatario" required />
 
-    <!-- FIRMA -->
-    <div class="card">
-      <h3>✍️ Firma del Inquilino</h3>
-      <canvas id="firma" class="signature"></canvas><br />
-      <button class="btn-danger" onclick="limpiarFirma()">🧹 Limpiar</button>
-      <button class="btn-primary" onclick="guardarFirma()">💾 Guardar Firma</button>
-    </div>
+      <label for="telefono">Teléfono</label>
+      <input type="tel" id="telefono" placeholder="Ej: 3012040465" required />
 
-    <!-- FINALIZAR -->
-    <div class="card" style="text-align:center;">
-      <button class="btn-success" onclick="finalizarOrden()">✅ Finalizar Orden</button>
-    </div>
+      <label for="tecnico">Técnico asignado</label>
+      <select id="tecnico">
+        <option value="">Sin asignar</option>
+      </select>
+
+      <label for="descripcion">Descripción o reporte</label>
+      <textarea id="descripcion" rows="3" placeholder="Ej: Daño en lavamanos principal" required></textarea>
+
+      <label for="estado">Estado</label>
+      <select id="estado">
+        <option value="Pendiente">Pendiente</option>
+        <option value="En proceso">En proceso</option>
+        <option value="Finalizada">Finalizada</option>
+      </select>
+
+      <button type="submit">➕ Crear orden</button>
+    </form>
+
+    <!-- ===== TABLA ===== -->
+    <table id="tablaOrdenes">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Teléfono</th>
+          <th>Técnico</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="7" style="text-align:center;">Cargando órdenes...</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("codigo");
-
-    if (!codigo) {
-      alert("Código de orden no definido.");
-      window.location.href = "/ordenes.html";
+    // === CARGAR LISTA DE TÉCNICOS ===
+    async function cargarTecnicos() {
+      try {
+        const res = await fetch("/api/users");
+        const usuarios = await res.json();
+        const select = document.getElementById("tecnico");
+        usuarios
+          .filter(u => u.rol?.toLowerCase() === "tecnico")
+          .forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.nombre;
+            opt.textContent = t.nombre;
+            select.appendChild(opt);
+          });
+      } catch (err) {
+        console.warn("⚠️ No se pudieron cargar técnicos:", err);
+      }
     }
 
-    let ordenActual = null;
+    // === CARGAR ÓRDENES EXISTENTES ===
+    async function cargarOrdenes() {
+      const tbody = document.querySelector("#tablaOrdenes tbody");
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>`;
 
-    // === CARGAR ORDEN ===
-    async function cargarOrden() {
       try {
         const res = await fetch("/api/orders");
         const data = await res.json();
+        tbody.innerHTML = "";
 
-        ordenActual = data.find(
-          o =>
-            (o.codigo || o.Código || o.código) &&
-            (o.codigo || o.Código || o.código).toString().trim() === codigo.trim()
-        );
-
-        if (!ordenActual) {
-          alert("No se encontró la orden.");
-          window.location.href = "/ordenes.html";
+        if (!data.length) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay órdenes</td></tr>`;
           return;
         }
 
-        document.getElementById("codigo").textContent = ordenActual.codigo || ordenActual.Código || ordenActual.código;
-        document.getElementById("cliente").textContent = ordenActual.cliente || ordenActual.inquilino || "-";
-        document.getElementById("telefono").textContent = ordenActual.telefono || "-";
-        document.getElementById("tecnico").textContent = ordenActual.tecnico || "Sin asignar";
-        document.getElementById("estado").textContent = ordenActual.estado || "Pendiente";
-        document.getElementById("descripcion").value = ordenActual.descripcion || "-";
-      } catch (err) {
-        console.error("Error al cargar la orden:", err);
-        alert("Error al cargar la información de la orden.");
-      }
-    }
+        data.forEach(o => {
+          // ✅ Captura tolerante a mayúsculas y tildes
+          const codigo =
+            o.codigo ||
+            o["codigo"] ||
+            o["Código"] ||
+            o["código"] ||
+            o["CÓDIGO"] ||
+            "-";
 
-    // === SUBIR FOTOS ===
-    async function subirFotos() {
-      alert("📸 Función de carga conectada. Aquí se integrará con Drive (backend ya tiene driveService.js).");
-    }
+          const cliente = o.cliente || o.inquilino || "-";
+          const telefono = o.telefono || "-";
+          const tecnico = o.tecnico || "Sin asignar";
+          const estado = o.estado || "-";
+          const fecha = o.fecha || "-";
 
-    // === GUARDAR RETROALIMENTACIÓN ===
-    async function guardarRetro() {
-      const retro = document.getElementById("retro").value;
-      if (!retro) return alert("Escribe los materiales o el trabajo realizado.");
-
-      try {
-        await fetch(`/api/orders/${codigo}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ descripcion: retro })
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${fecha}</td>
+            <td>${codigo}</td>
+            <td>${cliente}</td>
+            <td>${telefono}</td>
+            <td>${tecnico}</td>
+            <td>${estado}</td>
+            <td><button class="btn-ver" data-codigo="${codigo}">Ver / Gestionar</button></td>
+          `;
+          tbody.appendChild(fila);
         });
-        alert("💾 Retroalimentación guardada correctamente.");
+
+        // ✅ Enlace directo con código correcto
+        document.querySelectorAll(".btn-ver").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const codigo = btn.dataset.codigo;
+            if (!codigo || codigo === "-") return alert("Código de orden no definido.");
+            window.location.href = `/orden.html?codigo=${codigo}`;
+          });
+        });
       } catch (err) {
-        console.error(err);
-        alert("Error al guardar la retroalimentación.");
+        console.error("❌ Error al cargar órdenes:", err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error al cargar datos</td></tr>`;
       }
     }
 
-    // === FIRMA DIGITAL ===
-    const canvas = document.getElementById("firma");
-    const ctx = canvas.getContext("2d");
-    let pintando = false;
-
-    canvas.addEventListener("mousedown", () => (pintando = true));
-    canvas.addEventListener("mouseup", () => (pintando = false));
-    canvas.addEventListener("mousemove", dibujar);
-    canvas.addEventListener("touchstart", e => {
-      pintando = true;
+    // === CREAR NUEVA ORDEN ===
+    document.getElementById("formOrden").addEventListener("submit", async (e) => {
       e.preventDefault();
-    });
-    canvas.addEventListener("touchend", () => (pintando = false));
-    canvas.addEventListener("touchmove", e => {
-      e.preventDefault();
-      const t = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const x = t.clientX - rect.left;
-      const y = t.clientY - rect.top;
-      dibujarPos(x, y);
-    });
 
-    function dibujar(e) {
-      if (!pintando) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      dibujarPos(x, y);
-    }
+      const fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
+      const data = {
+        cliente: document.getElementById("cliente").value,
+        inquilino: document.getElementById("cliente").value,
+        telefono: document.getElementById("telefono").value,
+        codigo: document.getElementById("codigo").value,
+        descripcion: document.getElementById("descripcion").value,
+        tecnico: document.getElementById("tecnico").value || "Sin asignar",
+        estado: document.getElementById("estado").value,
+        fecha
+      };
 
-    function dibujarPos(x, y) {
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#000";
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    }
-
-    function limpiarFirma() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-    }
-
-    async function guardarFirma() {
-      const firmaData = canvas.toDataURL("image/png");
       try {
-        await fetch(`/api/orders/${codigo}`, {
-          method: "PATCH",
+        const res = await fetch("/api/orders", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firma: firmaData })
+          body: JSON.stringify(data),
         });
-        alert("✍️ Firma guardada correctamente.");
-      } catch (err) {
-        console.error(err);
-        alert("Error al guardar la firma.");
-      }
-    }
+        const result = await res.json();
 
-    // === FINALIZAR ORDEN ===
-    async function finalizarOrden() {
-      try {
-        await fetch(`/api/orders/${codigo}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ estado: "Finalizada" })
-        });
-        alert("✅ Orden finalizada correctamente.");
-        window.location.href = "/ordenes.html";
+        if (res.ok) {
+          alert("✅ Orden creada correctamente");
+          e.target.reset();
+          cargarOrdenes();
+        } else {
+          alert("⚠️ " + (result.error || "Error al crear orden"));
+        }
       } catch (err) {
-        console.error(err);
-        alert("Error al finalizar la orden.");
+        console.error("Error al crear orden:", err);
+        alert("❌ Error al conectar con el servidor");
       }
-    }
+    });
 
-    cargarOrden();
+    cargarTecnicos();
+    cargarOrdenes();
   </script>
 </body>
 </html>
