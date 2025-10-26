@@ -6,7 +6,14 @@
   <title>Gestión de Órdenes - Blue Home Gestor</title>
 
   <style>
-    /* ======== ENCABEZADO SUPERIOR ======== */
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+
+    /* ======== ENCABEZADO ======== */
     .header {
       position: fixed;
       top: 0;
@@ -15,22 +22,66 @@
       background: #007bff;
       color: #fff;
       text-align: center;
-      padding: 12px;
+      padding: 14px;
       font-weight: bold;
       font-size: 1.2rem;
       z-index: 1000;
     }
 
-    /* ======== CONTENIDO PRINCIPAL ======== */
     .main-content {
-      margin-top: 70px;
+      margin-top: 85px;
       padding: 20px;
-      background-color: #f5f7fa;
-      min-height: calc(100vh - 70px);
-      overflow-y: auto;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    /* ======== TABLA DE ÓRDENES ======== */
+    /* ======== FORMULARIO ======== */
+    form {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    form h2 {
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 5px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 18px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    /* ======== TABLA ======== */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -44,7 +95,6 @@
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
-      color: #333;
     }
 
     th {
@@ -57,47 +107,64 @@
       background: #eef5ff;
     }
 
-    /* ======== BOTONES ======== */
     .btn-ver {
       background: #007bff;
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 8px 14px;
+      padding: 7px 12px;
       cursor: pointer;
-      transition: 0.3s;
     }
 
     .btn-ver:hover {
       background: #0056b3;
     }
 
-    /* ======== RESPONSIVE ======== */
     @media (max-width: 768px) {
-      th, td {
-        font-size: 0.9rem;
-        padding: 8px;
+      form {
+        padding: 15px;
       }
 
-      .header {
-        font-size: 1rem;
-        padding: 10px;
+      th, td {
+        font-size: 0.9rem;
       }
 
       .btn-ver {
-        padding: 6px 10px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        padding: 6px 9px;
       }
     }
   </style>
 </head>
 
 <body>
-  <!-- 🔹 ENCABEZADO -->
-  <div class="header">📋 Órdenes de Servicio - Blue Home Gestor</div>
+  <div class="header">🛠️ Blue Home Gestor — Órdenes de Servicio</div>
 
-  <!-- 🔹 CONTENIDO -->
   <div class="main-content">
+    <!-- ======== FORMULARIO ======== -->
+    <form id="formOrden">
+      <h2>Crear nueva orden</h2>
+
+      <label for="arrendatario">Arrendatario</label>
+      <input type="text" id="arrendatario" placeholder="Nombre del arrendatario" required />
+
+      <label for="tecnico">Técnico asignado</label>
+      <input type="text" id="tecnico" placeholder="Nombre del técnico" required />
+
+      <label for="descripcion">Descripción del daño o solicitud</label>
+      <textarea id="descripcion" rows="3" placeholder="Ej: Fuga de agua en baño principal" required></textarea>
+
+      <label for="estado">Estado</label>
+      <select id="estado">
+        <option value="pendiente">Pendiente</option>
+        <option value="en_proceso">En proceso</option>
+        <option value="finalizada">Finalizada</option>
+      </select>
+
+      <button type="submit">➕ Crear orden</button>
+    </form>
+
+    <!-- ======== TABLA DE ÓRDENES ======== -->
     <table id="tablaOrdenes">
       <thead>
         <tr>
@@ -110,18 +177,19 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Filas generadas dinámicamente -->
+        <tr><td colspan="6" style="text-align:center;">Cargando órdenes...</td></tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // ✅ Cargar órdenes desde API y mostrarlas en la tabla
+    // === CARGAR ÓRDENES DESDE GOOGLE SHEETS (vía backend) ===
     async function cargarOrdenes() {
+      const tbody = document.querySelector("#tablaOrdenes tbody");
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Cargando...</td></tr>`;
       try {
         const res = await fetch("/api/orders");
         const ordenes = await res.json();
-        const tbody = document.querySelector("#tablaOrdenes tbody");
         tbody.innerHTML = "";
 
         if (!ordenes.length) {
@@ -142,21 +210,49 @@
           tbody.appendChild(fila);
         });
 
-        // ✅ Enlace directo a la orden
         document.querySelectorAll(".btn-ver").forEach(btn => {
           btn.addEventListener("click", () => {
             const codigo = btn.dataset.codigo;
-            if (!codigo) return alert("Código no encontrado");
             window.location.href = `/orden.html?codigo=${codigo}`;
           });
         });
-
-      } catch (err) {
-        console.error("Error al cargar órdenes:", err);
+      } catch (error) {
+        console.error("Error al cargar órdenes:", error);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Error al cargar datos</td></tr>`;
       }
     }
 
-    // Ejecutar al cargar
+    // === CREAR NUEVA ORDEN ===
+    document.getElementById("formOrden").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = {
+        arrendatario: document.getElementById("arrendatario").value,
+        tecnico: document.getElementById("tecnico").value,
+        descripcion: document.getElementById("descripcion").value,
+        estado: document.getElementById("estado").value,
+      };
+
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          alert("✅ Orden creada correctamente");
+          e.target.reset();
+          cargarOrdenes();
+        } else {
+          alert("⚠️ " + (result.error || "Error al crear orden"));
+        }
+      } catch (err) {
+        console.error("Error al crear orden:", err);
+        alert("❌ Error de conexión con el servidor");
+      }
+    });
+
     cargarOrdenes();
   </script>
 </body>
