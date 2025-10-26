@@ -11,7 +11,6 @@
       background-color: #f4f6f9;
       color: #333;
     }
-
     .header {
       position: fixed;
       top: 0;
@@ -25,33 +24,27 @@
       font-size: 1.2rem;
       z-index: 1000;
     }
-
     .container {
       margin: 90px auto 40px auto;
       padding: 20px;
       max-width: 1100px;
     }
-
-    /* ===== FORMULARIO ===== */
     form {
       background: #fff;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 25px;
       margin-bottom: 25px;
     }
-
     h2 {
       color: #007bff;
       margin-top: 0;
     }
-
     label {
       display: block;
       font-weight: 600;
       margin-top: 12px;
     }
-
     input, select, textarea {
       width: 100%;
       padding: 10px;
@@ -59,12 +52,10 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
-      box-sizing: border-box;
     }
-
     button {
       background: #007bff;
-      color: #fff;
+      color: white;
       border: none;
       border-radius: 6px;
       padding: 10px 18px;
@@ -72,36 +63,26 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    button:hover {
-      background: #0056b3;
-    }
-
-    /* ===== TABLA ===== */
+    button:hover { background: #0056b3; }
     table {
       width: 100%;
       border-collapse: collapse;
       background: #fff;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
-
     th, td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
     }
-
     th {
       background: #007bff;
       color: white;
       font-weight: 600;
     }
-
-    tr:hover {
-      background: #eef5ff;
-    }
-
+    tr:hover { background: #eef5ff; }
     .btn-ver {
       background: #007bff;
       color: white;
@@ -110,21 +91,7 @@
       padding: 7px 12px;
       cursor: pointer;
     }
-    .btn-ver:hover {
-      background: #0056b3;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 10px;
-      }
-      form {
-        padding: 15px;
-      }
-      th, td {
-        font-size: 0.9rem;
-      }
-    }
+    .btn-ver:hover { background: #0056b3; }
   </style>
 </head>
 <body>
@@ -141,19 +108,16 @@
       <label for="cliente">Cliente / Arrendatario</label>
       <input type="text" id="cliente" placeholder="Nombre del arrendatario" required />
 
-      <label for="telefono">Teléfono del arrendatario</label>
+      <label for="telefono">Teléfono</label>
       <input type="tel" id="telefono" placeholder="Ej: 3012040465" required />
 
       <label for="tecnico">Técnico asignado</label>
       <select id="tecnico">
         <option value="">Sin asignar</option>
-        <option value="Dayan">Dayan</option>
-        <option value="Julissa">Julissa</option>
-        <option value="Itana">Itana</option>
       </select>
 
       <label for="descripcion">Descripción o reporte</label>
-      <textarea id="descripcion" rows="3" placeholder="Ej: Daño en lavamanos principal, fuga leve de agua" required></textarea>
+      <textarea id="descripcion" rows="3" placeholder="Ej: Daño en lavamanos principal" required></textarea>
 
       <label for="estado">Estado</label>
       <select id="estado">
@@ -185,7 +149,26 @@
   </div>
 
   <script>
-    // === CARGAR ÓRDENES ===
+    // === CARGAR LISTA DE TÉCNICOS ===
+    async function cargarTecnicos() {
+      try {
+        const res = await fetch("/api/users");
+        const usuarios = await res.json();
+        const select = document.getElementById("tecnico");
+        usuarios
+          .filter(u => u.rol?.toLowerCase() === "tecnico")
+          .forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.nombre;
+            opt.textContent = t.nombre;
+            select.appendChild(opt);
+          });
+      } catch (err) {
+        console.warn("⚠️ No se pudieron cargar técnicos:", err);
+      }
+    }
+
+    // === CARGAR ÓRDENES EXISTENTES ===
     async function cargarOrdenes() {
       const tbody = document.querySelector("#tablaOrdenes tbody");
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>`;
@@ -196,20 +179,20 @@
         tbody.innerHTML = "";
 
         if (!data.length) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay órdenes registradas</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay órdenes</td></tr>`;
           return;
         }
 
-        data.forEach((o) => {
+        data.forEach(o => {
           const fila = document.createElement("tr");
           fila.innerHTML = `
-            <td>${o.Fecha || "-"}</td>
-            <td>${o.Código || "-"}</td>
-            <td>${o.Inquilino || o.Cliente || "-"}</td>
-            <td>${o.Telefono || "-"}</td>
-            <td>${o.Tecnico || "Sin asignar"}</td>
-            <td>${o.Estado || "-"}</td>
-            <td><button class="btn-ver" data-codigo="${o.Código}">Ver / Gestionar</button></td>
+            <td>${o.fecha || "-"}</td>
+            <td>${o.codigo || "-"}</td>
+            <td>${o.cliente || o.inquilino || "-"}</td>
+            <td>${o.telefono || "-"}</td>
+            <td>${o.tecnico || "Sin asignar"}</td>
+            <td>${o.estado || "-"}</td>
+            <td><button class="btn-ver" data-codigo="${o.codigo}">Ver / Gestionar</button></td>
           `;
           tbody.appendChild(fila);
         });
@@ -222,21 +205,25 @@
           });
         });
       } catch (err) {
-        console.error("Error al cargar órdenes:", err);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error al cargar órdenes</td></tr>`;
+        console.error("❌ Error al cargar órdenes:", err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error al cargar datos</td></tr>`;
       }
     }
 
     // === CREAR NUEVA ORDEN ===
     document.getElementById("formOrden").addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      const fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
       const data = {
-        codigo: document.getElementById("codigo").value,
         cliente: document.getElementById("cliente").value,
+        inquilino: document.getElementById("cliente").value,
         telefono: document.getElementById("telefono").value,
-        tecnico: document.getElementById("tecnico").value || "Sin asignar",
+        codigo: document.getElementById("codigo").value,
         descripcion: document.getElementById("descripcion").value,
+        tecnico: document.getElementById("tecnico").value || "Sin asignar",
         estado: document.getElementById("estado").value,
+        fecha
       };
 
       try {
@@ -260,6 +247,7 @@
       }
     });
 
+    cargarTecnicos();
     cargarOrdenes();
   </script>
 </body>
