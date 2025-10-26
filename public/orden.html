@@ -4,40 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orden de Trabajo | Blue Home Gestor</title>
+  <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background:#f6f8fb; font-family:"Segoe UI",sans-serif; margin:0; }
+    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
     header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
     .logo { height:42px; }
     main { padding:24px; max-width:1000px; margin:0 auto; }
-    h2 { color:#fff; margin:0; font-weight:600; }
-    h3 { color:#004aad; margin-bottom:12px; }
+    h2 { color:#004aad; margin:0; }
+    h3 { color:#004aad; margin:0 0 12px; }
     .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    .info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
-    .info-item b { color:#004aad; }
+
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
+    .info-item b { color:#004aad; min-width:95px; display:inline-block; }
+
     input[type="file"], input[type="text"], textarea {
       width:100%; padding:8px 10px; border:1px solid #cfd6e4; border-radius:8px; font-size:14px; outline:none;
     }
-    textarea { min-height:90px; resize:vertical; }
+    textarea { min-height:100px; resize:vertical; }
+
     .btn { border:none; border-radius:8px; padding:9px 14px; cursor:pointer; font-weight:600; transition:0.2s; }
     .btn-primary{ background:#004aad; color:#fff; } .btn-primary:hover{ background:#1f64d1; }
     .btn-muted{ background:#6c757d; color:#fff; } .btn-muted:hover{ background:#5a6268; }
     .btn-success{ background:#2ecc71; color:#fff; }
     .btn-danger{ background:#e74c3c; color:#fff; }
+
     .signature-wrap{ border:2px dashed #bfc6d8; border-radius:10px; background:#fff; height:220px; }
     #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
-    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
   <header>
     <div style="display:flex;align-items:center;gap:10px;">
-      <img class="logo" alt="Blue Home" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARcAAAAgCAYAAABzJf8GAAAABHNCSVQICAgIfAhkiAAAAVlJREFUeJzt1rENgzAMQ9G5/7+m2YqXcCQkNkwUcxIn54EjAbEw0zZ5Ck0s5B82cB3B3d+oU7xEAwl0xjZ6eRDC9lFoQghhBBCiIoyED5yHqqGAcAbXx7a/DnWppXCe2xvKnwIoZhBBCiDAFfO5cz2feBAcVADtzH9zRzX4EPPZPOH+w99W4FOT7mzxEAwgUh2iKc4xNwaQCCGEEEIIIYQQQgghhBAiU9YElcLa6v1wG5LVmQAAAABJRU5ErkJggg==" />
+      <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
       <h2>Orden de Trabajo</h2>
     </div>
     <button class="btn btn-muted" id="btnBack">← Volver</button>
   </header>
 
   <main>
+    <!-- INFO -->
     <div class="card">
       <div class="info-grid">
         <div class="info-item"><b>Código:</b> <span id="codigo">—</span></div>
@@ -49,112 +55,67 @@
       <p style="margin-top:10px;"><b>Descripción:</b> <span id="descripcion">—</span></p>
     </div>
 
+    <!-- FOTOS -->
     <div class="card">
       <h3>📸 Evidencias del trabajo</h3>
       <label><b>Foto Antes:</b></label>
       <input type="file" id="fotoAntes" accept="image/*"/>
       <label style="margin-top:8px;"><b>Foto Después:</b></label>
       <input type="file" id="fotoDespues" accept="image/*"/>
-      <div class="row-actions">
-        <button class="btn btn-primary" id="btnSubirFotos">📤 Subir Fotos</button>
-      </div>
     </div>
 
+    <!-- RETRO -->
     <div class="card">
       <h3>🪚 Materiales y Trabajo Realizado</h3>
       <textarea id="materiales" placeholder="Describe materiales o trabajos realizados..."></textarea>
       <textarea id="observaciones" placeholder="Observaciones o comentarios..."></textarea>
-      <div class="row-actions">
-        <button class="btn btn-primary" id="btnGuardarRetro">💾 Guardar Retroalimentación</button>
-      </div>
     </div>
 
+    <!-- FIRMA -->
     <div class="card">
       <h3>✍️ Firma del Inquilino</h3>
       <input type="text" id="nombreFirmante" placeholder="Nombre del firmante (Ej: Juan Pérez)" />
-      <div class="signature-wrap"><canvas id="firmaCanvas"></canvas></div>
-      <div class="row-actions">
+      <div class="signature-wrap" style="margin-top:8px;">
+        <canvas id="firmaCanvas"></canvas>
+      </div>
+      <div class="row-actions" style="margin-top:10px;">
         <button class="btn btn-danger" id="btnLimpiarFirma">Limpiar</button>
-        <button class="btn btn-primary" id="btnGuardarFirma">💾 Guardar Firma</button>
       </div>
     </div>
 
-    <div style="text-align:center;">
-      <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden</button>
+    <!-- FINALIZAR -->
+    <div style="text-align:center; margin-top:12px;">
+      <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden (Generar PDF)</button>
     </div>
   </main>
 
   <script>
     const API = "/api/orders";
-    const params = new URLSearchParams(location.search);
-    const codigoParam = params.get("codigo");
-
+    const q = new URLSearchParams(location.search);
+    const codigo = q.get("codigo");
     document.getElementById("btnBack").onclick = () => location.href = "ordenes.html";
 
+    // ===== CARGAR DATOS ORDEN =====
     async function cargarOrden() {
       try {
         const r = await fetch(API);
-        const all = await r.json();
+        const data = await r.json();
+        const o = data.find(x => x.codigo === codigo || x.Código === codigo);
+        if (!o) return alert("No se encontró la orden.");
 
-        const o = all.find(x => {
-          const keys = Object.keys(x);
-          const keyCodigo = keys.find(k => k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") === "codigo");
-          if (!keyCodigo) return false;
-          return (x[keyCodigo] || "").trim().toLowerCase() === (codigoParam || "").trim().toLowerCase();
-        });
-
-        if (!o) return alert("⚠️ No se encontró la orden.");
-
-        const keyCodigo = Object.keys(o).find(k => k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") === "codigo");
-        document.getElementById("codigo").textContent = keyCodigo ? o[keyCodigo] : "—";
-        document.getElementById("cliente").textContent = o.cliente || o.arrendatario || "—";
-        document.getElementById("telefono").textContent = o.telefono || "—";
-        document.getElementById("tecnico").textContent = o.tecnico || "—";
-        document.getElementById("estado").textContent = o.estado || "—";
-        document.getElementById("descripcion").textContent = o.descripcion || "—";
+        document.getElementById("codigo").textContent = o.codigo || o.Código || "—";
+        document.getElementById("cliente").textContent = o.cliente || o.Cliente || "—";
+        document.getElementById("telefono").textContent = o.telefono || o.Teléfono || "—";
+        document.getElementById("tecnico").textContent = o.tecnico || o.Técnico || "—";
+        document.getElementById("estado").textContent = o.estado || o.Estado || "—";
+        document.getElementById("descripcion").textContent = o.descripcion || o.Descripción || "—";
       } catch (e) {
         console.error(e);
-        alert("❌ Error al cargar la orden.");
+        alert("Error cargando datos de la orden.");
       }
     }
 
-    document.getElementById("btnSubirFotos").onclick = async () => {
-      const antes = document.getElementById("fotoAntes").files[0];
-      const despues = document.getElementById("fotoDespues").files[0];
-      if (!antes && !despues) return alert("Selecciona al menos una foto.");
-
-      const fd = new FormData();
-      if (antes) fd.append("fotoAntes", antes);
-      if (despues) fd.append("fotoDespues", despues);
-
-      try {
-        const r = await fetch(`${API}/${codigoParam}/upload`, { method:"POST", body: fd });
-        const out = await r.json();
-        alert(out.ok ? "✅ Fotos subidas correctamente." : "❌ Error al subir fotos.");
-      } catch (e) {
-        console.error(e);
-        alert("Error de conexión al subir fotos.");
-      }
-    };
-
-    document.getElementById("btnGuardarRetro").onclick = async () => {
-      const materiales = document.getElementById("materiales").value.trim();
-      const observaciones = document.getElementById("observaciones").value.trim();
-
-      try {
-        const r = await fetch(`${API}/${codigoParam}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materiales, observaciones })
-        });
-        const out = await r.json();
-        alert(out.ok ? "💾 Retroalimentación guardada en la hoja." : "❌ Error al guardar.");
-      } catch (e) {
-        console.error(e);
-        alert("Error al guardar en Google Sheets.");
-      }
-    };
-
+    // ===== FIRMA =====
     const canvas = document.getElementById("firmaCanvas");
     const ctx = canvas.getContext("2d");
     function resizeCanvas() {
@@ -162,44 +123,60 @@
       const ratio = window.devicePixelRatio || 1;
       canvas.width = rect.width * ratio;
       canvas.height = rect.height * ratio;
-      ctx.setTransform(ratio,0,0,ratio,0,0);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#111827";
     }
     resizeCanvas(); window.addEventListener("resize", resizeCanvas);
 
     let dibujando = false;
-    function getPos(e){const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length)e=e.touches[0]; return{x:e.clientX-r.left,y:e.clientY-r.top};}
-    function start(e){dibujando=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();}
-    function draw(e){if(!dibujando)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();}
-    function end(){dibujando=false;}
-    canvas.addEventListener("mousedown",start);canvas.addEventListener("mousemove",draw);window.addEventListener("mouseup",end);
-    canvas.addEventListener("touchstart",start,{passive:false});canvas.addEventListener("touchmove",draw,{passive:false});canvas.addEventListener("touchend",end);
+    function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length) e=e.touches[0]; return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+    function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+    function end(){ dibujando=false; }
+    canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",draw); window.addEventListener("mouseup",end);
+    canvas.addEventListener("touchstart",start,{passive:false}); canvas.addEventListener("touchmove",draw,{passive:false}); canvas.addEventListener("touchend",end);
+    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); };
 
-    document.getElementById("btnLimpiarFirma").onclick = () => {ctx.clearRect(0,0,canvas.width,canvas.height);resizeCanvas();};
-
-    document.getElementById("btnGuardarFirma").onclick = async () => {
-      const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
-      if (!nombreFirmante) return alert("Ingresa el nombre del firmante.");
-      const firmaData = canvas.toDataURL("image/png");
-      try {
-        const r = await fetch(`${API}/${codigoParam}/firma`, {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({ nombre: nombreFirmante, firma: firmaData })
-        });
-        const out = await r.json();
-        alert(out.ok ? "✅ Firma guardada en Drive." : "❌ Error al guardar la firma.");
-      } catch(e){ console.error(e); alert("Error al guardar la firma."); }
-    };
-
+    // ===== FINALIZAR Y GENERAR PDF =====
     document.getElementById("btnFinalizar").onclick = async () => {
-      if (!confirm("¿Finalizar esta orden?")) return;
       try {
-        const r = await fetch(`${API}/${codigoParam}/finish`, { method:"POST" });
-        const out = await r.json();
-        alert(out.ok ? "✅ Orden finalizada." : "❌ Error al finalizar.");
-        if (out.ok) location.href="ordenes.html";
-      } catch(e){ console.error(e); alert("Error al finalizar orden."); }
+        const materiales = document.getElementById("materiales").value.trim();
+        const observaciones = document.getElementById("observaciones").value.trim();
+        const cliente = document.getElementById("cliente").textContent;
+        const telefono = document.getElementById("telefono").textContent;
+        const tecnico = document.getElementById("tecnico").textContent;
+        const estado = "Finalizada";
+        const descripcion = document.getElementById("descripcion").textContent;
+        const firmaData = canvas.toDataURL("image/png");
+        const fotoAntes = document.getElementById("fotoAntes").files[0];
+        const fotoDespues = document.getElementById("fotoDespues").files[0];
+
+        const formData = new FormData();
+        formData.append("codigo", codigo);
+        formData.append("cliente", cliente);
+        formData.append("telefono", telefono);
+        formData.append("tecnico", tecnico);
+        formData.append("estado", estado);
+        formData.append("descripcion", descripcion);
+        formData.append("materiales", materiales);
+        formData.append("observaciones", observaciones);
+        formData.append("firma", firmaData);
+        if (fotoAntes) formData.append("fotoAntes", fotoAntes);
+        if (fotoDespues) formData.append("fotoDespues", fotoDespues);
+
+        const res = await fetch(`${API}/${codigo}/pdf`, { method: "POST", body: formData });
+        const out = await res.json();
+
+        if (out.ok) {
+          alert("✅ Orden finalizada y PDF generado correctamente.\n\n📎 Enlace: " + out.driveUrl);
+          location.href = "ordenes.html";
+        } else {
+          alert("❌ Error generando PDF.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error al generar PDF.");
+      }
     };
 
     cargarOrden();
