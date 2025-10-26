@@ -6,7 +6,7 @@
   <title>Orden de Trabajo | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
+    body { background:#f6f8fb; font-family:"Segoe UI", sans-serif; }
     header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
     .logo { height:42px; }
     main { padding:24px; max-width:1000px; margin:0 auto; }
@@ -109,11 +109,14 @@
         const r = await fetch(API);
         const all = await r.json();
 
-        const o = all.find(x =>
-          x.codigo?.trim()?.toLowerCase() === codigo?.toLowerCase()
-        );
+        // 🧩 Comparación robusta: ignora tildes, mayúsculas, espacios
+        const normalize = txt => (txt || "").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const o = all.find(x => normalize(x.codigo) === normalize(codigo));
 
-        if (!o) return alert("No se encontró la orden.");
+        if (!o) {
+          console.warn("Orden no encontrada. Código buscado:", codigo, " disponibles:", all.map(x => x.codigo));
+          return alert("No se encontró la orden.");
+        }
 
         document.getElementById("cliente").textContent = o.cliente || o.inquilino || "—";
         document.getElementById("telefono").textContent = o.telefono || "—";
@@ -138,10 +141,7 @@
         if (antes) formData.append("fotoAntes", antes);
         if (despues) formData.append("fotoDespues", despues);
 
-        const res = await fetch(`${API}/${codigo}/upload`, {
-          method: "POST",
-          body: formData,
-        });
+        const res = await fetch(`${API}/${codigo}/upload`, { method: "POST", body: formData });
         const result = await res.json();
         alert(result.ok ? "✅ Fotos subidas correctamente." : "❌ Error al subir fotos.");
       } catch (e) {
