@@ -3,240 +3,273 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Órdenes | Blue Home Gestor</title>
+  <title>Órdenes | Blue Home Gestor</title>
+  <link rel="icon" href="assets/img/logo-blanco.png" />
   <link rel="stylesheet" href="assets/css/estilos.css" />
-  <script src="https://unpkg.com/lucide@latest"></script>
-
+  
   <style>
-  /* ======== BASE GENERAL ======== */
-  body {
-    background: linear-gradient(145deg, #f5f8fb, #e9eef5);
-    color: #1c2b4a;
-    font-family: "Poppins", "Inter", sans-serif;
-    margin: 0;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+    /* ======== BASE ======== */
+    body {
+      background: linear-gradient(145deg, #f5f8fb, #e9eef5);
+      color: #1c2b4a;
+      font-family: "Poppins", "Inter", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-  /* ======== HEADER ======== */
-  header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    backdrop-filter: blur(10px);
-    background: rgba(10, 60, 110, 0.92);
-    color: white;
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    z-index: 999;
-    height: 85px;
-  }
-
-  header img {
-    height: 42px;
-  }
-
-  header h1 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: 0.3px;
-  }
-
-  /* ======== CONTENIDO PRINCIPAL ======== */
-  main {
-    margin-top: 130px !important; /* compensación total del header */
-    padding: 25px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    transition: margin-top 0.3s ease;
-  }
-
-  /* ======== FORMULARIO ======== */
-  .form-container {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
-    padding: 30px;
-    margin-bottom: 25px;
-  }
-
-  .form-container h2 {
-    margin: 0 0 15px;
-    color: #0a3c6e;
-    font-weight: 600;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 15px;
-    margin-bottom: 15px;
-  }
-
-  .form-grid input,
-  .form-grid select,
-  textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1.5px solid #d1d6de;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    color: #1c1c1c;
-    background: #ffffff;
-    outline: none;
-    transition: all 0.3s ease;
-  }
-
-  .form-grid input::placeholder,
-  textarea::placeholder {
-    color: #7a7f89;
-  }
-
-  .form-grid input:focus,
-  .form-grid select:focus,
-  textarea:focus {
-    border-color: #0a3c6e;
-    box-shadow: 0 0 8px rgba(10, 60, 110, 0.25);
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    margin-top: 20px;
-  }
-
-  .form-actions button {
-    background: #0a3c6e;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 9px 18px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-
-  .form-actions button:hover {
-    background: #164f9c;
-  }
-
-  /* ======== TABLA ======== */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  thead {
-    background: #0a3c6e;
-    color: #fff;
-  }
-
-  th, td {
-    padding: 12px 15px;
-    text-align: left;
-    font-size: 0.95rem;
-  }
-
-  tr:nth-child(even) {
-    background: #f8fafc;
-  }
-
-  tr:hover {
-    background: #eef3ff;
-  }
-
-  .badge {
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #fff;
-  }
-
-  .badge.pendiente {
-    background: #ff5c5c;
-  }
-
-  .badge.finalizada {
-    background: #4caf50;
-  }
-
-  /* ======== RESPONSIVE ======== */
-  @media (max-width: 768px) {
+    /* ======== HEADER ======== */
     header {
-      flex-direction: row;
-      justify-content: center;
-      height: auto;
-      padding: 12px 18px;
-      text-align: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      background: rgba(10, 60, 110, 0.92);
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      z-index: 999;
+      height: 85px;
+    }
+
+    header img {
+      height: 42px;
     }
 
     header h1 {
-      font-size: 1.1rem;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0;
     }
 
+    /* ======== CONTENIDO ======== */
     main {
-      margin-top: 140px !important;
-      padding: 15px;
+      margin-top: 130px !important;
+      padding: 25px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
+    /* ======== FORMULARIO ======== */
     .form-container {
-      padding: 22px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      margin-bottom: 25px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .form-grid input,
+    .form-grid select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid #d1d6de;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-grid input:focus,
+    .form-grid select:focus,
+    textarea:focus {
+      border-color: #0a3c6e;
+      box-shadow: 0 0 8px rgba(10, 60, 110, 0.25);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .form-actions button {
+      background: #0a3c6e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .form-actions button:hover {
+      background: #164f9c;
+    }
+
+    /* ======== TABLA ======== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    thead {
+      background: #0a3c6e;
+      color: #fff;
     }
 
     th, td {
-      font-size: 0.85rem;
+      padding: 12px 15px;
+      text-align: left;
+      font-size: 0.95rem;
     }
-  }
-</style>
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    tr:hover {
+      background: #eef3ff;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .badge.pendiente {
+      background: #ff5c5c;
+    }
+
+    .badge.finalizada {
+      background: #4caf50;
+    }
+
+    /* ======== MODAL ======== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .modal-content {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 16px;
+      padding: 25px;
+      width: 95%;
+      max-width: 600px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(15px);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: #0a3c6e;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .modal-body select, .modal-body input {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+    }
+
+    .save-btn {
+      margin-top: 20px;
+      background: #0a3c6e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      float: right;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: row;
+        justify-content: center;
+        height: auto;
+        padding: 12px 18px;
+      }
+
+      header h1 {
+        font-size: 1.1rem;
+      }
+
+      main {
+        margin-top: 140px !important;
+        padding: 15px;
+      }
+    }
+  </style>
 </head>
 
 <body>
   <header>
-    <h1><img src="assets/img/logo-blanco.png" alt="Logo Blue Home" height="40" /> Órdenes</h1>
+    <img src="assets/img/logo-blanco.png" alt="Logo Blue Home">
+    <h1>Órdenes</h1>
   </header>
 
   <main>
-    <!-- FORMULARIO DE CREACIÓN -->
     <section class="form-container">
-      <h2 style="margin-top:0;">Nueva Orden</h2>
+      <h2>Nueva Orden</h2>
       <div class="form-grid">
-        <input type="text" id="cliente" placeholder="Cliente" value="BLUE HOME INMOBILIARIA" />
-        <input type="text" id="telefono" placeholder="Teléfono" value="3012040465" />
-        <input type="text" id="codigo" placeholder="Código" />
-        <input type="date" id="fecha" />
-        <select id="tecnico">
-          <option value="">Sin asignar</option>
-          <option value="Carlos">Carlos</option>
-          <option value="Daniela">Daniela</option>
-        </select>
-        <select id="estado">
-          <option value="Pendiente">Pendiente</option>
-          <option value="Finalizada">Finalizada</option>
-        </select>
+        <input type="text" placeholder="Cliente" id="cliente">
+        <input type="text" placeholder="Teléfono" id="telefono">
+        <input type="text" placeholder="Código" id="codigo">
+        <input type="date" id="fecha">
+        <textarea placeholder="Descripción" id="descripcion"></textarea>
       </div>
-
-      <textarea id="descripcion" rows="3" placeholder="Descripción detallada de la orden..."></textarea>
-
       <div class="form-actions">
         <button id="btnLimpiar">Limpiar</button>
         <button id="btnCrear">Crear Orden</button>
       </div>
     </section>
 
-    <!-- TABLA DE ÓRDENES -->
-    <section>
+    <section class="tabla">
       <table>
         <thead>
           <tr>
@@ -255,64 +288,85 @@
     </section>
   </main>
 
+  <!-- Modal de gestión -->
+  <div class="modal" id="modalGestion">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Gestionar Orden</h2>
+        <button class="close-btn" id="cerrarModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label for="tecnicoAsignado">Asignar técnico:</label>
+        <select id="tecnicoAsignado">
+          <option value="">Sin asignar</option>
+          <option value="Carlos">Carlos</option>
+          <option value="Diana">Diana</option>
+          <option value="Luis">Luis</option>
+        </select>
+
+        <label for="estadoOrden">Estado:</label>
+        <select id="estadoOrden">
+          <option value="Pendiente">Pendiente</option>
+          <option value="Finalizada">Finalizada</option>
+        </select>
+
+        <button class="save-btn" id="guardarCambios">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    lucide.createIcons();
+    const ordenes = [
+      { fecha: "15/10/2025, 22:04:18", codigo: "001", cliente: "BLUE HOME INMOBILIARIA", telefono: "3012040465", descripcion: "REALIZAR BODEGA DE MONACO CON PARQUEADERO", tecnico: "Sin asignar", estado: "Finalizada" },
+      { fecha: "16/10/2025, 17:57:23", codigo: "002", cliente: "BLUE HOME INMOBILIARIA", telefono: "3012040465", descripcion: "INSTALAR LETRERO EN LA OFICINA", tecnico: "Sin asignar", estado: "Pendiente" }
+    ];
 
-    // Cargar órdenes
-    async function cargarOrdenes() {
-      const resp = await fetch("/api/orders");
-      const data = await resp.json();
-      const tbody = document.getElementById("tablaOrdenes");
-      tbody.innerHTML = "";
+    const tabla = document.getElementById("tablaOrdenes");
+    const modal = document.getElementById("modalGestion");
+    const cerrarModal = document.getElementById("cerrarModal");
+    const tecnicoSelect = document.getElementById("tecnicoAsignado");
+    const estadoSelect = document.getElementById("estadoOrden");
+    const guardarBtn = document.getElementById("guardarCambios");
+    let ordenActual = null;
 
-      if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px;">No hay órdenes registradas.</td></tr>`;
-        return;
-      }
-
-      data.forEach(o => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${o.fecha}</td>
-          <td>${o.codigo}</td>
-          <td>${o.cliente}</td>
-          <td>${o.telefono}</td>
-          <td>${o.descripcion}</td>
-          <td>${o.tecnico || "-"}</td>
-          <td><span class="badge ${o.estado.toLowerCase()}">${o.estado}</span></td>
-          <td><button>Ver / Gestionar</button></td>
+    function renderTabla() {
+      tabla.innerHTML = "";
+      ordenes.forEach((o, i) => {
+        tabla.innerHTML += `
+          <tr>
+            <td>${o.fecha}</td>
+            <td>${o.codigo}</td>
+            <td>${o.cliente}</td>
+            <td>${o.telefono}</td>
+            <td>${o.descripcion}</td>
+            <td>${o.tecnico}</td>
+            <td><span class="badge ${o.estado.toLowerCase()}">${o.estado}</span></td>
+            <td><button onclick="abrirModal(${i})">Ver / Gestionar</button></td>
+          </tr>
         `;
-        tbody.appendChild(tr);
       });
     }
 
-    cargarOrdenes();
+    function abrirModal(index) {
+      ordenActual = index;
+      tecnicoSelect.value = ordenes[index].tecnico !== "Sin asignar" ? ordenes[index].tecnico : "";
+      estadoSelect.value = ordenes[index].estado;
+      modal.style.display = "flex";
+    }
 
-    // Crear nueva orden
-    document.getElementById("btnCrear").addEventListener("click", async () => {
-      const nueva = {
-        cliente: document.getElementById("cliente").value,
-        telefono: document.getElementById("telefono").value,
-        codigo: document.getElementById("codigo").value,
-        fecha: document.getElementById("fecha").value,
-        descripcion: document.getElementById("descripcion").value,
-        tecnico: document.getElementById("tecnico").value,
-        estado: document.getElementById("estado").value
-      };
+    cerrarModal.onclick = () => modal.style.display = "none";
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; }
 
-      await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nueva)
-      });
+    guardarBtn.onclick = () => {
+      if (ordenActual !== null) {
+        ordenes[ordenActual].tecnico = tecnicoSelect.value || "Sin asignar";
+        ordenes[ordenActual].estado = estadoSelect.value;
+        modal.style.display = "none";
+        renderTabla();
+      }
+    };
 
-      alert("✅ Orden creada correctamente");
-      cargarOrdenes();
-    });
-
-    document.getElementById("btnLimpiar").addEventListener("click", () => {
-      document.querySelectorAll("input, textarea, select").forEach(el => el.value = "");
-    });
+    renderTabla();
   </script>
 </body>
 </html>
