@@ -1,4 +1,6 @@
-// services/driveService.js
+// ======================================================
+// 📂 Blue Home Gestor — Servicio Google Drive (solo PDFs)
+// ======================================================
 import { google } from "googleapis";
 import fs from "fs";
 
@@ -14,13 +16,12 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: "v3", auth });
 
 // ======================================================
-// 🔹 Verificar o crear carpeta destino
+// 🔹 Verificar o crear carpeta destino (en unidad compartida)
 // ======================================================
 export async function ensureFolderExists(folderName) {
   try {
     const parentId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-    // Verificar si la carpeta ya existe
     const res = await drive.files.list({
       q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: "files(id, name)",
@@ -33,7 +34,6 @@ export async function ensureFolderExists(folderName) {
       return res.data.files[0].id;
     }
 
-    // Crear carpeta si no existe
     const folder = await drive.files.create({
       resource: {
         name: folderName,
@@ -47,22 +47,17 @@ export async function ensureFolderExists(folderName) {
     console.log(`📂 Carpeta creada en Drive: ${folderName}`);
     return folder.data.id;
   } catch (err) {
-    console.error("❌ Error al verificar/crear carpeta en Drive:", err);
+    console.error("❌ Error verificando/creando carpeta en Drive:", err);
     throw err;
   }
 }
 
 // ======================================================
-// 🔹 Subir archivo a Drive (solo para miembros de la unidad)
+// 🔹 Subir archivo PDF al Drive
 // ======================================================
-export async function uploadFileToDrive(filePath, fileName, folderName = null) {
+export async function uploadFileToDrive(filePath, fileName, folderName = "BlueHome_Gestor_PDFs") {
   try {
-    let parentId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-    // Si se pasa un folderName, crear o usar subcarpeta
-    if (folderName) {
-      parentId = await ensureFolderExists(folderName);
-    }
+    const parentId = await ensureFolderExists(folderName);
 
     const fileMetadata = {
       name: fileName,
@@ -70,27 +65,26 @@ export async function uploadFileToDrive(filePath, fileName, folderName = null) {
     };
 
     const media = {
-      mimeType: "image/jpeg",
+      mimeType: "application/pdf",
       body: fs.createReadStream(filePath),
     };
 
-    const file = await drive.files.create({
+    const response = await drive.files.create({
       resource: fileMetadata,
-      media: media,
+      media,
       fields: "id, webViewLink",
       supportsAllDrives: true,
     });
 
-    const fileId = file.data.id;
-    console.log(`✅ Archivo subido correctamente: ${fileName}`);
+    const fileId = response.data.id;
+    console.log(`✅ PDF subido correctamente: ${fileName}`);
 
-    // No intentar cambiar permisos (el Shared Drive ya maneja herencia)
     return {
       id: fileId,
       webViewLink: `https://drive.google.com/file/d/${fileId}/view`,
     };
   } catch (err) {
-    console.error("❌ Error al subir archivo a Drive (Shared Drive):", err.message);
+    console.error("❌ Error al subir PDF a Drive:", err.message);
     throw err;
   }
 }
