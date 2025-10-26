@@ -1,62 +1,72 @@
-// ======================================================
-// 📦 Blue Home Gestor — Servicio de Google Drive (Shared Drive Ready)
-// ======================================================
+// services/driveService.js
 import { google } from "googleapis";
 import fs from "fs";
 
-const auth = new google.auth.JWT(
-  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  null,
-  process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/drive"]
-);
+// 🔹 Autenticación con la cuenta de servicio
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  },
+  scopes: ["https://www.googleapis.com/auth/drive"],
+});
 
 const drive = google.drive({ version: "v3", auth });
 
 // ======================================================
-// 🔹 Verifica o crea carpeta destino dentro del Shared Drive
+// 🔹 Verificar o crear carpeta destino
 // ======================================================
-async function ensureFolderExists(folderId) {
+export async function ensureFolderExists(folderName) {
   try {
-    const res = await drive.files.get({
-      fileId: folderId,
-      fields: "id, name",
+    const parentId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+    // Verificar si la carpeta ya existe
+    const res = await drive.files.list({
+      q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: "files(id, name)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+
+    if (res.data.files.length > 0) {
+      console.log(`📁 Carpeta detectada en Drive: ${folderName}`);
+      return res.data.files[0].id;
+    }
+
+    // Crear carpeta si no existe
+    const folder = await drive.files.create({
+      resource: {
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parentId],
+      },
+      fields: "id",
       supportsAllDrives: true,
     });
-    console.log(`✅ Carpeta detectada en Drive: ${res.data.name}`);
-    return folderId;
+
+    console.log(`📂 Carpeta creada en Drive: ${folderName}`);
+    return folder.data.id;
   } catch (err) {
-    if (err.code === 404) {
-      console.warn("⚠️ Carpeta no encontrada. Creando una nueva en la Unidad Compartida...");
-      const newFolder = await drive.files.create({
-        resource: {
-          name: "BlueHome_Gestor_Fotos",
-          mimeType: "application/vnd.google-apps.folder",
-          driveId: process.env.GOOGLE_DRIVE_FOLDER_ID, // raíz de la unidad
-          parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
-        },
-        fields: "id, webViewLink",
-        supportsAllDrives: true,
-      });
-      console.log(`📁 Nueva carpeta creada: ${newFolder.data.webViewLink}`);
-      return newFolder.data.id;
-    } else {
-      console.error("❌ Error verificando carpeta:", err);
-      throw err;
-    }
+    console.error("❌ Error al verificar/crear carpeta en Drive:", err);
+    throw err;
   }
 }
 
 // ======================================================
-// 🔹 Subir archivo a la Unidad Compartida
+// 🔹 Subir archivo a Drive (solo para miembros de la unidad)
 // ======================================================
-export async function uploadFileToDrive(filePath, fileName) {
+export async function uploadFileToDrive(filePath, fileName, folderName = null) {
   try {
-    const folderId = await ensureFolderExists(process.env.GOOGLE_DRIVE_FOLDER_ID);
+    let parentId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+    // Si se pasa un folderName, crear o usar subcarpeta
+    if (folderName) {
+      parentId = await ensureFolderExists(folderName);
+    }
 
     const fileMetadata = {
       name: fileName,
-      parents: [folderId],
+      parents: [parentId],
     };
 
     const media = {
@@ -64,35 +74,23 @@ export async function uploadFileToDrive(filePath, fileName) {
       body: fs.createReadStream(filePath),
     };
 
-    const response = await drive.files.create({
+    const file = await drive.files.create({
       resource: fileMetadata,
       media: media,
       fields: "id, webViewLink",
       supportsAllDrives: true,
     });
 
-    const fileId = response.data.id;
-
-    // 🔓 Permitir acceso público de solo lectura
-    await drive.permissions.create({
-      fileId: fileId,
-      requestBody: {
-        role: "reader",
-        type: "anyone",
-      },
-      supportsAllDrives: true,
-    });
-
-    const file = await drive.files.get({
-      fileId: fileId,
-      fields: "webViewLink",
-      supportsAllDrives: true,
-    });
-
+    const fileId = file.data.id;
     console.log(`✅ Archivo subido correctamente: ${fileName}`);
-    return file.data;
-  } catch (e) {
-    console.error("❌ Error al subir archivo a Drive (Shared Drive):", e.message);
-    throw e;
+
+    // No intentar cambiar permisos (el Shared Drive ya maneja herencia)
+    return {
+      id: fileId,
+      webViewLink: `https://drive.google.com/file/d/${fileId}/view`,
+    };
+  } catch (err) {
+    console.error("❌ Error al subir archivo a Drive (Shared Drive):", err.message);
+    throw err;
   }
 }
