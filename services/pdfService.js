@@ -1,87 +1,126 @@
+// ======================================================
+// 🧾 Blue Home Gestor — Servicio de generación de PDFs
+// ======================================================
 import PDFDocument from "pdfkit";
 import fs from "fs";
-import axios from "axios";
-import { getSheetData } from "./sheetsService.js";
-import { ensureOrderFolder } from "./driveService.js";
+import path from "path";
 
-async function loadImageToBuffer(url) {
+export async function generarPDFOrden({
+  codigo,
+  cliente,
+  telefono,
+  tecnico,
+  estado,
+  descripcion,
+  materiales,
+  observaciones,
+  firmaData,
+  fotoAntes,
+  fotoDespues,
+}) {
   try {
-    if (!url) return null;
-    const res = await axios.get(url, { responseType: "arraybuffer" });
-    return Buffer.from(res.data, "binary");
-  } catch {
-    console.warn("⚠️ No se pudo cargar imagen:", url);
-    return null;
-  }
-}
+    const doc = new PDFDocument({ margin: 40 });
+    const pdfPath = `/tmp/Orden_${codigo}.pdf`;
+    const stream = fs.createWriteStream(pdfPath);
+    doc.pipe(stream);
 
-export async function generateOrderPDF(codigo, { modo = "tecnico" } = {}) {
-  const rows = await getSheetData("Órdenes");
-  const headers = rows[0];
-  const idxCodigo = headers.findIndex(h => /c[óo]digo/i.test(h));
-  const orderRow = rows.find(r => r[idxCodigo] == codigo);
-  if (!orderRow) throw new Error("Orden no encontrada en hoja");
+    // ===== ENCABEZADO =====
+    const logoPath = path.resolve("public/assets/img/logo-blanco.png");
 
-  const data = {};
-  headers.forEach((h, i) => (data[h] = orderRow[i] || ""));
+    doc
+      .rect(0, 0, doc.page.width, 70)
+      .fill("#004AAD") // franja azul superior
+      .fillColor("#fff")
+      .fontSize(22)
+      .text("ORDEN DE TRABAJO", 200, 25);
 
-  const pdfPath = `/tmp/Orden_${codigo}_${modo}.pdf`;
-  const doc = new PDFDocument({ size: "A4", margin: 40 });
-  doc.pipe(fs.createWriteStream(pdfPath));
-
-  doc.fontSize(18).text(`Blue Home Inmobiliaria`, { align: "center" });
-  doc.moveDown();
-  doc.fontSize(14).text(`Orden de Servicio ${codigo}`, { align: "center" });
-  doc.moveDown(1);
-
-  doc.fontSize(11).text(`Arrendatario: ${data["Arrendatario"] || ""}`);
-  doc.text(`Teléfono: ${data["Teléfono"] || ""}`);
-  doc.text(`Técnico: ${data["Técnico"] || ""}`);
-  doc.text(`Estado: ${data["Estado"] || ""}`);
-  doc.text(`Descripción: ${data["Descripción"] || data["Observación"] || ""}`);
-  doc.moveDown();
-
-  const fotoAntes = await loadImageToBuffer(data["Foto Antes"]);
-  if (fotoAntes) doc.image(fotoAntes, { fit: [250, 150], align: "left" });
-
-  const fotoDespues = await loadImageToBuffer(data["Foto Después"]);
-  if (fotoDespues) {
-    doc.moveDown();
-    doc.image(fotoDespues, { fit: [250, 150], align: "left" });
-  }
-
-  doc.moveDown(2);
-  const firmaInq = await loadImageToBuffer(data["Firma Inquilino"]);
-  if (firmaInq) {
-    doc.text("Firma Inquilino:", { align: "left" });
-    doc.image(firmaInq, { width: 100 });
-  }
-
-  if (modo !== "tecnico") {
-    const firmaDayan = await loadImageToBuffer(data["Firma Dayan"]);
-    if (firmaDayan) {
-      doc.moveDown();
-      doc.text("Firma Dayan (Revisión):", { align: "left" });
-      doc.image(firmaDayan, { width: 100 });
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 40, 15, { width: 100 });
     }
 
-    if (data["Valor"]) {
-      doc.moveDown();
-      doc.fontSize(13).text(`Valor aprobado: $${data["Valor"]}`, { align: "left" });
-    }
-  }
+    doc.moveDown(2);
 
-  if (modo === "final") {
-    const factura = await loadImageToBuffer(data["Factura"]);
-    if (factura) {
-      doc.addPage();
-      doc.fontSize(14).text("Factura adjunta:", { align: "center" });
-      doc.image(factura, { fit: [450, 500], align: "center" });
-    }
-  }
+    // ===== DATOS PRINCIPALES =====
+    doc.fillColor("#000").fontSize(12);
+    doc.text(`Código: ${codigo}`);
+    doc.text(`Arrendatario: ${cliente}`);
+    doc.text(`Teléfono: ${telefono}`);
+    doc.text(`Técnico: ${tecnico}`);
+    doc.text(`Estado: ${estado}`);
+    doc.moveDown(1);
+    doc.fontSize(12).text("Descripción del reporte:");
+    doc.fontSize(11).text(descripcion || "—", { indent: 10 });
+    doc.moveDown(1);
 
-  doc.end();
-  await ensureOrderFolder(codigo);
-  console.log(`✅ PDF generado para ${codigo} (${modo})`);
-  return pdfPath;
+    // ===== EVIDENCIAS =====
+    doc.fontSize(14).fillColor("#004AAD").text("📸 Evidencias del trabajo");
+    doc.moveDown(0.5);
+
+    const imageWidth = 240;
+    const startY = doc.y;
+
+    if (fotoAntes && fs.existsSync(fotoAntes)) {
+      doc.image(fotoAntes, 40, startY, { width: imageWidth, height: 160 });
+      doc.fontSize(10).fillColor("#000").text("Antes", 130, startY + 165);
+    }
+
+    if (fotoDespues && fs.existsSync(fotoDespues)) {
+      doc.image(fotoDespues, 320, startY, { width: imageWidth, height: 160 });
+      doc.fontSize(10).fillColor("#000").text("Después", 420, startY + 165);
+    }
+
+    doc.moveDown(10);
+
+    // ===== MATERIALES =====
+    doc.addPage();
+    doc.fillColor("#004AAD").fontSize(14).text("🧰 Materiales y Trabajo Realizado");
+    doc.moveDown(0.5);
+    doc.fillColor("#000").fontSize(11).text(materiales || "—", { indent: 10 });
+    doc.moveDown(1);
+
+    // ===== OBSERVACIONES =====
+    doc.fillColor("#004AAD").fontSize(14).text("📝 Observaciones");
+    doc.moveDown(0.5);
+    doc.fillColor("#000").fontSize(11).text(observaciones || "—", { indent: 10 });
+    doc.moveDown(2);
+
+    // ===== FIRMA =====
+    doc.fillColor("#004AAD").fontSize(14).text("✍️ Firma del Inquilino");
+    doc.moveDown(0.5);
+
+    if (firmaData) {
+      const base64Image = firmaData.replace(/^data:image\/png;base64,/, "");
+      const firmaPath = `/tmp/firma_${codigo}.png`;
+      fs.writeFileSync(firmaPath, base64Image, "base64");
+      doc.image(firmaPath, 60, doc.y, { width: 200 });
+      fs.unlinkSync(firmaPath);
+    } else {
+      doc.fillColor("#aaa").text("Sin firma registrada.");
+    }
+
+    doc.moveDown(4);
+
+    // ===== ESPACIO PARA DAYAN =====
+    doc.fillColor("#004AAD").fontSize(14).text("💰 Valores asignados por Dayan Correa");
+    doc.moveDown(1);
+    doc.fillColor("#000").fontSize(11).text("Materiales: ____________________________");
+    doc.text("Mano de obra: ____________________________");
+    doc.text("Total: ____________________________");
+
+    // ===== PIE DE PÁGINA =====
+    doc.moveDown(4);
+    doc.fontSize(9).fillColor("#555").text(
+      "Documento generado automáticamente por Blue Home Inmobiliaria • Gestor de Procesos",
+      { align: "center" }
+    );
+
+    doc.end();
+
+    await new Promise((resolve) => stream.on("finish", resolve));
+    console.log(`✅ PDF generado correctamente: ${pdfPath}`);
+    return pdfPath;
+  } catch (e) {
+    console.error("❌ Error al generar PDF:", e);
+    throw e;
+  }
 }
