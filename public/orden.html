@@ -6,34 +6,32 @@
   <title>Orden de Trabajo | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background:#f6f8fb; font-family:"Segoe UI",sans-serif; }
-    header {
-      background:linear-gradient(90deg,#004aad,#2196f3);
-      color:#fff; display:flex; align-items:center;
-      justify-content:space-between; padding:12px 24px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.2);
-    }
+    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
+    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
     .logo { height:42px; }
     main { padding:24px; max-width:1000px; margin:0 auto; }
-    h2,h3{color:#004aad;margin:0 0 12px;}
-    .card{background:#fff;border-radius:10px;padding:18px;margin-bottom:18px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);}
-    .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:10px 18px;font-size:15px;}
-    .info-item b{color:#004aad;min-width:95px;display:inline-block;}
-    input[type="file"],input[type="text"],textarea{
-      width:100%;padding:8px 10px;border:1px solid #cfd6e4;border-radius:8px;
-      font-size:14px;outline:none;background:#fafafa;
+    h2 { color:#004aad; margin:0; }
+    h3 { color:#004aad; margin:0 0 12px; }
+    .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
+    .info-item b { color:#004aad; min-width:95px; display:inline-block; }
+
+    input[type="file"], input[type="text"], textarea {
+      width:100%; padding:8px 10px; border:1px solid #cfd6e4; border-radius:8px; font-size:14px; outline:none;
     }
-    textarea{min-height:100px;resize:vertical;}
-    .btn{border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;}
-    .btn-primary{background:#004aad;color:#fff;} .btn-primary:hover{background:#1f64d1;}
-    .btn-muted{background:#6c757d;color:#fff;} .btn-muted:hover{background:#5a6268;}
-    .btn-success{background:#2ecc71;color:#fff;}
-    .btn-danger{background:#e74c3c;color:#fff;}
-    .signature-wrap{border:2px dashed #bfc6d8;border-radius:10px;background:#fff;height:220px;}
-    #firmaCanvas{width:100%;height:100%;display:block;border-radius:8px;background:#fff;}
-    .row-actions{display:flex;gap:10px;flex-wrap:wrap;}
+    textarea { min-height:100px; resize:vertical; }
+
+    .btn { border:none; border-radius:8px; padding:9px 14px; cursor:pointer; font-weight:600; }
+    .btn-primary{ background:#004aad; color:#fff; } .btn-primary:hover{ background:#1f64d1; }
+    .btn-muted{ background:#6c757d; color:#fff; } .btn-muted:hover{ background:#5a6268; }
+    .btn-success{ background:#2ecc71; color:#fff; }
+    .btn-danger{ background:#e74c3c; color:#fff; }
+
+    /* Firma */
+    .signature-wrap{ border:2px dashed #bfc6d8; border-radius:10px; background:#fff; height:220px; }
+    #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -72,7 +70,7 @@
 
     <!-- RETRO -->
     <div class="card">
-      <h3>🧰 Materiales y Trabajo Realizado</h3>
+      <h3>🪚 Materiales y Trabajo Realizado</h3>
       <textarea id="materiales" placeholder="Describe materiales o trabajos realizados..."></textarea>
       <textarea id="observaciones" placeholder="Observaciones o comentarios..."></textarea>
       <div class="row-actions">
@@ -110,16 +108,16 @@
       try {
         const r = await fetch(API);
         const all = await r.json();
+
         const o = all.find(x =>
-          (x.codigo && x.codigo.trim() === codigo) ||
-          (x["Código"] && x["Código"].trim() === codigo) ||
-          (x["código"] && x["código"].trim() === codigo)
+          x.codigo?.trim()?.toLowerCase() === codigo?.toLowerCase()
         );
+
         if (!o) return alert("No se encontró la orden.");
 
-        document.getElementById("cliente").textContent = o.cliente || o.Cliente || o.inquilino || "—";
+        document.getElementById("cliente").textContent = o.cliente || o.inquilino || "—";
         document.getElementById("telefono").textContent = o.telefono || "—";
-        document.getElementById("codigo").textContent = codigo;
+        document.getElementById("codigo").textContent = o.codigo || "—";
         document.getElementById("tecnico").textContent = o.tecnico || "Sin asignar";
         document.getElementById("estado").textContent = o.estado || "Pendiente";
         document.getElementById("descripcion").textContent = o.descripcion || "—";
@@ -129,7 +127,7 @@
       }
     }
 
-    // ===== SUBIR FOTOS A DRIVE =====
+    // ===== SUBIR FOTOS =====
     document.getElementById("btnSubirFotos").onclick = async () => {
       const antes = document.getElementById("fotoAntes").files[0];
       const despues = document.getElementById("fotoDespues").files[0];
@@ -152,7 +150,7 @@
       }
     };
 
-    // ===== GUARDAR RETROALIMENTACIÓN =====
+    // ===== GUARDAR RETRO =====
     document.getElementById("btnGuardarRetro").onclick = async () => {
       const materiales = document.getElementById("materiales").value.trim();
       const observaciones = document.getElementById("observaciones").value.trim();
