@@ -10,16 +10,18 @@ dotenv.config();
 const auth = new google.auth.GoogleAuth({
   credentials: {
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    private_key: process.env.GOOGLE_PRIVATE_KEY
+      ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n").replace(/\r?\n/g, "\n")
+      : undefined,
   },
-  scopes: ["https://www.googleapis.com/auth/drive.file"],
+  scopes: ["https://www.googleapis.com/auth/drive"],
 });
 
 const drive = google.drive({ version: "v3", auth });
 
 /**
  * ======================================================
- * 🔹 Subir archivo a Google Drive (soporta multer o ruta)
+ * 🔹 Subir archivo a Google Drive (fotos, firmas, etc.)
  * ======================================================
  * @param {string|object} file — ruta temporal o archivo de multer
  * @param {string} nombre — nombre que tendrá en Drive
@@ -28,7 +30,7 @@ const drive = google.drive({ version: "v3", auth });
  */
 export async function uploadFileToDrive(file, nombre, folderId = process.env.GOOGLE_DRIVE_FOLDER_ID) {
   try {
-    const filePath = typeof file === "string" ? file : file.path;
+    const filePath = typeof file === "string" ? file : file?.path;
     if (!filePath) throw new Error("No se encontró archivo o ruta válida.");
 
     const fileMetadata = { name: nombre || (file.originalname ?? "archivo_sin_nombre"), parents: [folderId] };
@@ -49,4 +51,3 @@ export async function uploadFileToDrive(file, nombre, folderId = process.env.GOO
     throw err;
   }
 }
-
