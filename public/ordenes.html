@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
+  /* ======== BASE GENERAL ======== */
   body {
     background: linear-gradient(145deg, #f5f8fb, #e9eef5);
     color: #1c2b4a;
@@ -17,21 +18,22 @@
     overflow-x: hidden;
   }
 
+  /* ======== HEADER ======== */
   header {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    background: #0a3c6e;
+    backdrop-filter: blur(10px);
+    background: rgba(10, 60, 110, 0.92);
     color: white;
-    padding: 15px 30px;
+    padding: 18px 32px;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     gap: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 999;
-    height: 80px;
+    height: 85px;
   }
 
   header img {
@@ -42,41 +44,65 @@
     font-size: 1.4rem;
     font-weight: 600;
     margin: 0;
+    letter-spacing: 0.3px;
   }
 
-  /* 🔹 ESTE AJUSTE SOLUCIONA TU PROBLEMA */
+  /* ======== CONTENIDO PRINCIPAL ======== */
   main {
-    margin-top: 100px !important; /* deja espacio exacto para la franja azul */
+    margin-top: 130px !important; /* compensación total del header */
     padding: 25px;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
+    transition: margin-top 0.3s ease;
   }
 
+  /* ======== FORMULARIO ======== */
   .form-container {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+    padding: 30px;
     margin-bottom: 25px;
+  }
+
+  .form-container h2 {
+    margin: 0 0 15px;
+    color: #0a3c6e;
+    font-weight: 600;
   }
 
   .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 15px;
+    margin-bottom: 15px;
   }
 
   .form-grid input,
   .form-grid select,
-  .form-grid textarea {
+  textarea {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #cfd6e1;
+    padding: 12px;
+    border: 1.5px solid #d1d6de;
     border-radius: 8px;
     font-size: 0.95rem;
-    font-family: inherit;
-    resize: none;
+    color: #1c1c1c;
+    background: #ffffff;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .form-grid input::placeholder,
+  textarea::placeholder {
+    color: #7a7f89;
+  }
+
+  .form-grid input:focus,
+  .form-grid select:focus,
+  textarea:focus {
+    border-color: #0a3c6e;
+    box-shadow: 0 0 8px rgba(10, 60, 110, 0.25);
   }
 
   .form-actions {
@@ -91,7 +117,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 9px 18px;
     font-weight: 500;
     cursor: pointer;
     transition: 0.3s;
@@ -101,11 +127,12 @@
     background: #164f9c;
   }
 
+  /* ======== TABLA ======== */
   table {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
   }
@@ -122,7 +149,7 @@
   }
 
   tr:nth-child(even) {
-    background: #f5f7fa;
+    background: #f8fafc;
   }
 
   tr:hover {
@@ -145,17 +172,14 @@
     background: #4caf50;
   }
 
+  /* ======== RESPONSIVE ======== */
   @media (max-width: 768px) {
     header {
       flex-direction: row;
       justify-content: center;
-      text-align: center;
       height: auto;
-      padding: 10px 15px;
-    }
-
-    header img {
-      height: 36px;
+      padding: 12px 18px;
+      text-align: center;
     }
 
     header h1 {
@@ -163,8 +187,12 @@
     }
 
     main {
-      margin-top: 120px !important;
+      margin-top: 140px !important;
       padding: 15px;
+    }
+
+    .form-container {
+      padding: 22px;
     }
 
     th, td {
