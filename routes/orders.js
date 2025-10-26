@@ -3,7 +3,7 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import { getSheetData, appendRow, updateCell, deleteRow } from "../services/sheetsService.js";
-import { uploadFileToDrive } from "../services/driveService.js"; // ✅ Usa tu driveService.js
+import { uploadFileToDrive } from "../services/driveService.js";
 
 const router = express.Router();
 const SHEET_NAME = "ordenes";
@@ -22,11 +22,15 @@ router.get("/", async (req, res) => {
     const headers = rows[0];
     const data = rows.slice(1).map((r) => {
       const obj = {};
-      headers.forEach((h, i) => (obj[h.trim().toLowerCase()] = r[i] || ""));
+      headers.forEach((h, i) => {
+        obj[h.trim().toLowerCase()] = (r[i] || "").trim();
+      });
       return obj;
     });
 
-    res.json(data);
+    // ✅ Asegurar que el contenido se devuelva como JSON real
+    res.setHeader("Content-Type", "application/json");
+    res.status(200).json(data);
   } catch (e) {
     console.error("❌ Error al obtener órdenes:", e);
     res.status(500).json({ error: "Error al cargar órdenes" });
@@ -118,7 +122,6 @@ router.post("/:codigo/upload", upload.fields([{ name: "fotoAntes" }, { name: "fo
     const idxCodigo = headers.findIndex((h) => /c(ó|o)digo/i.test(h));
     if (idxCodigo < 0) throw new Error("No existe columna Código");
 
-    // Buscar la fila de la orden
     let rowIndex = -1;
     for (let i = 1; i < rows.length; i++) {
       if ((rows[i][idxCodigo] || "").trim().toLowerCase() === codigo.toLowerCase()) {
@@ -145,7 +148,6 @@ router.post("/:codigo/upload", upload.fields([{ name: "fotoAntes" }, { name: "fo
       fs.unlinkSync(fotoDespues.path);
     }
 
-    // Actualiza la hoja
     for (const [key, value] of Object.entries(updates)) {
       const colIdx = headers.findIndex((h) => h.trim().toLowerCase() === key.trim().toLowerCase());
       if (colIdx >= 0 && value) {
@@ -171,7 +173,6 @@ router.post("/:codigo/firma", async (req, res) => {
     const { nombre, firma } = req.body;
     if (!firma) return res.status(400).json({ error: "Firma requerida" });
 
-    // Guardar la imagen temporalmente
     const base64Data = firma.replace(/^data:image\/png;base64,/, "");
     const tempPath = `/tmp/Firma_${codigo}.png`;
     fs.writeFileSync(tempPath, base64Data, "base64");
@@ -179,7 +180,6 @@ router.post("/:codigo/firma", async (req, res) => {
     const driveFile = await uploadFileToDrive(tempPath, `Firma_${nombre}_${codigo}.png`);
     fs.unlinkSync(tempPath);
 
-    // Actualiza la hoja
     const rows = await getSheetData(SHEET_NAME);
     const headers = rows[0];
     const idxCodigo = headers.findIndex((h) => /c(ó|o)digo/i.test(h));
