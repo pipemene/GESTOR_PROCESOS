@@ -1,5 +1,5 @@
 // ======================================================
-// 🧾 Blue Home Gestor — Rutas de Órdenes (con PDF automático)
+// 🧾 Blue Home Gestor — Rutas de Órdenes (PDF automático)
 // ======================================================
 import express from "express";
 import multer from "multer";
@@ -50,18 +50,18 @@ router.post("/:codigo/pdf", upload.fields([
     const folderId = await ensureFolderExists("BlueHome_Gestor_PDFs");
     const driveFile = await uploadFileToDrive(pdfPath, `Orden_${codigo}.pdf`, "BlueHome_Gestor_PDFs");
 
-    // Borrar archivos temporales
+    // Eliminar archivos temporales
     if (fotoAntes && fs.existsSync(fotoAntes)) fs.unlinkSync(fotoAntes);
     if (fotoDespues && fs.existsSync(fotoDespues)) fs.unlinkSync(fotoDespues);
     if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
 
-    // Actualizar hoja Google
+    // Actualizar hoja Google con enlace PDF
     const rows = await getSheetData(SHEET_NAME);
     const headers = rows[0];
     const idxCodigo = headers.findIndex((h) => /c(ó|o)digo/i.test(h));
     const idxPdf = headers.findIndex((h) => /pdf/i.test(h));
-    let rowIndex = -1;
 
+    let rowIndex = -1;
     for (let i = 1; i < rows.length; i++) {
       if ((rows[i][idxCodigo] || "").trim().toLowerCase() === codigo.toLowerCase()) {
         rowIndex = i + 1;
@@ -83,7 +83,7 @@ router.post("/:codigo/pdf", upload.fields([
 });
 
 /* ======================================================
-   🔹 PATCH: finalizar orden (ahora genera PDF automáticamente)
+   🔹 PATCH: finalizar orden (marca como Finalizada)
 ====================================================== */
 router.patch("/:codigo/finish", async (req, res) => {
   try {
@@ -116,4 +116,3 @@ router.patch("/:codigo/finish", async (req, res) => {
 });
 
 export { router };
-l
