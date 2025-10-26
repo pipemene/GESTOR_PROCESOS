@@ -1,13 +1,12 @@
 // services/driveService.js
 import fs from "fs";
-import path from "path";
 import { google } from "googleapis";
 import dotenv from "dotenv";
-
 dotenv.config();
 
-const KEYFILE_PATH = "./bluehome-key.json";
-
+// ======================================================
+// 🔹 Autenticación Google Drive
+// ======================================================
 const auth = new google.auth.GoogleAuth({
   credentials: {
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -19,43 +18,35 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: "v3", auth });
 
 /**
- * 🔹 Sube un archivo al Drive de Blue Home Gestor
- * @param {Object} file — archivo de multer (req.file)
- * @param {String} folderId — ID de carpeta destino
- * @returns {Object} { id, link }
+ * ======================================================
+ * 🔹 Subir archivo a Google Drive (soporta multer o ruta)
+ * ======================================================
+ * @param {string|object} file — ruta temporal o archivo de multer
+ * @param {string} nombre — nombre que tendrá en Drive
+ * @param {string} folderId — carpeta destino (por defecto la global)
+ * @returns {object} { id, webViewLink }
  */
-export async function uploadFileToDrive(file, folderId = process.env.GOOGLE_DRIVE_FOLDER_ID) {
+export async function uploadFileToDrive(file, nombre, folderId = process.env.GOOGLE_DRIVE_FOLDER_ID) {
   try {
-    if (!file || !file.path) {
-      throw new Error("Archivo no encontrado en la solicitud");
-    }
+    const filePath = typeof file === "string" ? file : file.path;
+    if (!filePath) throw new Error("No se encontró archivo o ruta válida.");
 
-    const fileMetadata = {
-      name: file.originalname,
-      parents: [folderId],
-    };
+    const fileMetadata = { name: nombre || (file.originalname ?? "archivo_sin_nombre"), parents: [folderId] };
+    const media = { body: fs.createReadStream(filePath) };
 
-    const media = {
-      mimeType: file.mimetype || "application/octet-stream",
-      body: fs.createReadStream(file.path), // ✅ Esto garantiza que sea un stream válido
-    };
-
-    const response = await drive.files.create({
+    const res = await drive.files.create({
       requestBody: fileMetadata,
       media,
       fields: "id, webViewLink",
     });
 
-    // Limpieza del archivo temporal
-    fs.unlinkSync(file.path);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-    console.log("✅ Archivo subido correctamente:", response.data.webViewLink);
-    return {
-      id: response.data.id,
-      link: response.data.webViewLink,
-    };
-  } catch (error) {
-    console.error("❌ Error al subir archivo a Google Drive:", error);
-    throw error;
+    console.log(`✅ Archivo subido a Drive: ${res.data.webViewLink}`);
+    return { id: res.data.id, webViewLink: res.data.webViewLink };
+  } catch (err) {
+    console.error("❌ Error al subir archivo a Drive:", err.message);
+    throw err;
   }
 }
+
