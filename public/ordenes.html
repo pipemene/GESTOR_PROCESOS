@@ -8,47 +8,65 @@
     body {
       margin: 0;
       font-family: "Segoe UI", Arial, sans-serif;
-      background-color: #f4f6f9;
+      background-color: #f4f7fb;
       color: #333;
     }
 
+    /* ======= ENCABEZADO ======= */
     .header {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      background: #007bff;
+      height: 70px;
+      background: linear-gradient(90deg, #0053a4, #2196f3);
       color: #fff;
-      text-align: center;
-      padding: 14px;
-      font-weight: bold;
-      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 25px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       z-index: 1000;
     }
 
+    .header img {
+      height: 42px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* ======= CONTENIDO ======= */
     .container {
-      margin: 90px auto 40px auto;
+      margin: 100px auto 40px auto;
       padding: 20px;
       max-width: 1100px;
     }
 
     form {
       background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 25px;
-      margin-bottom: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      padding: 25px 30px;
+      margin-bottom: 30px;
+      border-top: 5px solid #007bff;
     }
 
     h2 {
-      color: #007bff;
+      color: #0053a4;
       margin-top: 0;
+      text-align: center;
     }
 
     label {
       display: block;
       font-weight: 600;
       margin-top: 12px;
+      color: #333;
     }
 
     input, select, textarea {
@@ -58,6 +76,14 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
+      background: #fafafa;
+      transition: 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #007bff;
+      outline: none;
+      background: #fff;
     }
 
     button {
@@ -66,30 +92,32 @@
       border: none;
       border-radius: 6px;
       padding: 10px 18px;
-      margin-top: 15px;
+      margin-top: 20px;
       cursor: pointer;
       transition: 0.3s;
+      font-weight: 600;
     }
 
     button:hover { background: #0056b3; }
 
+    /* ======= TABLA ======= */
     table {
       width: 100%;
       border-collapse: collapse;
       background: #fff;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     th, td {
-      padding: 12px;
+      padding: 14px 12px;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #e5e9f2;
     }
 
     th {
-      background: #007bff;
+      background: #0053a4;
       color: white;
       font-weight: 600;
     }
@@ -99,33 +127,33 @@
     }
 
     .btn-ver {
-      background: #007bff;
+      background: #2196f3;
       color: white;
       border: none;
       border-radius: 6px;
       padding: 7px 12px;
       cursor: pointer;
+      font-weight: 500;
     }
 
     .btn-ver:hover {
-      background: #0056b3;
+      background: #0d6efd;
     }
 
     @media (max-width: 768px) {
-      .container {
-        padding: 10px;
-      }
-      form {
-        padding: 15px;
-      }
-      th, td {
-        font-size: 0.9rem;
-      }
+      .container { padding: 10px; }
+      form { padding: 20px; }
+      th, td { font-size: 0.9rem; }
+      .header h1 { font-size: 1.1rem; }
+      .header img { height: 35px; }
     }
   </style>
 </head>
 <body>
-  <div class="header">🧰 Blue Home Gestor — Órdenes de Servicio</div>
+  <div class="header">
+    <img src="assets/logo.png" alt="Blue Home Logo" />
+    <h1>Gestor de Órdenes de Servicio</h1>
+  </div>
 
   <div class="container">
     <!-- ===== FORMULARIO ===== -->
@@ -198,11 +226,10 @@
       }
     }
 
-    // === CARGAR ÓRDENES EXISTENTES ===
+    // === CARGAR ÓRDENES ===
     async function cargarOrdenes() {
       const tbody = document.querySelector("#tablaOrdenes tbody");
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>`;
-
       try {
         const res = await fetch("/api/orders");
         const data = await res.json();
@@ -214,7 +241,6 @@
         }
 
         data.forEach(o => {
-          // ✅ Captura tolerante a mayúsculas y tildes
           const codigo =
             o.codigo ||
             o["codigo"] ||
@@ -242,7 +268,6 @@
           tbody.appendChild(fila);
         });
 
-        // ✅ Enlace directo con código correcto
         document.querySelectorAll(".btn-ver").forEach(btn => {
           btn.addEventListener("click", () => {
             const codigo = btn.dataset.codigo;
@@ -256,10 +281,9 @@
       }
     }
 
-    // === CREAR NUEVA ORDEN ===
+    // === CREAR ORDEN ===
     document.getElementById("formOrden").addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
       const data = {
         cliente: document.getElementById("cliente").value,
