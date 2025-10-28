@@ -207,7 +207,16 @@
     document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); };
 
     // ===== FINALIZAR Y GENERAR PDF =====
-    document.getElementById("btnFinalizar").onclick = async () => {
+    const btnFinalizar = document.getElementById("btnFinalizar");
+    btnFinalizar.addEventListener("click", async () => {
+      if (!codigo) {
+        alert("❌ No se encontró el código de la orden.");
+        return;
+      }
+
+      const originalText = btnFinalizar.textContent;
+      btnFinalizar.disabled = true;
+      btnFinalizar.textContent = "Generando PDF...";
       try {
         const materiales = document.getElementById("materiales").value.trim();
         const observaciones = document.getElementById("observaciones").value.trim();
@@ -219,6 +228,7 @@
         const firmaData = canvas.toDataURL("image/png");
         const fotoAntes = document.getElementById("fotoAntes").files[0];
         const fotoDespues = document.getElementById("fotoDespues").files[0];
+        const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
 
         const formData = new FormData();
         formData.append("codigo", codigo);
@@ -230,23 +240,38 @@
         formData.append("materiales", materiales);
         formData.append("observaciones", observaciones);
         formData.append("firma", firmaData);
+        formData.append("nombreFirmante", nombreFirmante);
         if (fotoAntes) formData.append("fotoAntes", fotoAntes);
         if (fotoDespues) formData.append("fotoDespues", fotoDespues);
 
         const res = await fetch(`${API}/${codigo}/pdf`, { method: "POST", body: formData });
         const out = await res.json();
 
-        if (out.ok) {
-          alert("✅ Orden finalizada y PDF generado correctamente.\n\n📎 Enlace: " + out.driveUrl);
-          location.href = "ordenes.html";
-        } else {
-          alert("❌ Error generando PDF.");
+        if (!res.ok || !out.ok) {
+          throw new Error(out.error || "Error generando PDF");
         }
+
+        const enlaces = [];
+        if (out.driveUrl) enlaces.push(`📄 PDF: ${out.driveUrl}`);
+        if (out.assets?.fotoAntes) enlaces.push(`📸 Foto antes: ${out.assets.fotoAntes}`);
+        if (out.assets?.fotoDespues) enlaces.push(`📸 Foto después: ${out.assets.fotoDespues}`);
+        if (out.assets?.firma) enlaces.push(`✍️ Firma: ${out.assets.firma}`);
+
+        const mensaje = [
+          out.message || "Orden finalizada correctamente.",
+          enlaces.length ? "\n" + enlaces.join("\n") : "",
+        ].join("");
+
+        alert(`✅ ${mensaje}`);
+        location.href = "ordenes.html";
       } catch (e) {
         console.error(e);
-        alert("Error al generar PDF.");
+        alert(`❌ ${e.message || "Error al generar PDF."}`);
+      } finally {
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = originalText;
       }
-    };
+    });
 
     cargarOrden();
   </script>

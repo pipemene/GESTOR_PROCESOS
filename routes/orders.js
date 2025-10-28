@@ -4,6 +4,7 @@
 import express from "express";
 import multer from "multer";
 import fs from "fs";
+import path from "path";
 import {
   getSheetData,
   appendRow,
@@ -12,6 +13,7 @@ import {
 } from "../services/sheetsService.js";
 import { uploadFileToDrive, ensureFolderExists } from "../services/driveService.js";
 import { generarPDFOrden } from "../services/pdfService.js";
+import { sendMail } from "../services/mailService.js";
 
 const router = express.Router();
 const SHEET_NAME = "ordenes";
@@ -42,8 +44,13 @@ const HEADER_ALIASES = {
     "observacion",
   ],
   fecha: ["fecha", "fechacreacion", "fecharegistro", "fechadecreacion"],
-  materiales: ["materiales", "materialesutilizados"],
+  materiales: ["materiales", "materialesutilizados", "insumos"],
   observaciones: ["observaciones", "comentarios", "nota", "notas", "observacion"],
+  fotobefore: ["fotoantes", "evidenciaantes", "foto antes"],
+  fotoafter: ["fotodespues", "evidenciadespues", "foto despues", "fotodespués"],
+  pdf: ["pdf", "enlacepdf", "linkpdf", "urlpdf"],
+  firmante: ["firmante", "nombrefirmante", "quienfirma", "firmadoportecnico"],
+  firma: ["firma", "firmaurl", "evidenciafirma"],
 };
 
 const HEADER_LOOKUP = Object.entries(HEADER_ALIASES).reduce((acc, [canonical, aliases]) => {
@@ -140,6 +147,29 @@ const findRowNumberByCodigo = (rows = [], headers = [], codigo = "") => {
   return -1;
 };
 
+const updateColumnIfExists = async (headers = [], rowNumber, regex, value) => {
+  if (!headers?.length || !regex) return false;
+  const idx = headers.findIndex((header) => regex.test(header || ""));
+  if (idx < 0) return false;
+
+  const column = getExcelColumnName(idx);
+  await updateCell(SHEET_NAME, `${column}${rowNumber}`, value ?? "");
+  return true;
+};
+
+const parseNotificationRecipients = () => {
+  const raw =
+    process.env.DAYAN_EMAILS ||
+    process.env.DAYAN_EMAIL ||
+    process.env.NOTIFY_DAYAN_EMAIL ||
+    "";
+
+  return raw
+    .split(/[,;\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
 /* ======================================================
    🔹 GET: listar órdenes desde Google Sheets
 ====================================================== */
@@ -165,18 +195,6 @@ router.get("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: crear nueva orden en la hoja
-====================================================== */
-router.post("/", async (req, res) => {
-  try {
-    const body = canonicalizePayload({ ...req.body });
-    if (!body.fecha) {
-      body.fecha = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
-    }
-    if (!body.estado) {
-      body.estado = "Pendiente";
-    }
-    if (!body.descripcion && body.observaciones) {
-      body.descripcion = body.observaciones;
     }
     if (!body.observaciones && body.descripcion) {
       body.observaciones = body.descripcion;
@@ -205,78 +223,6 @@ router.post("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: generar y subir PDF de orden
-====================================================== */
-router.post("/:codigo/pdf", upload.fields([
-  { name: "fotoAntes" },
-  { name: "fotoDespues" },
-  { name: "firma" },
-]), async (req, res) => {
-  try {
-    const { codigo } = req.params;
-    const { cliente, telefono, tecnico, estado, descripcion, materiales, observaciones } = req.body;
-
-    // Rutas temporales para fotos
-    const fotoAntes = req.files["fotoAntes"]?.[0]?.path || null;
-    const fotoDespues = req.files["fotoDespues"]?.[0]?.path || null;
-    const firmaData = req.body.firma || null;
-
-    console.log(`🧾 Generando PDF para orden ${codigo}...`);
-
-    // Generar el PDF
-    const pdfPath = await generarPDFOrden({
-      codigo,
-      cliente,
-      telefono,
-      tecnico,
-      estado,
-      descripcion,
-      materiales,
-      observaciones,
-      firmaData,
-      fotoAntes,
-      fotoDespues,
-    });
-
-    // Subir el PDF al Drive
-    await ensureFolderExists("BlueHome_Gestor_PDFs");
-    const driveFile = await uploadFileToDrive(pdfPath, `Orden_${codigo}.pdf`, "BlueHome_Gestor_PDFs");
-
-    // Eliminar archivos temporales
-    if (fotoAntes && fs.existsSync(fotoAntes)) fs.unlinkSync(fotoAntes);
-    if (fotoDespues && fs.existsSync(fotoDespues)) fs.unlinkSync(fotoDespues);
-    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
-
-    // Actualizar hoja Google con enlace PDF
-    const rows = await getSheetData(SHEET_NAME);
-    if (!rows?.length) {
-      return res.status(404).json({ error: "No se encontraron datos en la hoja." });
-    }
-
-    const headers = rows[0] || [];
-    const idxPdf = headers.findIndex((h) => /pdf/i.test(h || ""));
-    if (idxPdf < 0) {
-      return res
-        .status(500)
-        .json({ error: "No se encontró la columna para guardar el enlace del PDF." });
-    }
-
-    const rowNumber = findRowNumberByCodigo(rows, headers, codigo);
-    if (rowNumber < 0) {
-      return res.status(404).json({ error: `No se encontró la orden ${codigo}.` });
-    }
-
-    const column = getExcelColumnName(idxPdf);
-    await updateCell(SHEET_NAME, `${column}${rowNumber}`, driveFile.webViewLink);
-
-    console.log(`✅ PDF de la orden ${codigo} subido correctamente a Drive`);
-    res.json({ ok: true, driveUrl: driveFile.webViewLink });
-  } catch (e) {
-    console.error("❌ Error generando o subiendo el PDF:", e);
-    res.status(500).json({ error: "Error generando o subiendo el PDF" });
-  }
-});
-
-/* ======================================================
    🔹 PATCH/POST: finalizar orden (marca como Finalizada)
 ====================================================== */
 const finishOrderHandler = async (req, res) => {
