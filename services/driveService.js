@@ -18,12 +18,16 @@ const drive = google.drive({ version: "v3", auth });
 // ======================================================
 // 🔹 Verificar o crear carpeta destino (en unidad compartida)
 // ======================================================
-export async function ensureFolderExists(folderName) {
+export async function ensureFolderExists(folderName, parentId = process.env.GOOGLE_DRIVE_FOLDER_ID) {
   try {
-    const parentId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    if (!parentId) {
+      throw new Error("GOOGLE_DRIVE_FOLDER_ID no está configurado en las variables de entorno");
+    }
+
+    const sanitizedName = folderName.replace(/'/g, "\\'");
 
     const res = await drive.files.list({
-      q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `name='${sanitizedName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: "files(id, name)",
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
@@ -55,17 +59,26 @@ export async function ensureFolderExists(folderName) {
 // ======================================================
 // 🔹 Subir archivo PDF al Drive
 // ======================================================
-export async function uploadFileToDrive(filePath, fileName, folderName = "BlueHome_Gestor_PDFs") {
+export async function uploadFileToDrive(
+  filePath,
+  fileName,
+  folderReference = "BlueHome_Gestor_PDFs",
+  options = {}
+) {
   try {
-    const parentId = await ensureFolderExists(folderName);
+    const { mimeType = "application/pdf", isFolderId = false, parentId = undefined } = options;
+
+    const targetFolderId = isFolderId
+      ? folderReference
+      : await ensureFolderExists(folderReference, parentId);
 
     const fileMetadata = {
       name: fileName,
-      parents: [parentId],
+      parents: [targetFolderId],
     };
 
     const media = {
-      mimeType: "application/pdf",
+      mimeType,
       body: fs.createReadStream(filePath),
     };
 

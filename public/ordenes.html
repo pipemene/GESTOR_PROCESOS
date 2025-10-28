@@ -18,26 +18,87 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 70px;
+      height: 80px;
       background: linear-gradient(90deg, #0053a4, #2196f3);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 25px;
+      padding: 12px 25px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       z-index: 1000;
+      gap: 18px;
+      flex-wrap: wrap;
     }
 
-    .header img {
-      height: 42px;
-    }
+    .header img { height: 42px; }
 
     .header h1 {
       margin: 0;
       font-size: 1.3rem;
       font-weight: 600;
       letter-spacing: 0.5px;
+      flex: 1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-summary {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .metric-chip {
+      min-width: 95px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.85;
+    }
+
+    .metric-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.32);
     }
 
     /* ======= CONTENIDO ======= */
@@ -140,12 +201,57 @@
       background: #0d6efd;
     }
 
-    @media (max-width: 768px) {
-      .container { padding: 10px; }
-      form { padding: 20px; }
-      th, td { font-size: 0.9rem; }
-      .header h1 { font-size: 1.1rem; }
-      .header img { height: 35px; }
+    @media (max-width: 992px) {
+      .container { margin: 90px auto 30px; }
+      table { display: block; overflow-x: auto; }
+      thead { display: none; }
+      tbody { display: flex; flex-direction: column; gap: 12px; }
+      tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 16px;
+        padding: 12px;
+        border: 1px solid #e5e9f2;
+        border-radius: 10px;
+      }
+      tbody td {
+        border-bottom: none;
+        padding: 6px 0;
+        font-size: 0.95rem;
+      }
+      tbody td[colspan] {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+      tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: 600;
+        color: #0053a4;
+        margin-bottom: 2px;
+      }
+      tbody td:last-child {
+        grid-column: 1 / -1;
+        padding-top: 10px;
+      }
+      .btn-ver { width: 100%; text-align: center; }
+      .header { height: auto; padding: 16px; flex-wrap: wrap; }
+      .header img { height: 36px; }
+      .header h1 { font-size: 1.1rem; text-align: center; }
+      .header-actions { width: 100%; justify-content: center; }
+      .header-summary { width: 100%; justify-content: center; }
+      .metric-chip { flex: 1 1 40%; align-items: center; text-align: center; }
+    }
+
+    @media (max-width: 576px) {
+      .container { padding: 12px; margin-top: 100px; }
+      form { padding: 18px 16px; }
+      input, select, textarea { font-size: 0.95rem; }
+      button { width: 100%; }
+      .header { gap: 10px; }
+      .header-actions { flex-direction: column; gap: 8px; }
+      .btn-back { width: 100%; justify-content: center; }
+      .metric-chip { width: 100%; }
     }
   </style>
 </head>
@@ -153,6 +259,27 @@
   <div class="header">
     <img src="assets/logo.png" alt="Blue Home Logo" />
     <h1>Gestor de Órdenes de Servicio</h1>
+    <div class="header-summary" id="resumenEncabezado">
+      <div class="metric-chip">
+        <span class="metric-label">Total</span>
+        <span class="metric-value" id="metricTotal">0</span>
+      </div>
+      <div class="metric-chip">
+        <span class="metric-label">Pendientes</span>
+        <span class="metric-value" id="metricPendientes">0</span>
+      </div>
+      <div class="metric-chip">
+        <span class="metric-label">En proceso</span>
+        <span class="metric-value" id="metricProceso">0</span>
+      </div>
+      <div class="metric-chip">
+        <span class="metric-label">Finalizadas</span>
+        <span class="metric-value" id="metricFinalizadas">0</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-back" id="btnVolver">← Volver</button>
+    </div>
   </div>
 
   <div class="container">
@@ -188,7 +315,7 @@
     </form>
 
     <!-- ===== TABLA ===== -->
-    <table id="tablaOrdenes">
+    <table id="tablaOrdenes" data-responsive>
       <thead>
         <tr>
           <th>Fecha</th>
@@ -207,6 +334,49 @@
   </div>
 
   <script>
+    const metricRefs = {
+      total: document.getElementById("metricTotal"),
+      pendientes: document.getElementById("metricPendientes"),
+      proceso: document.getElementById("metricProceso"),
+      finalizadas: document.getElementById("metricFinalizadas"),
+    };
+
+    const actualizarMetricas = (ordenes = []) => {
+      const counters = {
+        total: ordenes.length,
+        pendientes: 0,
+        proceso: 0,
+        finalizadas: 0,
+      };
+
+      ordenes.forEach((orden) => {
+        const estadoRaw =
+          orden.estado ||
+          orden.Estado ||
+          orden.estatus ||
+          orden.Estatus ||
+          "";
+        const estado = String(estadoRaw).toLowerCase();
+
+        if (estado.includes("final") || estado.includes("cerr")) {
+          counters.finalizadas += 1;
+        } else if (estado.includes("pend")) {
+          counters.pendientes += 1;
+        } else if (estado.includes("asig") || estado.includes("proc") || estado.includes("curso")) {
+          counters.proceso += 1;
+        } else if (!estado.trim()) {
+          counters.pendientes += 1;
+        } else {
+          counters.proceso += 1;
+        }
+      });
+
+      metricRefs.total.textContent = counters.total;
+      metricRefs.pendientes.textContent = counters.pendientes;
+      metricRefs.proceso.textContent = counters.proceso;
+      metricRefs.finalizadas.textContent = counters.finalizadas;
+    };
+
     // === CARGAR LISTA DE TÉCNICOS ===
     async function cargarTecnicos() {
       try {
@@ -230,6 +400,7 @@
     async function cargarOrdenes() {
       const tbody = document.querySelector("#tablaOrdenes tbody");
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>`;
+      actualizarMetricas([]);
       try {
         const res = await fetch("/api/orders");
         const data = await res.json();
@@ -237,6 +408,7 @@
 
         if (!data.length) {
           tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay órdenes</td></tr>`;
+          actualizarMetricas([]);
           return;
         }
 
@@ -257,16 +429,18 @@
 
           const fila = document.createElement("tr");
           fila.innerHTML = `
-            <td>${fecha}</td>
-            <td>${codigo}</td>
-            <td>${cliente}</td>
-            <td>${telefono}</td>
-            <td>${tecnico}</td>
-            <td>${estado}</td>
-            <td><button class="btn-ver" data-codigo="${codigo}">Ver / Gestionar</button></td>
+            <td data-label="Fecha">${fecha}</td>
+            <td data-label="Código">${codigo}</td>
+            <td data-label="Cliente">${cliente}</td>
+            <td data-label="Teléfono">${telefono}</td>
+            <td data-label="Técnico">${tecnico}</td>
+            <td data-label="Estado">${estado}</td>
+            <td data-label="Acción"><button class="btn-ver" data-codigo="${codigo}">Ver / Gestionar</button></td>
           `;
           tbody.appendChild(fila);
         });
+
+        actualizarMetricas(data);
 
         document.querySelectorAll(".btn-ver").forEach(btn => {
           btn.addEventListener("click", () => {
@@ -278,6 +452,7 @@
       } catch (err) {
         console.error("❌ Error al cargar órdenes:", err);
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error al cargar datos</td></tr>`;
+        actualizarMetricas([]);
       }
     }
 
@@ -314,6 +489,14 @@
       } catch (err) {
         console.error("Error al crear orden:", err);
         alert("❌ Error al conectar con el servidor");
+      }
+    });
+
+    document.getElementById("btnVolver").addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "dashboard.html";
       }
     });
 
