@@ -14,9 +14,18 @@
     h3 { color:#004aad; margin:0 0 12px; }
     .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); color:#0f172a; }
     .card p, .card span { color:#0f172a; }
-    .top-summary { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; color:#fff; }
-    .top-summary span { background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.2); border-radius:30px; padding:6px 12px; display:flex; align-items:center; gap:6px; }
-    .top-summary span::before { content: attr(data-label) ":"; font-weight:600; }
+    .top-summary { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; color:#0f172a; }
+    .top-summary span {
+      background:#f1f5ff;
+      border:1px solid rgba(15,23,42,0.12);
+      border-radius:30px;
+      padding:6px 12px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#0f172a;
+    }
+    .top-summary span::before { content: attr(data-label) ":"; font-weight:600; color:#004aad; }
 
     .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
     .info-item b { color:#004aad; min-width:95px; display:inline-block; }
@@ -328,7 +337,6 @@
         const tecnico = document.getElementById("tecnico").textContent;
         const estado = "Finalizada";
         const descripcion = document.getElementById("descripcion").textContent;
-        const firmaData = firmaTrazada ? canvas.toDataURL("image/png") : null;
         const fotoAntes = document.getElementById("fotoAntes").files[0];
         const fotoDespues = document.getElementById("fotoDespues").files[0];
         const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
@@ -346,10 +354,22 @@
         formData.append("descripcion", descripcion);
         formData.append("materiales", materiales);
         formData.append("observaciones", observaciones);
-        if (firmaData) formData.append("firma", firmaData);
         formData.append("nombreFirmante", nombreFirmante);
         if (fotoAntes) formData.append("fotoAntes", fotoAntes);
         if (fotoDespues) formData.append("fotoDespues", fotoDespues);
+
+        if (firmaTrazada) {
+          const firmaBlob = await new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("No se pudo procesar la firma."));
+            }, "image/png");
+          });
+
+          const firmaDataUrl = canvas.toDataURL("image/png");
+          formData.append("firmaArchivo", firmaBlob, `firma_${codigo || "orden"}.png`);
+          formData.append("firmaDataUrl", firmaDataUrl);
+        }
 
         const res = await fetch(`${API}/${codigo}/pdf`, { method: "POST", body: formData });
         const out = await res.json();
