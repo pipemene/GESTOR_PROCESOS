@@ -276,10 +276,14 @@
     const canvas = document.getElementById("firmaCanvas");
     const ctx = canvas.getContext("2d");
     function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
+      const wrapper = canvas.parentElement;
+      if (!wrapper) return;
+      const rect = wrapper.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
-      canvas.width = rect.width * ratio;
-      canvas.height = rect.height * ratio;
+      const width = rect.width || wrapper.offsetWidth || 320;
+      const height = rect.height || wrapper.offsetHeight || 180;
+      canvas.width = Math.max(1, width * ratio);
+      canvas.height = Math.max(1, height * ratio);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#111827";
     }
@@ -293,12 +297,32 @@
     };
 
     function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length) e=e.touches[0]; return {x:e.clientX-r.left, y:e.clientY-r.top}; }
-    function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+    function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); setFirmaTrazada(true); e.preventDefault(); }
     function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); setFirmaTrazada(true); e.preventDefault(); }
     function end(){ dibujando=false; }
     canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",draw); window.addEventListener("mouseup",end);
     canvas.addEventListener("touchstart",start,{passive:false}); canvas.addEventListener("touchmove",draw,{passive:false}); canvas.addEventListener("touchend",end);
     document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); setFirmaTrazada(false); };
+
+    const dataUrlToBlob = (dataUrl) => {
+      try {
+        if (!dataUrl) return null;
+        const parts = dataUrl.split(",");
+        if (parts.length < 2) return null;
+        const mimeMatch = parts[0].match(/data:(.*?);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+        const binary = atob(parts[1]);
+        const len = binary.length;
+        const buffer = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) {
+          buffer[i] = binary.charCodeAt(i);
+        }
+        return new Blob([buffer], { type: mimeType });
+      } catch (error) {
+        console.error("No se pudo convertir la firma en un archivo", error);
+        return null;
+      }
+    };
 
     // ===== FINALIZAR Y GENERAR PDF =====
     const btnFinalizar = document.getElementById("btnFinalizar");
@@ -359,14 +383,11 @@
         if (fotoDespues) formData.append("fotoDespues", fotoDespues);
 
         if (firmaTrazada) {
-          const firmaBlob = await new Promise((resolve, reject) => {
-            canvas.toBlob((blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error("No se pudo procesar la firma."));
-            }, "image/png");
-          });
-
           const firmaDataUrl = canvas.toDataURL("image/png");
+          const firmaBlob = dataUrlToBlob(firmaDataUrl);
+          if (!firmaBlob) {
+            throw new Error("No se pudo procesar la firma.");
+          }
           formData.append("firmaArchivo", firmaBlob, `firma_${codigo || "orden"}.png`);
           formData.append("firmaDataUrl", firmaDataUrl);
         }
