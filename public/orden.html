@@ -35,25 +35,6 @@
     #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
     .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
-    .status-message {
-      margin-top:16px;
-      padding:12px 16px;
-      border-radius:10px;
-      border:1px solid transparent;
-      background:#f1f5f9;
-      color:#0f172a;
-      font-size:14px;
-      text-align:left;
-      display:none;
-    }
-
-    .status-message.is-visible { display:block; }
-    .status-message.is-success { border-color:#16a34a; background:#ecfdf5; color:#166534; }
-    .status-message.is-error { border-color:#dc2626; background:#fef2f2; color:#7f1d1d; }
-    .status-message.is-info { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
-
-    .status-message a { color: inherit; text-decoration: underline; word-break: break-all; }
-
     @media (max-width: 768px) {
       header { flex-direction: column; align-items:flex-start; }
       header > button { align-self: stretch; }
@@ -171,7 +152,7 @@
         const data = await r.json();
         const cleanCodigo = codigo ? codigo.trim() : "";
         const o = data.find(x => {
-          const codeCandidate = prefer(x, [
+      const codeCandidate = prefer(x, [
             "codigo",
             "Código",
             "código",
@@ -185,6 +166,7 @@
             "idorden",
             "orden",
           ], "");
+          const codeCandidate = prefer(x, ["codigo", "Código", "código", "CÓDIGO"], "");
           return String(codeCandidate).trim() === cleanCodigo;
         });
         if (!o) {
@@ -241,6 +223,12 @@
           "observacion",
           "Observacion",
         ], "—");
+        const codigoVal = prefer(o, ["codigo", "Código", "código", "CÓDIGO"], "—");
+        const clienteVal = prefer(o, ["cliente", "Cliente", "inquilino", "Arrendatario"], "—");
+        const telefonoVal = prefer(o, ["telefono", "teléfono", "Telefono", "Teléfono"], "—");
+        const tecnicoVal = prefer(o, ["tecnico", "Técnico"], "—");
+        const estadoVal = prefer(o, ["estado", "Estado"], "—");
+        const descripcionVal = prefer(o, ["descripcion", "Descripción", "descripcion_reporte", "Reporte"], "—");
 
         document.getElementById("codigo").textContent = codigoVal;
         document.getElementById("cliente").textContent = clienteVal;
@@ -310,6 +298,9 @@
     btnFinalizar.addEventListener("click", async () => {
       if (!codigo) {
         mostrarEstado("error", "❌ No se encontró el código de la orden.");
+    btnFinalizar.addEventListener("click", async () => {
+      if (!codigo) {
+        alert("❌ No se encontró el código de la orden.");
         return;
       }
 
@@ -344,6 +335,7 @@
         formData.append("materiales", materiales);
         formData.append("observaciones", observaciones);
         if (firmaData) formData.append("firma", firmaData);
+        formData.append("firma", firmaData);
         formData.append("nombreFirmante", nombreFirmante);
         if (fotoAntes) formData.append("fotoAntes", fotoAntes);
         if (fotoDespues) formData.append("fotoDespues", fotoDespues);
@@ -369,6 +361,21 @@
       } catch (e) {
         console.error(e);
         mostrarEstado("error", `❌ ${e.message || "Error al generar PDF."}`);
+        if (out.driveUrl) enlaces.push(`📄 PDF: ${out.driveUrl}`);
+        if (out.assets?.fotoAntes) enlaces.push(`📸 Foto antes: ${out.assets.fotoAntes}`);
+        if (out.assets?.fotoDespues) enlaces.push(`📸 Foto después: ${out.assets.fotoDespues}`);
+        if (out.assets?.firma) enlaces.push(`✍️ Firma: ${out.assets.firma}`);
+
+        const mensaje = [
+          out.message || "Orden finalizada correctamente.",
+          enlaces.length ? "\n" + enlaces.join("\n") : "",
+        ].join("");
+
+        alert(`✅ ${mensaje}`);
+        location.href = "ordenes.html";
+      } catch (e) {
+        console.error(e);
+        alert(`❌ ${e.message || "Error al generar PDF."}`);
       } finally {
         btnFinalizar.disabled = false;
         btnFinalizar.textContent = originalText;

@@ -195,7 +195,6 @@ router.get("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: crear nueva orden en la hoja
-====================================================== */
 router.post("/", async (req, res) => {
   try {
     const body = canonicalizePayload({ ...req.body });
@@ -235,7 +234,6 @@ router.post("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: generar y subir PDF de orden
-====================================================== */
 router.post(
   "/:codigo/pdf",
   upload.fields([
@@ -464,6 +462,11 @@ const finishOrderHandler = async (req, res) => {
     const headers = rows[0] || [];
     const idxEstado = headers.findIndex((h) => /estado/i.test(h || ""));
     const rowNumber = findRowNumberByCodigo(rows, headers, codigo);
+
+    if (rowNumber < 0) return res.status(404).json({ error: "Orden no encontrada" });
+    if (idxEstado < 0)
+      return res.status(500).json({ error: "No se encontró la columna Estado en la hoja." });
+
 
     if (rowNumber < 0) return res.status(404).json({ error: "Orden no encontrada" });
     if (idxEstado < 0)

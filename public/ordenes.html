@@ -458,6 +458,11 @@
       (metricRefs[key] || []).forEach((el) => {
         if (el) el.textContent = value;
       });
+    const metricRefs = {
+      total: document.getElementById("metricTotal"),
+      pendientes: document.getElementById("metricPendientes"),
+      proceso: document.getElementById("metricProceso"),
+      finalizadas: document.getElementById("metricFinalizadas"),
     };
 
     const actualizarMetricas = (ordenes = []) => {
@@ -470,6 +475,12 @@
 
       ordenes.forEach((orden) => {
         const estadoRaw = preferValue(orden, KEY_VARIANTS.estado, "");
+        const estadoRaw =
+          orden.estado ||
+          orden.Estado ||
+          orden.estatus ||
+          orden.Estatus ||
+          "";
         const estado = String(estadoRaw).toLowerCase();
 
         if (estado.includes("final") || estado.includes("cerr")) {
@@ -489,6 +500,10 @@
       setMetricValue("pendientes", counters.pendientes);
       setMetricValue("proceso", counters.proceso);
       setMetricValue("finalizadas", counters.finalizadas);
+      metricRefs.total.textContent = counters.total;
+      metricRefs.pendientes.textContent = counters.pendientes;
+      metricRefs.proceso.textContent = counters.proceso;
+      metricRefs.finalizadas.textContent = counters.finalizadas;
     };
 
     // === CARGAR LISTA DE TÉCNICOS ===
