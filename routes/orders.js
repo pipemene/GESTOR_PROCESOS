@@ -467,6 +467,11 @@ const finishOrderHandler = async (req, res) => {
     if (idxEstado < 0)
       return res.status(500).json({ error: "No se encontró la columna Estado en la hoja." });
 
+
+    if (rowNumber < 0) return res.status(404).json({ error: "Orden no encontrada" });
+    if (idxEstado < 0)
+      return res.status(500).json({ error: "No se encontró la columna Estado en la hoja." });
+
     const column = getExcelColumnName(idxEstado);
     await updateCell(SHEET_NAME, `${column}${rowNumber}`, "Finalizada");
 

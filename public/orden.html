@@ -152,6 +152,20 @@
         const data = await r.json();
         const cleanCodigo = codigo ? codigo.trim() : "";
         const o = data.find(x => {
+      const codeCandidate = prefer(x, [
+            "codigo",
+            "Código",
+            "código",
+            "CÓDIGO",
+            "codigoinmueble",
+            "Codigo del inmueble",
+            "Código del inmueble",
+            "codigo del inmueble",
+            "id",
+            "ID",
+            "idorden",
+            "orden",
+          ], "");
           const codeCandidate = prefer(x, ["codigo", "Código", "código", "CÓDIGO"], "");
           return String(codeCandidate).trim() === cleanCodigo;
         });
@@ -160,6 +174,55 @@
           return;
         }
 
+        const codigoVal = prefer(o, [
+          "codigo",
+          "Código",
+          "código",
+          "CÓDIGO",
+          "codigoinmueble",
+          "Codigo del inmueble",
+          "Código del inmueble",
+          "codigo del inmueble",
+          "id",
+          "ID",
+          "idorden",
+          "orden",
+        ], "—");
+        const clienteVal = prefer(o, [
+          "cliente",
+          "Cliente",
+          "inquilino",
+          "Inquilino",
+          "arrendatario",
+          "Arrendatario",
+          "nombre arrendatario",
+          "Nombre arrendatario",
+          "nombreinquilino",
+        ], "—");
+        const telefonoVal = prefer(o, [
+          "telefono",
+          "teléfono",
+          "Telefono",
+          "Teléfono",
+          "celular",
+          "Celular",
+          "contacto",
+          "Contacto",
+          "telefono arrendatario",
+          "Telefono arrendatario",
+        ], "—");
+        const tecnicoVal = prefer(o, ["tecnico", "Técnico", "tecnico asignado", "Tecnico Asignado", "responsable", "Responsable"], "—");
+        const estadoVal = prefer(o, ["estado", "Estado", "estatus", "Estatus", "estado actual"], "—");
+        const descripcionVal = prefer(o, [
+          "descripcion",
+          "Descripción",
+          "descripcion_reporte",
+          "Reporte",
+          "detalle",
+          "Detalle",
+          "observacion",
+          "Observacion",
+        ], "—");
         const codigoVal = prefer(o, ["codigo", "Código", "código", "CÓDIGO"], "—");
         const clienteVal = prefer(o, ["cliente", "Cliente", "inquilino", "Arrendatario"], "—");
         const telefonoVal = prefer(o, ["telefono", "teléfono", "Telefono", "Teléfono"], "—");
@@ -215,6 +278,26 @@
 
     // ===== FINALIZAR Y GENERAR PDF =====
     const btnFinalizar = document.getElementById("btnFinalizar");
+    const statusBox = document.getElementById("finalizacionStatus");
+
+    const mostrarEstado = (tipo, contenido) => {
+      statusBox.className = "status-message";
+      if (!contenido) {
+        statusBox.textContent = "";
+        statusBox.classList.remove("is-visible");
+        return;
+      }
+
+      statusBox.innerHTML = contenido;
+      statusBox.classList.add("is-visible");
+      if (tipo === "error") statusBox.classList.add("is-error");
+      else if (tipo === "success") statusBox.classList.add("is-success");
+      else statusBox.classList.add("is-info");
+    };
+
+    btnFinalizar.addEventListener("click", async () => {
+      if (!codigo) {
+        mostrarEstado("error", "❌ No se encontró el código de la orden.");
     btnFinalizar.addEventListener("click", async () => {
       if (!codigo) {
         alert("❌ No se encontró el código de la orden.");
@@ -224,6 +307,7 @@
       const originalText = btnFinalizar.textContent;
       btnFinalizar.disabled = true;
       btnFinalizar.textContent = "Generando PDF...";
+      mostrarEstado("info", "⏳ Procesando orden, subiendo evidencias al servidor...");
       try {
         const materiales = document.getElementById("materiales").value.trim();
         const observaciones = document.getElementById("observaciones").value.trim();
@@ -237,6 +321,10 @@
         const fotoDespues = document.getElementById("fotoDespues").files[0];
         const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
 
+        if (firmaTrazada && !nombreFirmante) {
+          throw new Error("Debes escribir el nombre del firmante junto a la firma.");
+        }
+
         const formData = new FormData();
         formData.append("codigo", codigo);
         formData.append("cliente", cliente);
@@ -246,6 +334,7 @@
         formData.append("descripcion", descripcion);
         formData.append("materiales", materiales);
         formData.append("observaciones", observaciones);
+        if (firmaData) formData.append("firma", firmaData);
         formData.append("firma", firmaData);
         formData.append("nombreFirmante", nombreFirmante);
         if (fotoAntes) formData.append("fotoAntes", fotoAntes);
@@ -259,6 +348,19 @@
         }
 
         const enlaces = [];
+        if (out.driveUrl) enlaces.push(`<li><a href="${out.driveUrl}" target="_blank" rel="noopener">📄 PDF generado</a></li>`);
+        if (out.assets?.fotoAntes) enlaces.push(`<li><a href="${out.assets.fotoAntes}" target="_blank" rel="noopener">📸 Foto antes</a></li>`);
+        if (out.assets?.fotoDespues) enlaces.push(`<li><a href="${out.assets.fotoDespues}" target="_blank" rel="noopener">📸 Foto después</a></li>`);
+        if (out.assets?.firma) enlaces.push(`<li><a href="${out.assets.firma}" target="_blank" rel="noopener">✍️ Firma registrada</a></li>`);
+
+        const mensaje = `✅ ${out.message || "Orden finalizada correctamente."}`;
+        const enlacesHtml = enlaces.length ? `<ul style="margin-top:8px;padding-left:18px;">${enlaces.join("")}</ul>` : "";
+        mostrarEstado("success", `${mensaje}${enlacesHtml}`);
+
+        setTimeout(() => { window.location.href = "ordenes.html"; }, 1200);
+      } catch (e) {
+        console.error(e);
+        mostrarEstado("error", `❌ ${e.message || "Error al generar PDF."}`);
         if (out.driveUrl) enlaces.push(`📄 PDF: ${out.driveUrl}`);
         if (out.assets?.fotoAntes) enlaces.push(`📸 Foto antes: ${out.assets.fotoAntes}`);
         if (out.assets?.fotoDespues) enlaces.push(`📸 Foto después: ${out.assets.fotoDespues}`);
