@@ -283,6 +283,25 @@
   </div>
 
   <div class="container">
+    <section class="metrics-board" id="panelMetricas">
+      <article class="metric-card">
+        <small>Total de órdenes</small>
+        <strong id="metricTotalPanel">0</strong>
+      </article>
+      <article class="metric-card">
+        <small>Pendientes</small>
+        <strong id="metricPendientesPanel">0</strong>
+      </article>
+      <article class="metric-card">
+        <small>En proceso</small>
+        <strong id="metricProcesoPanel">0</strong>
+      </article>
+      <article class="metric-card">
+        <small>Finalizadas</small>
+        <strong id="metricFinalizadasPanel">0</strong>
+      </article>
+    </section>
+
     <!-- ===== FORMULARIO ===== -->
     <form id="formOrden">
       <h2>Crear nueva orden</h2>
@@ -413,19 +432,12 @@
         }
 
         data.forEach(o => {
-          const codigo =
-            o.codigo ||
-            o["codigo"] ||
-            o["Código"] ||
-            o["código"] ||
-            o["CÓDIGO"] ||
-            "-";
-
-          const cliente = o.cliente || o.inquilino || "-";
-          const telefono = o.telefono || "-";
-          const tecnico = o.tecnico || "Sin asignar";
-          const estado = o.estado || "-";
-          const fecha = o.fecha || "-";
+          const codigo = preferValue(o, KEY_VARIANTS.codigo, "-");
+          const cliente = preferValue(o, KEY_VARIANTS.cliente, "-");
+          const telefono = preferValue(o, KEY_VARIANTS.telefono, "-");
+          const tecnico = preferValue(o, KEY_VARIANTS.tecnico, "Sin asignar");
+          const estado = preferValue(o, KEY_VARIANTS.estado, "-");
+          const fecha = preferValue(o, KEY_VARIANTS.fecha, "-");
 
           const fila = document.createElement("tr");
           fila.innerHTML = `

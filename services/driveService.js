@@ -4,16 +4,38 @@
 import { google } from "googleapis";
 import fs from "fs";
 
-// 🔹 Autenticación con la cuenta de servicio
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  },
-  scopes: ["https://www.googleapis.com/auth/drive"],
-});
+let driveClient = null;
 
-const drive = google.drive({ version: "v3", auth });
+const buildDriveClient = () => {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!email || !rawPrivateKey) {
+    const err = new Error(
+      "Google Drive no está configurado correctamente. Verifica GOOGLE_SERVICE_ACCOUNT_EMAIL y GOOGLE_PRIVATE_KEY."
+    );
+    err.code = "E_MISSING_DRIVE_CONFIG";
+    throw err;
+  }
+
+  const privateKey = rawPrivateKey.replace(/\\n/g, "\n");
+
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: email,
+      private_key: privateKey,
+    },
+    scopes: ["https://www.googleapis.com/auth/drive"],
+  });
+
+  driveClient = google.drive({ version: "v3", auth });
+  return driveClient;
+};
+
+const getDriveClient = () => {
+  if (driveClient) return driveClient;
+  return buildDriveClient();
+};
 
 // ======================================================
 // 🔹 Verificar o crear carpeta destino (en unidad compartida)
@@ -24,6 +46,7 @@ export async function ensureFolderExists(folderName, parentId = process.env.GOOG
       throw new Error("GOOGLE_DRIVE_FOLDER_ID no está configurado en las variables de entorno");
     }
 
+    const drive = getDriveClient();
     const sanitizedName = folderName.replace(/'/g, "\\'");
 
     const res = await drive.files.list({
@@ -66,6 +89,7 @@ export async function uploadFileToDrive(
   options = {}
 ) {
   try {
+    const drive = getDriveClient();
     const { mimeType = "application/pdf", isFolderId = false, parentId = undefined } = options;
 
     const targetFolderId = isFolderId

@@ -116,6 +116,7 @@
     <div style="text-align:center; margin-top:12px;">
       <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden (Generar PDF)</button>
     </div>
+    <div id="finalizacionStatus" class="status-message" role="status" aria-live="polite"></div>
   </main>
 
   <script>
@@ -198,13 +199,19 @@
     resizeCanvas(); window.addEventListener("resize", resizeCanvas);
 
     let dibujando = false;
+    let firmaTrazada = false;
+
+    const setFirmaTrazada = (state) => {
+      firmaTrazada = state;
+    };
+
     function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length) e=e.touches[0]; return {x:e.clientX-r.left, y:e.clientY-r.top}; }
     function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
-    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); setFirmaTrazada(true); e.preventDefault(); }
     function end(){ dibujando=false; }
     canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",draw); window.addEventListener("mouseup",end);
     canvas.addEventListener("touchstart",start,{passive:false}); canvas.addEventListener("touchmove",draw,{passive:false}); canvas.addEventListener("touchend",end);
-    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); };
+    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); setFirmaTrazada(false); };
 
     // ===== FINALIZAR Y GENERAR PDF =====
     const btnFinalizar = document.getElementById("btnFinalizar");
@@ -225,7 +232,7 @@
         const tecnico = document.getElementById("tecnico").textContent;
         const estado = "Finalizada";
         const descripcion = document.getElementById("descripcion").textContent;
-        const firmaData = canvas.toDataURL("image/png");
+        const firmaData = firmaTrazada ? canvas.toDataURL("image/png") : null;
         const fotoAntes = document.getElementById("fotoAntes").files[0];
         const fotoDespues = document.getElementById("fotoDespues").files[0];
         const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
