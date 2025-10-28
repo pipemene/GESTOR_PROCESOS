@@ -6,21 +6,27 @@
   <title>Orden de Trabajo | Blue Home Gestor</title>
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
-    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
-    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
+    body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; color:#0f172a; }
+    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; gap:16px; flex-wrap:wrap; }
     .logo { height:42px; }
     main { padding:24px; max-width:1000px; margin:0 auto; }
     h2 { color:#004aad; margin:0; }
     h3 { color:#004aad; margin:0 0 12px; }
-    .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); color:#0f172a; }
+    .card p, .card span { color:#0f172a; }
+    .top-summary { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; color:#fff; }
+    .top-summary span { background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.2); border-radius:30px; padding:6px 12px; display:flex; align-items:center; gap:6px; }
+    .top-summary span::before { content: attr(data-label) ":"; font-weight:600; }
 
     .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
     .info-item b { color:#004aad; min-width:95px; display:inline-block; }
 
     input[type="file"], input[type="text"], textarea {
-      width:100%; padding:8px 10px; border:1px solid #cfd6e4; border-radius:8px; font-size:14px; outline:none;
+      width:100%; padding:8px 10px; border:1px solid #cfd6e4; border-radius:8px; font-size:14px; outline:none; color:#0f172a; background:#fff;
     }
     textarea { min-height:100px; resize:vertical; }
+    input::placeholder, textarea::placeholder { color:#64748b; opacity:1; }
+    label { color:#0f172a; font-weight:600; }
 
     .btn { border:none; border-radius:8px; padding:9px 14px; cursor:pointer; font-weight:600; transition:0.2s; }
     .btn-primary{ background:#004aad; color:#fff; } .btn-primary:hover{ background:#1f64d1; }
@@ -31,13 +37,58 @@
     .signature-wrap{ border:2px dashed #bfc6d8; border-radius:10px; background:#fff; height:220px; }
     #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
     .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+    .status-message {
+      margin-top:16px;
+      padding:12px 16px;
+      border-radius:10px;
+      border:1px solid transparent;
+      background:#f1f5f9;
+      color:#0f172a;
+      font-size:14px;
+      text-align:left;
+      display:none;
+    }
+
+    .status-message.is-visible { display:block; }
+    .status-message.is-success { border-color:#16a34a; background:#ecfdf5; color:#166534; }
+    .status-message.is-error { border-color:#dc2626; background:#fef2f2; color:#7f1d1d; }
+    .status-message.is-info { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
+
+    .status-message a { color: inherit; text-decoration: underline; word-break: break-all; }
+
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items:flex-start; }
+      header > button { align-self: stretch; }
+      .top-summary { width:100%; }
+      .top-summary span { flex:1 1 45%; justify-content:center; }
+      main { padding:20px 16px 32px; }
+    }
+
+    @media (max-width: 480px) {
+      .top-summary { flex-direction:column; }
+      .top-summary span { flex:1 1 auto; width:100%; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
-      <h2>Orden de Trabajo</h2>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
+        <div>
+          <h2>Orden de Trabajo</h2>
+          <p id="orderBreadcrumb" style="margin:2px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">
+            Cargando información...
+          </p>
+        </div>
+      </div>
+      <div class="top-summary" id="topSummary">
+        <span data-label="Código" id="topCodigo">—</span>
+        <span data-label="Cliente" id="topCliente">—</span>
+        <span data-label="Teléfono" id="topTelefono">—</span>
+        <span data-label="Estado" id="topEstado">—</span>
+      </div>
     </div>
     <button class="btn btn-muted" id="btnBack">← Volver</button>
   </header>
@@ -87,28 +138,125 @@
     <div style="text-align:center; margin-top:12px;">
       <button class="btn btn-success" id="btnFinalizar">✅ Finalizar Orden (Generar PDF)</button>
     </div>
+    <div id="finalizacionStatus" class="status-message" role="status" aria-live="polite"></div>
   </main>
 
   <script>
     const API = "/api/orders";
     const q = new URLSearchParams(location.search);
     const codigo = q.get("codigo");
-    document.getElementById("btnBack").onclick = () => location.href = "ordenes.html";
+    document.getElementById("btnBack").onclick = () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        location.href = "ordenes.html";
+      }
+    };
+
+    const prefer = (record, keys, fallback = "") => {
+      if (!record) return fallback;
+      for (const key of keys) {
+        if (key in record && record[key] != null && String(record[key]).trim() !== "") {
+          return record[key];
+        }
+      }
+      return fallback;
+    };
 
     // ===== CARGAR DATOS ORDEN =====
+    if (!codigo) {
+      document.getElementById("orderBreadcrumb").textContent = "Sin código de orden";
+    }
+
     async function cargarOrden() {
       try {
         const r = await fetch(API);
         const data = await r.json();
-        const o = data.find(x => x.codigo === codigo || x.Código === codigo);
-        if (!o) return alert("No se encontró la orden.");
+        const cleanCodigo = codigo ? codigo.trim() : "";
+        const o = data.find(x => {
+          const codeCandidate = prefer(x, [
+            "codigo",
+            "Código",
+            "código",
+            "CÓDIGO",
+            "codigoinmueble",
+            "Codigo del inmueble",
+            "Código del inmueble",
+            "codigo del inmueble",
+            "id",
+            "ID",
+            "idorden",
+            "orden",
+          ], "");
+          return String(codeCandidate).trim() === cleanCodigo;
+        });
+        if (!o) {
+          alert("No se encontró la orden.");
+          return;
+        }
 
-        document.getElementById("codigo").textContent = o.codigo || o.Código || "—";
-        document.getElementById("cliente").textContent = o.cliente || o.Cliente || "—";
-        document.getElementById("telefono").textContent = o.telefono || o.Teléfono || "—";
-        document.getElementById("tecnico").textContent = o.tecnico || o.Técnico || "—";
-        document.getElementById("estado").textContent = o.estado || o.Estado || "—";
-        document.getElementById("descripcion").textContent = o.descripcion || o.Descripción || "—";
+        const codigoVal = prefer(o, [
+          "codigo",
+          "Código",
+          "código",
+          "CÓDIGO",
+          "codigoinmueble",
+          "Codigo del inmueble",
+          "Código del inmueble",
+          "codigo del inmueble",
+          "id",
+          "ID",
+          "idorden",
+          "orden",
+        ], "—");
+        const clienteVal = prefer(o, [
+          "cliente",
+          "Cliente",
+          "inquilino",
+          "Inquilino",
+          "arrendatario",
+          "Arrendatario",
+          "nombre arrendatario",
+          "Nombre arrendatario",
+          "nombreinquilino",
+        ], "—");
+        const telefonoVal = prefer(o, [
+          "telefono",
+          "teléfono",
+          "Telefono",
+          "Teléfono",
+          "celular",
+          "Celular",
+          "contacto",
+          "Contacto",
+          "telefono arrendatario",
+          "Telefono arrendatario",
+        ], "—");
+        const tecnicoVal = prefer(o, ["tecnico", "Técnico", "tecnico asignado", "Tecnico Asignado", "responsable", "Responsable"], "—");
+        const estadoVal = prefer(o, ["estado", "Estado", "estatus", "Estatus", "estado actual"], "—");
+        const descripcionVal = prefer(o, [
+          "descripcion",
+          "Descripción",
+          "descripcion_reporte",
+          "Reporte",
+          "detalle",
+          "Detalle",
+          "observacion",
+          "Observacion",
+        ], "—");
+
+        document.getElementById("codigo").textContent = codigoVal;
+        document.getElementById("cliente").textContent = clienteVal;
+        document.getElementById("telefono").textContent = telefonoVal;
+        document.getElementById("tecnico").textContent = tecnicoVal;
+        document.getElementById("estado").textContent = estadoVal;
+        document.getElementById("descripcion").textContent = descripcionVal;
+
+        document.getElementById("topCodigo").textContent = codigoVal;
+        document.getElementById("topCliente").textContent = clienteVal;
+        document.getElementById("topTelefono").textContent = telefonoVal;
+        document.getElementById("topEstado").textContent = estadoVal;
+        document.getElementById("orderBreadcrumb").textContent = `${codigoVal !== "—" ? "Orden " + codigoVal : "Orden"}${clienteVal !== "—" ? " · " + clienteVal : ""}`;
       } catch (e) {
         console.error(e);
         alert("Error cargando datos de la orden.");
@@ -129,16 +277,49 @@
     resizeCanvas(); window.addEventListener("resize", resizeCanvas);
 
     let dibujando = false;
+    let firmaTrazada = false;
+
+    const setFirmaTrazada = (state) => {
+      firmaTrazada = state;
+    };
+
     function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches.length) e=e.touches[0]; return {x:e.clientX-r.left, y:e.clientY-r.top}; }
     function start(e){ dibujando=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
-    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+    function draw(e){ if(!dibujando) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); setFirmaTrazada(true); e.preventDefault(); }
     function end(){ dibujando=false; }
     canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",draw); window.addEventListener("mouseup",end);
     canvas.addEventListener("touchstart",start,{passive:false}); canvas.addEventListener("touchmove",draw,{passive:false}); canvas.addEventListener("touchend",end);
-    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); };
+    document.getElementById("btnLimpiarFirma").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); resizeCanvas(); setFirmaTrazada(false); };
 
     // ===== FINALIZAR Y GENERAR PDF =====
-    document.getElementById("btnFinalizar").onclick = async () => {
+    const btnFinalizar = document.getElementById("btnFinalizar");
+    const statusBox = document.getElementById("finalizacionStatus");
+
+    const mostrarEstado = (tipo, contenido) => {
+      statusBox.className = "status-message";
+      if (!contenido) {
+        statusBox.textContent = "";
+        statusBox.classList.remove("is-visible");
+        return;
+      }
+
+      statusBox.innerHTML = contenido;
+      statusBox.classList.add("is-visible");
+      if (tipo === "error") statusBox.classList.add("is-error");
+      else if (tipo === "success") statusBox.classList.add("is-success");
+      else statusBox.classList.add("is-info");
+    };
+
+    btnFinalizar.addEventListener("click", async () => {
+      if (!codigo) {
+        mostrarEstado("error", "❌ No se encontró el código de la orden.");
+        return;
+      }
+
+      const originalText = btnFinalizar.textContent;
+      btnFinalizar.disabled = true;
+      btnFinalizar.textContent = "Generando PDF...";
+      mostrarEstado("info", "⏳ Procesando orden, subiendo evidencias al servidor...");
       try {
         const materiales = document.getElementById("materiales").value.trim();
         const observaciones = document.getElementById("observaciones").value.trim();
@@ -147,9 +328,14 @@
         const tecnico = document.getElementById("tecnico").textContent;
         const estado = "Finalizada";
         const descripcion = document.getElementById("descripcion").textContent;
-        const firmaData = canvas.toDataURL("image/png");
+        const firmaData = firmaTrazada ? canvas.toDataURL("image/png") : null;
         const fotoAntes = document.getElementById("fotoAntes").files[0];
         const fotoDespues = document.getElementById("fotoDespues").files[0];
+        const nombreFirmante = document.getElementById("nombreFirmante").value.trim();
+
+        if (firmaTrazada && !nombreFirmante) {
+          throw new Error("Debes escribir el nombre del firmante junto a la firma.");
+        }
 
         const formData = new FormData();
         formData.append("codigo", codigo);
@@ -160,24 +346,37 @@
         formData.append("descripcion", descripcion);
         formData.append("materiales", materiales);
         formData.append("observaciones", observaciones);
-        formData.append("firma", firmaData);
+        if (firmaData) formData.append("firma", firmaData);
+        formData.append("nombreFirmante", nombreFirmante);
         if (fotoAntes) formData.append("fotoAntes", fotoAntes);
         if (fotoDespues) formData.append("fotoDespues", fotoDespues);
 
         const res = await fetch(`${API}/${codigo}/pdf`, { method: "POST", body: formData });
         const out = await res.json();
 
-        if (out.ok) {
-          alert("✅ Orden finalizada y PDF generado correctamente.\n\n📎 Enlace: " + out.driveUrl);
-          location.href = "ordenes.html";
-        } else {
-          alert("❌ Error generando PDF.");
+        if (!res.ok || !out.ok) {
+          throw new Error(out.error || "Error generando PDF");
         }
+
+        const enlaces = [];
+        if (out.driveUrl) enlaces.push(`<li><a href="${out.driveUrl}" target="_blank" rel="noopener">📄 PDF generado</a></li>`);
+        if (out.assets?.fotoAntes) enlaces.push(`<li><a href="${out.assets.fotoAntes}" target="_blank" rel="noopener">📸 Foto antes</a></li>`);
+        if (out.assets?.fotoDespues) enlaces.push(`<li><a href="${out.assets.fotoDespues}" target="_blank" rel="noopener">📸 Foto después</a></li>`);
+        if (out.assets?.firma) enlaces.push(`<li><a href="${out.assets.firma}" target="_blank" rel="noopener">✍️ Firma registrada</a></li>`);
+
+        const mensaje = `✅ ${out.message || "Orden finalizada correctamente."}`;
+        const enlacesHtml = enlaces.length ? `<ul style="margin-top:8px;padding-left:18px;">${enlaces.join("")}</ul>` : "";
+        mostrarEstado("success", `${mensaje}${enlacesHtml}`);
+
+        setTimeout(() => { window.location.href = "ordenes.html"; }, 1200);
       } catch (e) {
         console.error(e);
-        alert("Error al generar PDF.");
+        mostrarEstado("error", `❌ ${e.message || "Error al generar PDF."}`);
+      } finally {
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = originalText;
       }
-    };
+    });
 
     cargarOrden();
   </script>
