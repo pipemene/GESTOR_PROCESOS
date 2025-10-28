@@ -210,6 +210,11 @@ router.post("/", async (req, res) => {
     if (!body.observaciones && body.descripcion) {
       body.observaciones = body.descripcion;
     }
+    if (!body.observaciones && body.descripcion) {
+      body.observaciones = body.descripcion;
+    }
+
+    ensureRequiredFields(body);
 
     ensureRequiredFields(body);
 

@@ -42,15 +42,18 @@ const getDriveClient = () => {
 // ======================================================
 export async function ensureFolderExists(folderName, parentId = process.env.GOOGLE_DRIVE_FOLDER_ID) {
   try {
+    const resolvedParent = parentId || "root";
     if (!parentId) {
-      throw new Error("GOOGLE_DRIVE_FOLDER_ID no está configurado en las variables de entorno");
+      console.warn(
+        "⚠️ GOOGLE_DRIVE_FOLDER_ID no está definido. Se usará la carpeta raíz del Drive del servicio."
+      );
     }
 
     const drive = getDriveClient();
     const sanitizedName = folderName.replace(/'/g, "\\'");
 
     const res = await drive.files.list({
-      q: `name='${sanitizedName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      q: `name='${sanitizedName}' and '${resolvedParent}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: "files(id, name)",
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
@@ -65,7 +68,7 @@ export async function ensureFolderExists(folderName, parentId = process.env.GOOG
       resource: {
         name: folderName,
         mimeType: "application/vnd.google-apps.folder",
-        parents: [parentId],
+        ...(resolvedParent ? { parents: [resolvedParent] } : {}),
       },
       fields: "id",
       supportsAllDrives: true,
