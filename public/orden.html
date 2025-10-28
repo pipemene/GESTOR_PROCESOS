@@ -7,12 +7,15 @@
   <link rel="stylesheet" href="assets/css/estilos.css" />
   <style>
     body { background:#f6f8fb; font-family: "Segoe UI", sans-serif; }
-    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; }
+    header { background:#004aad; color:#fff; display:flex; align-items:center; justify-content:space-between; padding:12px 24px; gap:16px; flex-wrap:wrap; }
     .logo { height:42px; }
     main { padding:24px; max-width:1000px; margin:0 auto; }
     h2 { color:#004aad; margin:0; }
     h3 { color:#004aad; margin:0 0 12px; }
     .card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    .top-summary { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; }
+    .top-summary span { background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.2); border-radius:30px; padding:6px 12px; display:flex; align-items:center; gap:6px; }
+    .top-summary span::before { content: attr(data-label) ":"; font-weight:600; }
 
     .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:10px 18px; font-size:15px; }
     .info-item b { color:#004aad; min-width:95px; display:inline-block; }
@@ -31,13 +34,39 @@
     .signature-wrap{ border:2px dashed #bfc6d8; border-radius:10px; background:#fff; height:220px; }
     #firmaCanvas{ width:100%; height:100%; display:block; border-radius:8px; background:#fff; }
     .row-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items:flex-start; }
+      header > button { align-self: stretch; }
+      .top-summary { width:100%; }
+      .top-summary span { flex:1 1 45%; justify-content:center; }
+      main { padding:20px 16px 32px; }
+    }
+
+    @media (max-width: 480px) {
+      .top-summary { flex-direction:column; }
+      .top-summary span { flex:1 1 auto; width:100%; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
-      <h2>Orden de Trabajo</h2>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="assets/img/logo-blanco.png" class="logo" alt="Blue Home" />
+        <div>
+          <h2>Orden de Trabajo</h2>
+          <p id="orderBreadcrumb" style="margin:2px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">
+            Cargando información...
+          </p>
+        </div>
+      </div>
+      <div class="top-summary" id="topSummary">
+        <span data-label="Código" id="topCodigo">—</span>
+        <span data-label="Cliente" id="topCliente">—</span>
+        <span data-label="Teléfono" id="topTelefono">—</span>
+        <span data-label="Estado" id="topEstado">—</span>
+      </div>
     </div>
     <button class="btn btn-muted" id="btnBack">← Volver</button>
   </header>
@@ -93,22 +122,62 @@
     const API = "/api/orders";
     const q = new URLSearchParams(location.search);
     const codigo = q.get("codigo");
-    document.getElementById("btnBack").onclick = () => location.href = "ordenes.html";
+    document.getElementById("btnBack").onclick = () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        location.href = "ordenes.html";
+      }
+    };
+
+    const prefer = (record, keys, fallback = "") => {
+      if (!record) return fallback;
+      for (const key of keys) {
+        if (key in record && record[key] != null && String(record[key]).trim() !== "") {
+          return record[key];
+        }
+      }
+      return fallback;
+    };
 
     // ===== CARGAR DATOS ORDEN =====
+    if (!codigo) {
+      document.getElementById("orderBreadcrumb").textContent = "Sin código de orden";
+    }
+
     async function cargarOrden() {
       try {
         const r = await fetch(API);
         const data = await r.json();
-        const o = data.find(x => x.codigo === codigo || x.Código === codigo);
-        if (!o) return alert("No se encontró la orden.");
+        const cleanCodigo = codigo ? codigo.trim() : "";
+        const o = data.find(x => {
+          const codeCandidate = prefer(x, ["codigo", "Código", "código", "CÓDIGO"], "");
+          return String(codeCandidate).trim() === cleanCodigo;
+        });
+        if (!o) {
+          alert("No se encontró la orden.");
+          return;
+        }
 
-        document.getElementById("codigo").textContent = o.codigo || o.Código || "—";
-        document.getElementById("cliente").textContent = o.cliente || o.Cliente || "—";
-        document.getElementById("telefono").textContent = o.telefono || o.Teléfono || "—";
-        document.getElementById("tecnico").textContent = o.tecnico || o.Técnico || "—";
-        document.getElementById("estado").textContent = o.estado || o.Estado || "—";
-        document.getElementById("descripcion").textContent = o.descripcion || o.Descripción || "—";
+        const codigoVal = prefer(o, ["codigo", "Código", "código", "CÓDIGO"], "—");
+        const clienteVal = prefer(o, ["cliente", "Cliente", "inquilino", "Arrendatario"], "—");
+        const telefonoVal = prefer(o, ["telefono", "teléfono", "Telefono", "Teléfono"], "—");
+        const tecnicoVal = prefer(o, ["tecnico", "Técnico"], "—");
+        const estadoVal = prefer(o, ["estado", "Estado"], "—");
+        const descripcionVal = prefer(o, ["descripcion", "Descripción", "descripcion_reporte", "Reporte"], "—");
+
+        document.getElementById("codigo").textContent = codigoVal;
+        document.getElementById("cliente").textContent = clienteVal;
+        document.getElementById("telefono").textContent = telefonoVal;
+        document.getElementById("tecnico").textContent = tecnicoVal;
+        document.getElementById("estado").textContent = estadoVal;
+        document.getElementById("descripcion").textContent = descripcionVal;
+
+        document.getElementById("topCodigo").textContent = codigoVal;
+        document.getElementById("topCliente").textContent = clienteVal;
+        document.getElementById("topTelefono").textContent = telefonoVal;
+        document.getElementById("topEstado").textContent = estadoVal;
+        document.getElementById("orderBreadcrumb").textContent = `${codigoVal !== "—" ? "Orden " + codigoVal : "Orden"}${clienteVal !== "—" ? " · " + clienteVal : ""}`;
       } catch (e) {
         console.error(e);
         alert("Error cargando datos de la orden.");

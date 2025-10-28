@@ -27,17 +27,42 @@
       padding: 0 25px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
       z-index: 1000;
+      gap: 18px;
     }
 
-    .header img {
-      height: 42px;
-    }
+    .header img { height: 42px; }
 
     .header h1 {
       margin: 0;
       font-size: 1.3rem;
       font-weight: 600;
       letter-spacing: 0.5px;
+      flex: 1;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.32);
     }
 
     /* ======= CONTENIDO ======= */
@@ -140,12 +165,54 @@
       background: #0d6efd;
     }
 
-    @media (max-width: 768px) {
-      .container { padding: 10px; }
-      form { padding: 20px; }
-      th, td { font-size: 0.9rem; }
-      .header h1 { font-size: 1.1rem; }
-      .header img { height: 35px; }
+    @media (max-width: 992px) {
+      .container { margin: 90px auto 30px; }
+      table { display: block; overflow-x: auto; }
+      thead { display: none; }
+      tbody { display: flex; flex-direction: column; gap: 12px; }
+      tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 16px;
+        padding: 12px;
+        border: 1px solid #e5e9f2;
+        border-radius: 10px;
+      }
+      tbody td {
+        border-bottom: none;
+        padding: 6px 0;
+        font-size: 0.95rem;
+      }
+      tbody td[colspan] {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+      tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: 600;
+        color: #0053a4;
+        margin-bottom: 2px;
+      }
+      tbody td:last-child {
+        grid-column: 1 / -1;
+        padding-top: 10px;
+      }
+      .btn-ver { width: 100%; text-align: center; }
+      .header { height: auto; padding: 16px; flex-wrap: wrap; }
+      .header img { height: 36px; }
+      .header h1 { font-size: 1.1rem; text-align: center; }
+      .header-actions { width: 100%; justify-content: center; }
+    }
+
+    @media (max-width: 576px) {
+      .container { padding: 12px; margin-top: 100px; }
+      form { padding: 18px 16px; }
+      input, select, textarea { font-size: 0.95rem; }
+      button { width: 100%; }
+      .header { gap: 10px; }
+      .header-actions { flex-direction: column; gap: 8px; }
+      .btn-back { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -153,6 +220,9 @@
   <div class="header">
     <img src="assets/logo.png" alt="Blue Home Logo" />
     <h1>Gestor de Órdenes de Servicio</h1>
+    <div class="header-actions">
+      <button class="btn-back" id="btnVolver">← Volver</button>
+    </div>
   </div>
 
   <div class="container">
@@ -188,7 +258,7 @@
     </form>
 
     <!-- ===== TABLA ===== -->
-    <table id="tablaOrdenes">
+    <table id="tablaOrdenes" data-responsive>
       <thead>
         <tr>
           <th>Fecha</th>
@@ -257,13 +327,13 @@
 
           const fila = document.createElement("tr");
           fila.innerHTML = `
-            <td>${fecha}</td>
-            <td>${codigo}</td>
-            <td>${cliente}</td>
-            <td>${telefono}</td>
-            <td>${tecnico}</td>
-            <td>${estado}</td>
-            <td><button class="btn-ver" data-codigo="${codigo}">Ver / Gestionar</button></td>
+            <td data-label="Fecha">${fecha}</td>
+            <td data-label="Código">${codigo}</td>
+            <td data-label="Cliente">${cliente}</td>
+            <td data-label="Teléfono">${telefono}</td>
+            <td data-label="Técnico">${tecnico}</td>
+            <td data-label="Estado">${estado}</td>
+            <td data-label="Acción"><button class="btn-ver" data-codigo="${codigo}">Ver / Gestionar</button></td>
           `;
           tbody.appendChild(fila);
         });
@@ -314,6 +384,14 @@
       } catch (err) {
         console.error("Error al crear orden:", err);
         alert("❌ Error al conectar con el servidor");
+      }
+    });
+
+    document.getElementById("btnVolver").addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "dashboard.html";
       }
     });
 
