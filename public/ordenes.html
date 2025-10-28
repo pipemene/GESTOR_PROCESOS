@@ -82,42 +82,6 @@
       line-height: 1.2;
     }
 
-    .metrics-board {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .metric-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-      border: 1px solid #e0e7ff;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .metric-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 30px rgba(59, 130, 246, 0.18);
-    }
-
-    .metric-card small {
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 600;
-      color: #2563eb;
-    }
-
-    .metric-card strong {
-      font-size: 1.5rem;
-      color: #0f172a;
-    }
-
     .btn-back {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
@@ -277,7 +241,6 @@
       .header-actions { width: 100%; justify-content: center; }
       .header-summary { width: 100%; justify-content: center; }
       .metric-chip { flex: 1 1 40%; align-items: center; text-align: center; }
-      .metrics-board { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     }
 
     @media (max-width: 576px) {
@@ -289,7 +252,6 @@
       .header-actions { flex-direction: column; gap: 8px; }
       .btn-back { width: 100%; justify-content: center; }
       .metric-chip { width: 100%; }
-      .metrics-board { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
     }
   </style>
 </head>
@@ -391,73 +353,11 @@
   </div>
 
   <script>
-    const KEY_VARIANTS = {
-      codigo: [
-        "codigo",
-        "Código",
-        "código",
-        "CÓDIGO",
-        "codigoinmueble",
-        "codigo del inmueble",
-        "Código del inmueble",
-        "Codigo del inmueble",
-        "codigo inmueble",
-        "Código inmueble",
-        "id",
-        "ID",
-        "idorden",
-        "orden",
-      ],
-      cliente: [
-        "cliente",
-        "Cliente",
-        "arrendatario",
-        "Arrendatario",
-        "inquilino",
-        "Inquilino",
-        "nombre arrendatario",
-        "Nombre arrendatario",
-        "nombreinquilino",
-      ],
-      telefono: [
-        "telefono",
-        "teléfono",
-        "Telefono",
-        "Teléfono",
-        "celular",
-        "Celular",
-        "contacto",
-        "Contacto",
-        "telefono arrendatario",
-        "Telefono arrendatario",
-        "telefono cliente",
-      ],
-      tecnico: ["tecnico", "Técnico", "tecnico asignado", "Tecnico Asignado", "responsable", "Responsable"],
-      estado: ["estado", "Estado", "estatus", "Estatus", "estado actual"],
-      fecha: ["fecha", "Fecha", "fecha creacion", "Fecha creacion", "fecha registro", "Fecha registro"],
-    };
-
-    const preferValue = (record, variants = [], fallback = "") => {
-      if (!record) return fallback;
-      for (const key of variants) {
-        if (key in record && record[key] != null && `${record[key]}`.trim() !== "") {
-          return record[key];
-        }
-      }
-      return fallback;
-    };
-
     const metricRefs = {
-      total: [document.getElementById("metricTotal"), document.getElementById("metricTotalPanel")],
-      pendientes: [document.getElementById("metricPendientes"), document.getElementById("metricPendientesPanel")],
-      proceso: [document.getElementById("metricProceso"), document.getElementById("metricProcesoPanel")],
-      finalizadas: [document.getElementById("metricFinalizadas"), document.getElementById("metricFinalizadasPanel")],
-    };
-
-    const setMetricValue = (key, value) => {
-      (metricRefs[key] || []).forEach((el) => {
-        if (el) el.textContent = value;
-      });
+      total: document.getElementById("metricTotal"),
+      pendientes: document.getElementById("metricPendientes"),
+      proceso: document.getElementById("metricProceso"),
+      finalizadas: document.getElementById("metricFinalizadas"),
     };
 
     const actualizarMetricas = (ordenes = []) => {
@@ -469,7 +369,12 @@
       };
 
       ordenes.forEach((orden) => {
-        const estadoRaw = preferValue(orden, KEY_VARIANTS.estado, "");
+        const estadoRaw =
+          orden.estado ||
+          orden.Estado ||
+          orden.estatus ||
+          orden.Estatus ||
+          "";
         const estado = String(estadoRaw).toLowerCase();
 
         if (estado.includes("final") || estado.includes("cerr")) {
@@ -485,10 +390,10 @@
         }
       });
 
-      setMetricValue("total", counters.total);
-      setMetricValue("pendientes", counters.pendientes);
-      setMetricValue("proceso", counters.proceso);
-      setMetricValue("finalizadas", counters.finalizadas);
+      metricRefs.total.textContent = counters.total;
+      metricRefs.pendientes.textContent = counters.pendientes;
+      metricRefs.proceso.textContent = counters.proceso;
+      metricRefs.finalizadas.textContent = counters.finalizadas;
     };
 
     // === CARGAR LISTA DE TÉCNICOS ===

@@ -195,7 +195,6 @@ router.get("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: crear nueva orden en la hoja
-====================================================== */
 router.post("/", async (req, res) => {
   try {
     const body = canonicalizePayload({ ...req.body });
@@ -235,7 +234,6 @@ router.post("/", async (req, res) => {
 
 /* ======================================================
    🔹 POST: generar y subir PDF de orden
-====================================================== */
 router.post(
   "/:codigo/pdf",
   upload.fields([
