@@ -15,6 +15,7 @@ export async function generarPDFOrden({
   materiales,
   observaciones,
   firmaData,
+  firmante,
   fotoAntes,
   fotoDespues,
 }) {
@@ -89,13 +90,21 @@ export async function generarPDFOrden({
     doc.moveDown(0.5);
 
     if (firmaData) {
-      const base64Image = firmaData.replace(/^data:image\/png;base64,/, "");
+      const base64Image = firmaData.replace(/^data:image\/png;base64,?/, "");
       const firmaPath = `/tmp/firma_${codigo}.png`;
       fs.writeFileSync(firmaPath, base64Image, "base64");
       doc.image(firmaPath, 60, doc.y, { width: 200 });
       fs.unlinkSync(firmaPath);
+      if (firmante) {
+        doc.moveDown(2 / 3);
+        doc.fillColor("#000").fontSize(11).text(`Nombre: ${firmante}`, { indent: 10 });
+      }
     } else {
       doc.fillColor("#aaa").text("Sin firma registrada.");
+      if (firmante) {
+        doc.moveDown(0.5);
+        doc.fillColor("#000").fontSize(11).text(`Nombre: ${firmante}`, { indent: 10 });
+      }
     }
 
     doc.moveDown(4);
